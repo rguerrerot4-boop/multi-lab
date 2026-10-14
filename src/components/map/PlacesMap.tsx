@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
-import MapView, { Circle, Marker } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline } from 'react-native-maps';
 import { colors } from '@/theme';
 import { KIND_STYLE, type PlacesMapProps } from './types';
 
 // Mapa real (Apple Maps en iPhone, Google Maps en Android) con tu ubicación y los lugares cercanos
-export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey }: PlacesMapProps) {
+export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey, route, routeApprox }: PlacesMapProps) {
   const map = useRef<MapView>(null);
   const delta = (radiusKm / 111) * 2.6;
 
@@ -14,7 +14,18 @@ export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm
     map.current?.animateToRegion({ latitude: center.lat, longitude: center.lon, latitudeDelta: delta, longitudeDelta: delta }, 500);
   }, [recenterKey, center.lat, center.lon, delta]);
 
+  // al trazar una ruta, el mapa se ajusta para mostrarla completa
   useEffect(() => {
+    if (route && route.length > 1) {
+      map.current?.fitToCoordinates(
+        route.map((c) => ({ latitude: c.lat, longitude: c.lon })),
+        { edgePadding: { top: 160, right: 60, bottom: 300, left: 60 }, animated: true },
+      );
+    }
+  }, [route]);
+
+  useEffect(() => {
+    if (route) return;
     const p = places.find((x) => x.id === selectedId);
     if (p) map.current?.animateToRegion({ latitude: p.lat - delta * 0.12, longitude: p.lon, latitudeDelta: delta * 0.6, longitudeDelta: delta * 0.6 }, 450);
   }, [selectedId, places, delta]);
@@ -39,6 +50,14 @@ export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm
         strokeColor="rgba(30,127,140,0.5)"
         fillColor="rgba(99,201,214,0.10)"
       />
+      {route && route.length > 1 ? (
+        <Polyline
+          coordinates={route.map((c) => ({ latitude: c.lat, longitude: c.lon }))}
+          strokeColor={colors.primary}
+          strokeWidth={6}
+          lineDashPattern={routeApprox ? [10, 8] : undefined}
+        />
+      ) : null}
       {places.map((p) => {
         const k = KIND_STYLE[p.kind];
         const on = p.id === selectedId;

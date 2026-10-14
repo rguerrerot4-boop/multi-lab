@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlacesMap } from '@/components/map/PlacesMap';
 import { KIND_STYLE } from '@/components/map/types';
 import { Button, Chip, goBack, styles } from '@/components/ui';
 import { dayLabel, personById } from '@/data/mock';
 import { SAMPLE_LOCATION, directionsUrl, distanceKm, fetchNearbyPlaces, formatDistance, type LatLon, type MapPlace, type PlaceKind } from '@/lib/places';
+import { fetchRoute, formatMinutes, type RouteResult } from '@/lib/routing';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, shadow, space, type } from '@/theme';
 
@@ -38,6 +39,9 @@ export default function Mapa() {
   const [radiusKm, setRadiusKm] = useState(2);
   const [selected, setSelected] = useState<string | null>(visita ? `v-${visita}` : null);
   const [recenter, setRecenter] = useState(0);
+  const [query, setQuery] = useState('');
+  const [route, setRoute] = useState<(RouteResult & { to: string }) | null>(null);
+  const [routing, setRouting] = useState(false);
   const sheet = useRef(new Animated.Value(0)).current;
 
   const center = user ?? SAMPLE_LOCATION;
@@ -64,9 +68,10 @@ export default function Mapa() {
     () =>
       all
         .filter((p) => filter === 'todo' || p.kind === filter)
+        .filter((p) => !query.trim() || `${p.name} ${p.subtitle ?? ''}`.toLowerCase().includes(query.trim().toLowerCase()))
         .map((p) => ({ ...p, km: distanceKm(center, p) }))
         .sort((a, b) => a.km - b.km),
-    [all, filter, center],
+    [all, filter, center, query],
   );
   const sel = all.find((p) => p.id === selected);
 
@@ -132,10 +137,20 @@ export default function Mapa() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, center.lat, center.lon, radiusKm]);
 
-  const openDirections = (p: LatLon) => {
-    logEvent('como_llegar');
+  // traza la ruta dentro de la app desde tu ubicación (o la de ejemplo) hasta el lugar
+  const showRoute = async (p: MapPlace) => {
+    setRouting(true);
+    logEvent('como_llegar', p.kind);
+    const r = await fetchRoute(center, p);
+    setRoute({ ...r, to: p.id });
+    setRouting(false);
+  };
+  // navegación paso a paso en la app de mapas del teléfono
+  const navigate = (p: LatLon) => {
+    logEvent('navegacion_externa');
     Linking.openURL(directionsUrl(p)).catch(() => {});
   };
+  const activeRoute = route && route.to === selected ? route : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -146,28 +161,38 @@ export default function Mapa() {
         selectedId={selected}
         onSelect={(id) => {
           setSelected(id);
+          if (id !== route?.to) setRoute(null);
           if (id) logEvent('lugar_mapa', id.startsWith('v-') ? 'visita' : 'cercano');
         }}
         radiusKm={radiusKm}
         recenterKey={recenter}
+        route={activeRoute?.coords ?? null}
+        routeApprox={activeRoute?.approx}
       />
 
       {/* barra superior flotante */}
       <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + space.sm, left: space.md, right: space.md, gap: space.sm }}>
         <View style={[styles.row, { gap: space.sm }]}>
           <Fab icon="chevron-back" label="Volver" onPress={() => goBack('/')} />
-          <View style={[{ flex: 1, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 8 }, shadow.card]}>
-            <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.ink }}>Mapa de cobertura</Text>
-            <Text style={{ fontFamily: font.medium, fontSize: 11, color: colors.inkMuted }} numberOfLines={1}>
-              {phase === 'ask'
-                ? 'Esperando permiso de ubicación'
-                : phase === 'locating'
-                  ? 'Buscando tu ubicación…'
-                  : usingSample
-                    ? 'Ubicación de ejemplo: Guayaquil'
-                    : 'Tu ubicación actual'}
-              {loadingPlaces ? ' · buscando lugares…' : source === 'osm' ? ' · datos de OpenStreetMap' : source === 'ejemplo' ? ' · lugares de ejemplo' : ''}
-            </Text>
+          <View style={[{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.md, minHeight: 44 }, shadow.card]}>
+            <Ionicons name="search" size={18} color={colors.inkMuted} />
+            <TextInput
+              value={query}
+              onChangeText={(t) => {
+                setQuery(t);
+                if (t) setFilter('todo');
+              }}
+              placeholder="Buscar consultorios, clínicas, médicos…"
+              placeholderTextColor={colors.inkSubtle}
+              style={[{ flex: 1, fontFamily: font.medium, fontSize: 14, color: colors.ink, paddingVertical: 10 }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
+              accessibilityLabel="Buscar en el mapa"
+              returnKeyType="search"
+            />
+            {query ? (
+              <Pressable onPress={() => setQuery('')} accessibilityLabel="Borrar búsqueda" hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.inkSubtle} />
+              </Pressable>
+            ) : null}
           </View>
           {loadingPlaces ? <ActivityIndicator color={colors.primary} /> : null}
         </View>
@@ -176,10 +201,22 @@ export default function Mapa() {
             <Chip key={f.key} label={f.label} selected={filter === f.key} onPress={() => setFilter(f.key)} />
           ))}
         </ScrollView>
+        <View style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <Text style={{ fontFamily: font.medium, fontSize: 11, color: colors.inkMuted }} numberOfLines={1}>
+            {phase === 'ask'
+              ? 'Esperando permiso de ubicación'
+              : phase === 'locating'
+                ? 'Buscando tu ubicación…'
+                : usingSample
+                  ? 'Ubicación de ejemplo: Guayaquil'
+                  : 'Mostrando tu ubicación actual'}
+            {loadingPlaces ? ' · buscando lugares…' : source === 'osm' ? ' · lugares de OpenStreetMap' : source === 'ejemplo' ? ' · lugares de ejemplo' : ''}
+          </Text>
+        </View>
       </View>
 
       {/* botones laterales */}
-      <View pointerEvents="box-none" style={{ position: 'absolute', right: space.md, top: insets.top + 130, gap: space.sm, alignItems: 'flex-end' }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', right: space.md, top: insets.top + 150, gap: space.sm, alignItems: 'flex-end' }}>
         <Fab
           icon="locate"
           label="Volver a mi ubicación"
@@ -247,11 +284,38 @@ export default function Mapa() {
               {formatDistance(distanceKm(center, sel))} {usingSample ? 'del punto de ejemplo' : 'de ti'}
               {sel.subtitle ? ` · ${sel.subtitle}` : ''}
             </Text>
+            {activeRoute ? (
+              <View style={{ backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: space.md, gap: 4 }}>
+                <View style={[styles.row, { gap: space.lg }]}>
+                  <View style={[styles.row, { gap: 6 }]}>
+                    <Ionicons name="car-outline" size={18} color={colors.primary} />
+                    <Text style={type.h3}>{formatMinutes(activeRoute.driveMin)}</Text>
+                  </View>
+                  <View style={[styles.row, { gap: 6 }]}>
+                    <Ionicons name="walk-outline" size={18} color={colors.primary} />
+                    <Text style={type.h3}>{formatMinutes(activeRoute.walkMin)}</Text>
+                  </View>
+                  <Text style={type.bodyMuted}>{formatDistance(activeRoute.distanceKm)}</Text>
+                </View>
+                {activeRoute.approx ? (
+                  <Text style={type.caption}>Ruta aproximada: sin conexión al servicio de rutas, se muestra la dirección en línea recta.</Text>
+                ) : null}
+              </View>
+            ) : null}
             <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
               <View style={{ flex: 1 }}>
-                <Button label="Cómo llegar" icon="navigate-outline" small onPress={() => openDirections(sel)} />
+                {activeRoute ? (
+                  <Button label="Navegar" icon="navigate" small onPress={() => navigate(sel)} />
+                ) : (
+                  <Button label="Cómo llegar" icon="git-branch-outline" small loading={routing} onPress={() => showRoute(sel)} />
+                )}
               </View>
-              {sel.visitId ? (
+              {activeRoute ? (
+                <View style={{ flex: 1 }}>
+                  <Button label="Quitar ruta" variant="secondary" icon="close" small onPress={() => setRoute(null)} />
+                </View>
+              ) : null}
+              {sel.visitId && !activeRoute ? (
                 <View style={{ flex: 1 }}>
                   <Button label="Abrir visita" variant="secondary" icon="calendar-outline" small onPress={() => router.push(`/visita/${sel.visitId}`)} />
                 </View>

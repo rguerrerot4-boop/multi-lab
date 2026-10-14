@@ -7,7 +7,7 @@ import { KIND_STYLE, type PlacesMapProps } from './types';
 
 // Versión web del mapa: ilustrativa (el navegador de la vista previa no permite cargar mapas externos).
 // Se puede arrastrar y acercar con la rueda del ratón o pellizcando; muestra los mismos lugares.
-export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey }: PlacesMapProps) {
+export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey, route, routeApprox }: PlacesMapProps) {
   const [box, setBox] = useState({ w: 360, h: 500 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -45,6 +45,16 @@ export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm
   }, [recenterKey, center.lat, center.lon, radiusKm]);
 
   useEffect(() => {
+    if (!route || route.length < 2) return;
+    const a = route[0];
+    const b = route[route.length - 1];
+    const mid = { lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 };
+    animatePan({ x: -(mid.lon - center.lon) * 111 * cosLat * k, y: (mid.lat - center.lat) * 111 * k - box.h * 0.1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route]);
+
+  useEffect(() => {
+    if (route) return;
     const p = places.find((x) => x.id === selectedId);
     if (!p) return;
     const dx = (p.lon - center.lon) * 111 * cosLat * k;
@@ -124,6 +134,17 @@ export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm
           ))}
           <Polyline points={river} fill="none" stroke="#BFE0E8" strokeWidth={Math.max(14, 0.35 * k)} strokeLinecap="round" strokeLinejoin="round" />
           <Circle cx={c.x} cy={c.y} r={radiusKm * k} fill="rgba(99,201,214,0.12)" stroke="rgba(30,127,140,0.45)" strokeWidth={1.5} />
+          {route && route.length > 1 ? (
+            <Polyline
+              points={route.map((r) => toXY(r.lat, r.lon)).map((q) => `${q.x},${q.y}`).join(' ')}
+              fill="none"
+              stroke={colors.primary}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={routeApprox ? '12 9' : undefined}
+            />
+          ) : null}
         </Svg>
       </Pressable>
 

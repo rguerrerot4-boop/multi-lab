@@ -10,6 +10,8 @@ export interface PlacesMapProps {
   onSelect: (id: string | null) => void;
   radiusKm: number;
   recenterKey: number; // al cambiar, el mapa vuelve a tu ubicación
+  route?: LatLon[] | null; // ruta dibujada hacia el lugar elegido
+  routeApprox?: boolean;
 }
 
 export const KIND_STYLE: Record<PlaceKind, { color: string; icon: IconName; label: string }> = {
