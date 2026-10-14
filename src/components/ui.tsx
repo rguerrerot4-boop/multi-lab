@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -495,19 +495,59 @@ export function Segmented<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  // pastilla blanca que se desliza con un pequeño rebote hasta la opción elegida
+  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const [w, setW] = useState(0);
+  const x = useRef(new Animated.Value(index)).current;
+  const pop = useRef(new Animated.Value(1)).current;
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      x.setValue(index);
+      return;
+    }
+    pop.setValue(0.8);
+    Animated.parallel([
+      Animated.spring(x, { toValue: index, useNativeDriver: true, stiffness: 340, damping: 22, mass: 0.9 }),
+      Animated.spring(pop, { toValue: 1, useNativeDriver: true, stiffness: 300, damping: 12 }),
+    ]).start();
+  }, [index, x, pop]);
+  const slot = w ? (w - 8 - 4 * (options.length - 1)) / options.length : 0;
   return (
-    <View style={styles.segment} accessibilityRole="tablist">
-      {options.map((o) => {
-        const on = o.value === value;
+    <View style={styles.segment} accessibilityRole="tablist" onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      {slot ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.segmentOn,
+            {
+              position: 'absolute',
+              top: 4,
+              bottom: 4,
+              left: 4,
+              width: slot,
+              borderRadius: radius.sm,
+              transform: [{ translateX: x.interpolate({ inputRange: options.map((_, i) => i), outputRange: options.map((_, i) => i * (slot + 4)) }) }],
+            },
+          ]}
+        />
+      ) : null}
+      {options.map((o, i) => {
+        const on = i === index;
         return (
           <Pressable
             key={o.value}
             onPress={() => onChange(o.value)}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            style={[styles.segmentItem, on && styles.segmentOn]}
+            style={[styles.segmentItem, !slot && on && styles.segmentOn]}
           >
-            {o.icon ? <Ionicons name={o.icon} size={16} color={on ? colors.primary : colors.inkMuted} /> : null}
+            {o.icon ? (
+              <Animated.View style={on ? { transform: [{ scale: pop }] } : undefined}>
+                <Ionicons name={o.icon} size={16} color={on ? colors.primary : colors.inkMuted} />
+              </Animated.View>
+            ) : null}
             <Text style={[type.label, { color: on ? colors.primary : colors.inkMuted }]}>{o.label}</Text>
           </Pressable>
         );
