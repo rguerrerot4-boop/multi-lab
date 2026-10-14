@@ -239,6 +239,21 @@ export default function Mapa() {
             </Pressable>
           ))}
         </View>
+        <Pressable
+          onPress={() => {
+            logEvent('google_maps_abierto');
+            router.push(user ? { pathname: '/mapa-google', params: { lat: String(user.lat), lon: String(user.lon) } } : '/mapa-google');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Ver consultorios en Google Maps"
+          style={({ pressed }) => [
+            { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 9, opacity: pressed ? 0.75 : 1 },
+            shadow.card,
+          ]}
+        >
+          <Ionicons name="logo-google" size={16} color={colors.primary} />
+          <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.ink }}>Google Maps</Text>
+        </Pressable>
       </View>
 
       {/* panel inferior: lugar seleccionado o lista de cercanos */}

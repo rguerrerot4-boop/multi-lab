@@ -39,7 +39,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
-| Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa interactivo con tu ubicación (GPS), buscador, tus visitas, consultorios, clínicas y hospitales cercanos de OpenStreetMap, y rutas dentro de la app (OSRM) con tiempo en auto y a pie |
+| Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa interactivo con tu ubicación (GPS), buscador, tus visitas, consultorios, clínicas y hospitales cercanos de OpenStreetMap, rutas dentro de la app (OSRM) con tiempo en auto y a pie, y Google Maps integrado para buscar consultorios y médicos |
 | Otros | Centro de notificaciones, perfil, contactos, historial de visitas y métricas de la prueba |
 
 ## Recorridos para probar
