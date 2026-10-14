@@ -79,7 +79,7 @@ export function MyStatusCard() {
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
         <View style={{ flex: 1 }}>
           <Text style={type.overline}>Tu estado</Text>
-          <Text style={type.caption}>Tu visitador lo ve antes de pasar por tu consultorio.</Text>
+          <Text style={type.caption}>Los visitadores lo ven antes de pasar por tu consultorio.</Text>
         </View>
         <DoctorStatusPill status={st} />
       </View>
@@ -178,12 +178,14 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
           {sent ? (
             <View style={{ padding: space.xl, gap: space.md, alignItems: 'center' }}>
               <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="paper-plane" size={32} color={colors.white} />
+                <Ionicons name="cloud-done" size={34} color={colors.white} />
               </View>
-              <Text style={[type.h2, { textAlign: 'center' }]}>Tu visitador ya fue avisado</Text>
-              <Text style={[type.bodyMuted, { textAlign: 'center' }]}>
-                Le llegó tu solicitud con las palabras clave “{allKeys.join(', ')}”. Te avisaremos cuando la vea y te responda.
-              </Text>
+              <Text style={[type.h2, { textAlign: 'center' }]}>Solicitud publicada</Text>
+              <View style={[styles.pill, { alignSelf: 'center', backgroundColor: colors.successSoft }]}>
+                <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                <Text style={[styles.pillText, { color: colors.success }]}>Estado: Publicada</Text>
+              </View>
+              <Text style={[type.bodyMuted, { textAlign: 'center' }]}>“{allKeys.join(', ')}”</Text>
               <View style={{ width: '100%', gap: space.sm }}>
                 <Button
                   label="Ver seguimiento"
@@ -199,7 +201,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
           ) : (
             <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: space.lg, gap: space.md }} keyboardShouldPersistTaps="handled">
               <Text style={type.h2}>Necesito un producto</Text>
-              <Text style={type.bodyMuted}>Describe con palabras clave lo que necesitas. Tu visitador recibirá la solicitud y verá si coincide con alguno de sus productos.</Text>
+              <Text style={type.bodyMuted}>Describe con palabras clave lo que necesitas y publica tu solicitud.</Text>
 
               <Text style={type.label}>Palabras clave</Text>
               <View style={[styles.input, { flexWrap: 'wrap', paddingVertical: 8, borderColor: keys.length ? colors.primary : colors.border, minHeight: 54 }]}>
@@ -242,7 +244,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
               </View>
               <Field label="Comentario (opcional)" value={note} onChangeText={setNote} placeholder="Ej.: quiero conocer texturas o material de apoyo" multiline />
               <Text style={type.caption}>No incluyas datos de pacientes. Esto no es un pedido ni una compra.</Text>
-              <Button label="Enviar solicitud al visitador" icon="notifications-outline" disabled={!allKeys.length} onPress={send} />
+              <Button label="Publicar solicitud" icon="cloud-upload-outline" disabled={!allKeys.length} onPress={send} />
             </ScrollView>
           )}
         </View>
@@ -250,6 +252,10 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
     </Modal>
   );
 }
+
+/** Nombre del estado según quién lo mira */
+export const needLabel = (st: ProductNeed['status'], forRep?: boolean) =>
+  st === 'Enviada' ? (forRep ? 'Nueva' : 'Publicada') : st === 'Atendida' ? 'Respondida' : 'Vista';
 
 const NEED_STYLE: Record<ProductNeed['status'], { bg: string; fg: string }> = {
   Enviada: { bg: colors.warningSoft, fg: colors.warning },
@@ -273,7 +279,7 @@ export function NeedCard({ need, forRep }: { need: ProductNeed; forRep?: boolean
           {forRep ? doc.name : 'Tu solicitud'} · {ago(need.createdAt)}
         </Text>
         <View style={[styles.pill, { backgroundColor: st.bg }]}>
-          <Text style={[styles.pillText, { color: st.fg }]}>{need.status === 'Enviada' && forRep ? 'Nueva' : need.status}</Text>
+          <Text style={[styles.pillText, { color: st.fg }]}>{needLabel(need.status, forRep)}</Text>
         </View>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

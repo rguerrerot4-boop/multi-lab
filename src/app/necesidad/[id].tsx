@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { ago, DoctorStatusPill } from '@/components/doctor';
+import { ago, DoctorStatusPill, needLabel } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, Screen, styles } from '@/components/ui';
 import { matchProducts, NEED_RESPONSES, personById, type NeedStatus } from '@/data/mock';
@@ -46,7 +46,7 @@ export default function Necesidad() {
 
   return (
     <Screen
-      header={<AppHeader title={isRep ? 'Solicitud de producto' : 'Mi solicitud de producto'} subtitle={`${isRep ? doc.name : 'Enviada'} · ${ago(need.createdAt)}`} />}
+      header={<AppHeader title={isRep ? 'Solicitud de producto' : 'Mi solicitud de producto'} subtitle={`${isRep ? doc.name : 'Publicada'} · ${ago(need.createdAt)}`} />}
       footer={
         isRep && need.status !== 'Atendida' ? (
           <Button
@@ -98,7 +98,7 @@ export default function Necesidad() {
               </View>
               <View style={{ flex: 1, height: 2, backgroundColor: i === STEPS.length - 1 ? 'transparent' : i < step ? colors.primary : colors.border }} />
             </View>
-            <Text style={[type.caption, i <= step && { color: colors.ink }]}>{s === 'Vista' ? 'Vista por el visitador' : s}</Text>
+            <Text style={[type.caption, i <= step && { color: colors.ink }]}>{needLabel(s, isRep)}</Text>
           </View>
         ))}
       </View>

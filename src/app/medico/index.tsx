@@ -43,7 +43,7 @@ export default function MedicoInicio() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[type.h3, { color: colors.white }]}>Necesito un producto</Text>
-          <Text style={[type.caption, { color: '#DDF1F4' }]}>Describe con palabras clave y avisamos a tu visitador</Text>
+          <Text style={[type.caption, { color: '#DDF1F4' }]}>Publica una solicitud con palabras clave</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={colors.white} />
       </PressableScale>
