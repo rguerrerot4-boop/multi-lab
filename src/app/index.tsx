@@ -35,7 +35,7 @@ export default function Splash() {
   const [phase, setPhase] = useState<'intro' | 'logo'>('intro');
   const B = Math.min(width * 0.6, 250); // diámetro de la burbuja
   const restY = height / 2 - B * 0.2; // distancia del centro de la pantalla a la burbuja en reposo
-  const intro = useRef({ lift: new Animated.Value(0), pop: new Animated.Value(0), idle: new Animated.Value(0) }).current;
+  const intro = useRef({ lift: new Animated.Value(0), pop: new Animated.Value(0), idle: new Animated.Value(0), enter: new Animated.Value(0) }).current;
   const launched = useRef(false);
   const skipped = useRef(false);
   const running = useRef<Animated.CompositeAnimation | null>(null);
@@ -78,13 +78,15 @@ export default function Splash() {
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
       if (cancelledRef.current) return;
       if (reduce) {
+        intro.enter.setValue(1);
         launched.current = true;
         setPhase('logo');
         [v.left, v.right, v.top, v.bottom, v.play, v.shift, v.multi, v.lab, v.dot].forEach((a) => a.setValue(1));
         setTimeout(() => !cancelledRef.current && skip(), 900);
         return;
       }
-      // la burbuja "respira" mientras espera
+      // la burbuja entra desde abajo con rebote líquido y luego "respira" mientras espera
+      Animated.spring(intro.enter, { toValue: 1, delay: 150, stiffness: 140, damping: 11, mass: 1, useNativeDriver: true }).start();
       Animated.loop(
         Animated.sequence([
           Animated.timing(intro.idle, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
@@ -113,7 +115,8 @@ export default function Splash() {
       useNativeDriver: true,
     }).start(() => {
       setPhase('logo');
-      Animated.timing(intro.pop, { toValue: 1, duration: 460, easing: Easing.in(Easing.back(1.4)), useNativeDriver: true }).start();
+      // la burbuja se contrae hasta el tamaño del play y revienta: de ahí brota el logo
+      Animated.timing(intro.pop, { toValue: 1, duration: 760, easing: Easing.linear, useNativeDriver: true }).start();
       runLogo();
     });
   };
@@ -146,21 +149,25 @@ export default function Splash() {
     if (cancelled) return;
     const t = (val: Animated.Value, duration: number, delay = 0, easing = ease) =>
       Animated.timing(val, { toValue: 1, duration, delay, easing, useNativeDriver: true });
+    const pop = (val: Animated.Value, delay: number) =>
+      Animated.spring(val, { toValue: 1, delay, friction: 5, tension: 95, useNativeDriver: true });
     {
       running.current = Animated.sequence([
         // 1 + 2. las cápsulas llegan casi juntas y, justo cuando encajan, el play aparece con efecto pop
         // en el centro: así los cruces entre cápsulas quedan cubiertos por el play casi de inmediato
         Animated.parallel([
-          t(v.left, 640, 0, glide),
-          t(v.top, 640, 50, glide),
-          t(v.right, 640, 100, glide),
-          t(v.bottom, 640, 150, glide),
+          // el play nace justo cuando la burbuja termina de contraerse
+          Animated.spring(v.play, { toValue: 1, delay: 330, friction: 4, tension: 90, useNativeDriver: true }),
+          // las cápsulas brotan desde el centro con rebote y se funden en la cruz
+          pop(v.left, 380),
+          pop(v.top, 420),
+          pop(v.right, 460),
+          pop(v.bottom, 500),
           Animated.sequence([
-            Animated.delay(330),
-            Animated.timing(v.bump, { toValue: 1, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-            Animated.timing(v.bump, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            Animated.delay(620),
+            Animated.timing(v.bump, { toValue: 1, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+            Animated.timing(v.bump, { toValue: 0, duration: 300, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
           ]),
-          Animated.spring(v.play, { toValue: 1, delay: 210, friction: 4.2, tension: 70, useNativeDriver: true }),
         ]),
         Animated.delay(140),
         // 3. nombre
@@ -199,6 +206,7 @@ export default function Splash() {
     transform: [
       { translateX: val.interpolate({ inputRange: [0, 1], outputRange: [dx * s, 0] }) },
       { translateY: val.interpolate({ inputRange: [0, 1], outputRange: [dy * s, 0] }) },
+      { scale: val.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }) },
     ],
   });
 
@@ -210,7 +218,7 @@ export default function Splash() {
       {
         scale: Animated.multiply(
           v.shift.interpolate({ inputRange: [0, 1], outputRange: [1.8, 1] }),
-          v.bump.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] }),
+          v.bump.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }),
         ),
       },
     ],
@@ -248,12 +256,16 @@ export default function Splash() {
             accessibilityLabel={phase === 'logo' ? 'Multi LAB. Toca para continuar' : 'Multi LAB. Desliza hacia arriba para entrar'}
             style={{ flex: 1, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
           >
-            <Animated.View style={{ width: W, height: H, opacity: logoFade }}>
+            {/* 0. burbuja de vidrio para deslizar (detrás del logo: el logo brota de ella) */}
+            <IntroBubble B={B} restY={restY} lift={intro.lift} pop={intro.pop} idle={intro.idle} enter={intro.enter} pan={pan.panHandlers} onTap={() => launch()} />
+
+            <Animated.View pointerEvents="none" style={{ width: W, height: H, opacity: logoFade }}>
               <Animated.View style={[{ position: 'absolute', left: 0, top: 0, width: W, height: H }, markGroup]}>
-                <LogoLayer name="left" scale={s} style={enter(v.left, -70, 0)} />
-                <LogoLayer name="right" scale={s} style={enter(v.right, 70, 0)} />
-                <LogoLayer name="top" scale={s} style={enter(v.top, 0, -70)} />
-                <LogoLayer name="bottom" scale={s} style={enter(v.bottom, 0, 70)} />
+                {/* cada cápsula brota desde el centro del play (donde se contrajo la burbuja) */}
+                <LogoLayer name="left" scale={s} style={enter(v.left, 24, 6)} />
+                <LogoLayer name="right" scale={s} style={enter(v.right, -26, 7)} />
+                <LogoLayer name="top" scale={s} style={enter(v.top, -6, 30)} />
+                <LogoLayer name="bottom" scale={s} style={enter(v.bottom, -6, -16)} />
                 {/* onda de selección */}
                 <Animated.View
                   pointerEvents="none"
@@ -319,8 +331,6 @@ export default function Splash() {
               Menos materiales. Más conexión.
             </Animated.Text>
 
-            {/* 0. burbuja de vidrio para deslizar */}
-            <IntroBubble B={B} restY={restY} lift={intro.lift} pop={intro.pop} idle={intro.idle} pan={pan.panHandlers} onTap={() => launch()} />
           </Pressable>
         </Animated.View>
       ) : null}
@@ -330,13 +340,16 @@ export default function Splash() {
 
 type Handlers = ReturnType<typeof PanResponder.create>['panHandlers'];
 
-/** Burbuja de vidrio que se desliza hacia arriba y se contrae en el centro, donde nace el logo */
+const DROPS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+/** Burbuja de vidrio que entra con rebote, se desliza hacia arriba y en el centro se contrae y revienta */
 function IntroBubble({
   B,
   restY,
   lift,
   pop,
   idle,
+  enter,
   pan,
   onTap,
 }: {
@@ -345,10 +358,19 @@ function IntroBubble({
   lift: Animated.Value;
   pop: Animated.Value;
   idle: Animated.Value;
+  enter: Animated.Value;
   pan: Handlers;
   onTap: () => void;
 }) {
-  const hint = lift.interpolate({ inputRange: [-0.1, 0, 0.25], outputRange: [1, 1, 0], extrapolate: 'clamp' });
+  const gone = pop.interpolate({ inputRange: [0, 0.01], outputRange: [1, 0], extrapolate: 'clamp' });
+  const shown = enter.interpolate({ inputRange: [0.3, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+  const hint = Animated.multiply(
+    Animated.multiply(lift.interpolate({ inputRange: [-0.1, 0, 0.25], outputRange: [1, 1, 0], extrapolate: 'clamp' }), gone),
+    shown,
+  );
+  // se contrae hasta el tamaño del play (≈30 %) y revienta
+  const popScale = pop.interpolate({ inputRange: [0, 0.42, 0.5, 1], outputRange: [1, 0.3, 0.34, 0.5], extrapolate: 'clamp' });
+  const burst = pop.interpolate({ inputRange: [0, 0.42, 1], outputRange: [0, 0, 1], extrapolate: 'clamp' });
   return (
     <>
       {/* frase superior: la burbuja la "atraviesa" al subir */}
@@ -360,14 +382,55 @@ function IntroBubble({
           left: 32,
           right: 32,
           alignItems: 'center',
-          opacity: Animated.multiply(lift.interpolate({ inputRange: [0, 0.35, 0.6], outputRange: [1, 1, 0], extrapolate: 'clamp' }), pop.interpolate({ inputRange: [0, 0.01], outputRange: [1, 0], extrapolate: 'clamp' })),
-          transform: [{ scale: lift.interpolate({ inputRange: [0, 0.6], outputRange: [1, 1.08], extrapolate: 'clamp' }) }],
+          opacity: Animated.multiply(
+            Animated.multiply(lift.interpolate({ inputRange: [0, 0.35, 0.6], outputRange: [1, 1, 0], extrapolate: 'clamp' }), gone),
+            shown,
+          ),
+          transform: [
+            { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [14, 0], extrapolate: 'clamp' }) },
+            { scale: lift.interpolate({ inputRange: [0, 0.6], outputRange: [1, 1.08], extrapolate: 'clamp' }) },
+          ],
         }}
       >
         <Text style={{ fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: colors.ink, textAlign: 'center' }}>
           La visita médica,{'\n'}más cerca.
         </Text>
       </Animated.View>
+
+      {/* anillo y gotas del estallido */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          width: B,
+          height: B,
+          borderRadius: B / 2,
+          borderWidth: 3,
+          borderColor: colors.turquesa,
+          opacity: burst.interpolate({ inputRange: [0, 0.05, 1], outputRange: [0, 0.9, 0] }),
+          transform: [{ scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.25] }) }],
+        }}
+      />
+      {DROPS.map((a, i) => {
+        const r = (a * Math.PI) / 180;
+        const d = burst.interpolate({ inputRange: [0, 1], outputRange: [B * 0.14, B * (i % 2 ? 0.62 : 0.78)] });
+        const size = i % 2 ? 7 : 10;
+        return (
+          <Animated.View
+            key={a}
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: i % 3 === 0 ? colors.primary : colors.turquesa,
+              opacity: burst.interpolate({ inputRange: [0, 0.08, 0.7, 1], outputRange: [0, 1, 0.8, 0] }),
+              transform: [{ translateX: Animated.multiply(d, Math.cos(r)) }, { translateY: Animated.multiply(d, Math.sin(r)) }],
+            }}
+          />
+        );
+      })}
 
       <Animated.View
         {...pan}
@@ -379,16 +442,35 @@ function IntroBubble({
           // @ts-expect-error solo web: evita que el navegador use el gesto para desplazar
           touchAction: 'none',
           cursor: 'grab',
-          opacity: pop.interpolate({ inputRange: [0, 0.75, 1], outputRange: [1, 1, 0] }),
+          opacity: Animated.multiply(
+            pop.interpolate({ inputRange: [0, 0.44, 0.56], outputRange: [1, 1, 0], extrapolate: 'clamp' }),
+            enter.interpolate({ inputRange: [0, 0.15], outputRange: [0, 1], extrapolate: 'clamp' }),
+          ),
           transform: [
-            { translateY: lift.interpolate({ inputRange: [-0.1, 1], outputRange: [restY + restY * 0.1, 0] }) },
+            // entra desde abajo con rebote
+            { translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [restY + B * 1.3, restY] }) },
+            // y sube con el dedo hasta el centro
+            { translateY: lift.interpolate({ inputRange: [-0.1, 1], outputRange: [restY * 0.1, -restY] }) },
+            // efecto líquido: se estira al moverse y se aplasta al frenar
+            {
+              scaleX: Animated.multiply(
+                enter.interpolate({ inputRange: [0, 0.8, 1, 1.12], outputRange: [0.9, 0.95, 1, 1.07] }),
+                lift.interpolate({ inputRange: [0, 0.4, 1], outputRange: [1, 0.94, 1], extrapolate: 'clamp' }),
+              ),
+            },
+            {
+              scaleY: Animated.multiply(
+                enter.interpolate({ inputRange: [0, 0.8, 1, 1.12], outputRange: [1.12, 1.05, 1, 0.93] }),
+                lift.interpolate({ inputRange: [0, 0.4, 1], outputRange: [1, 1.08, 1], extrapolate: 'clamp' }),
+              ),
+            },
             {
               scale: Animated.multiply(
                 Animated.multiply(
                   lift.interpolate({ inputRange: [0, 1], outputRange: [1, 0.86], extrapolate: 'clamp' }),
                   idle.interpolate({ inputRange: [0, 1], outputRange: [1, 1.035] }),
                 ),
-                pop.interpolate({ inputRange: [0, 1], outputRange: [1, 0.3] }),
+                popScale,
               ),
             },
           ],
@@ -408,27 +490,41 @@ function IntroBubble({
             style={{ flex: 1, borderRadius: B / 2, padding: 2 }}
           >
             <View style={{ flex: 1, borderRadius: B / 2, backgroundColor: colors.glass, overflow: 'hidden' }}>
-              {/* brillo de la parte inferior: se enciende al empezar a deslizar y se apaga al subir */}
+              {/* brillo inferior: se enciende al deslizar y al contraerse */}
               <Animated.View
                 style={[
                   StyleSheet.absoluteFill,
-                  { opacity: lift.interpolate({ inputRange: [0, 0.06, 0.5, 1], outputRange: [0.45, 1, 0.5, 0.15], extrapolate: 'clamp' }) },
+                  {
+                    opacity: Animated.add(
+                      lift.interpolate({ inputRange: [0, 0.06, 0.5, 1], outputRange: [0.45, 1, 0.5, 0.15], extrapolate: 'clamp' }),
+                      pop.interpolate({ inputRange: [0, 0.4], outputRange: [0, 0.85], extrapolate: 'clamp' }),
+                    ),
+                  },
                 ]}
               >
                 <LinearGradient colors={[colors.clear, colors.clear, colors.accentSoft, colors.turquesa]} locations={[0, 0.55, 0.8, 1]} style={{ flex: 1 }} />
               </Animated.View>
               {/* reflejo superior */}
-              <View style={{ position: 'absolute', top: B * 0.1, left: B * 0.2, width: B * 0.32, height: B * 0.12, borderRadius: B, backgroundColor: colors.surface, opacity: 0.9, transform: [{ rotate: '-18deg' }] }} />
+              <View
+                style={{
+                  position: 'absolute',
+                  top: B * 0.1,
+                  left: B * 0.2,
+                  width: B * 0.32,
+                  height: B * 0.12,
+                  borderRadius: B,
+                  backgroundColor: colors.surface,
+                  opacity: 0.9,
+                  transform: [{ rotate: '-18deg' }],
+                }}
+              />
             </View>
           </LinearGradient>
         </View>
       </Animated.View>
 
       {/* indicación inferior */}
-      <Animated.View
-        pointerEvents="none"
-        style={{ position: 'absolute', bottom: 36, alignItems: 'center', gap: 2, opacity: Animated.multiply(hint, pop.interpolate({ inputRange: [0, 0.01], outputRange: [1, 0], extrapolate: 'clamp' })) }}
-      >
+      <Animated.View pointerEvents="none" style={{ position: 'absolute', bottom: 36, alignItems: 'center', gap: 2, opacity: hint }}>
         <Animated.View style={{ transform: [{ translateY: idle.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }}>
           <Ionicons name="chevron-up" size={20} color={colors.primary} />
         </Animated.View>
