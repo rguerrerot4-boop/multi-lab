@@ -16,7 +16,11 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "ec.unemi.multilab"
+      "package": "ec.unemi.multilab",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/logo-mark.png",
@@ -25,7 +29,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Multi LAB usa tu ubicación para mostrarte los consultorios cercanos y organizar tus visitas."
+        }
+      ]
     ],
     "scheme": "multilab",
     "splash": {

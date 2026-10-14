@@ -1,108 +1,324 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
-import { AppHeader, Avatar, Button, Card, DemoNotice, Screen, StatusPill, styles } from '@/components/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PlacesMap } from '@/components/map/PlacesMap';
+import { KIND_STYLE } from '@/components/map/types';
+import { Button, Chip, goBack, styles } from '@/components/ui';
 import { dayLabel, personById } from '@/data/mock';
+import { SAMPLE_LOCATION, directionsUrl, distanceKm, fetchNearbyPlaces, formatDistance, type LatLon, type MapPlace, type PlaceKind } from '@/lib/places';
 import { useMine } from '@/store/AppStore';
-import { colors, font, radius, space, type } from '@/theme';
+import { colors, font, radius, shadow, space, type } from '@/theme';
 
-// Mapa de cobertura ilustrativo (sin geolocalización real)
+type Phase = 'ask' | 'locating' | 'ready';
+const FILTERS: { key: 'todo' | PlaceKind; label: string }[] = [
+  { key: 'todo', label: 'Todo' },
+  { key: 'visita', label: 'Mis visitas' },
+  { key: 'consultorio', label: 'Consultorios' },
+  { key: 'clinica', label: 'Clínicas' },
+  { key: 'hospital', label: 'Hospitales' },
+];
+const RADII = [1, 2, 5];
+
+// Mapa de cobertura: tu ubicación, tus visitas y los consultorios cercanos
 export default function Mapa() {
   const { visita } = useLocalSearchParams<{ visita?: string }>();
-  const { myVisits } = useMine();
-  const upcoming = myVisits.filter((v) => v.dayOffset >= 0).sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time));
-  const [sel, setSel] = useState(visita ?? upcoming[0]?.id);
-  const { width } = useWindowDimensions();
-  const W = Math.min(width, 720) - space.lg * 2;
-  const H = W * 0.9;
-  const selected = upcoming.find((v) => v.id === sel);
+  const { myVisits, role, logEvent } = useMine();
+  const insets = useSafeAreaInsets();
+  const [phase, setPhase] = useState<Phase>('locating');
+  const [user, setUser] = useState<LatLon | null>(null);
+  const [usingSample, setUsingSample] = useState(false);
+  const [denied, setDenied] = useState(false);
+  const [nearby, setNearby] = useState<MapPlace[]>([]);
+  const [source, setSource] = useState<'osm' | 'ejemplo' | null>(null);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [filter, setFilter] = useState<'todo' | PlaceKind>('todo');
+  const [radiusKm, setRadiusKm] = useState(2);
+  const [selected, setSelected] = useState<string | null>(visita ? `v-${visita}` : null);
+  const [recenter, setRecenter] = useState(0);
+  const sheet = useRef(new Animated.Value(0)).current;
+
+  const center = user ?? SAMPLE_LOCATION;
+
+  // tus visitas como lugares del mapa
+  const visitPlaces: MapPlace[] = useMemo(
+    () =>
+      myVisits
+        .filter((v) => v.dayOffset >= 0)
+        .map((v) => ({
+          id: `v-${v.id}`,
+          name: role === 'visitador' ? personById(v.doctorId).name : v.place,
+          kind: 'visita' as const,
+          lat: v.lat,
+          lon: v.lon,
+          subtitle: `${dayLabel(v.dayOffset)} · ${v.time} · ${v.place}`,
+          visitId: v.id,
+        })),
+    [myVisits, role],
+  );
+
+  const all = useMemo(() => [...visitPlaces, ...nearby], [visitPlaces, nearby]);
+  const shown = useMemo(
+    () =>
+      all
+        .filter((p) => filter === 'todo' || p.kind === filter)
+        .map((p) => ({ ...p, km: distanceKm(center, p) }))
+        .sort((a, b) => a.km - b.km),
+    [all, filter, center],
+  );
+  const sel = all.find((p) => p.id === selected);
+
+  useEffect(() => {
+    Animated.spring(sheet, { toValue: sel ? 1 : 0, friction: 8, tension: 80, useNativeDriver: true }).start();
+  }, [sel, sheet]);
+
+  const loadPlaces = useCallback(async (at: LatLon, r: number) => {
+    setLoadingPlaces(true);
+    const res = await fetchNearbyPlaces(at, r);
+    setNearby(res.places);
+    setSource(res.source);
+    setLoadingPlaces(false);
+  }, []);
+
+  const fallbackToSample = useCallback(() => {
+    setUser(null);
+    setUsingSample(true);
+    setPhase('ready');
+  }, []);
+
+  const locate = useCallback(async () => {
+    setPhase('locating');
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') {
+        setDenied(true);
+        fallbackToSample();
+        return;
+      }
+      setDenied(false);
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+      ]);
+      setUser({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      setUsingSample(false);
+      setPhase('ready');
+      setRecenter((n) => n + 1);
+      logEvent('ubicacion_permitida');
+    } catch {
+      setDenied(true);
+      fallbackToSample();
+    }
+  }, [logEvent, fallbackToSample]);
+
+  // al abrir: si ya hay permiso, ubicar directo; si no, mostrar la explicación antes de pedirlo
+  useEffect(() => {
+    (async () => {
+      try {
+        const perm = await Location.getForegroundPermissionsAsync();
+        if (perm.status === 'granted') return locate();
+      } catch {
+        // el navegador puede no permitir consultar el permiso
+      }
+      setPhase('ask');
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'ready') loadPlaces(center, radiusKm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, center.lat, center.lon, radiusKm]);
+
+  const openDirections = (p: LatLon) => {
+    logEvent('como_llegar');
+    Linking.openURL(directionsUrl(p)).catch(() => {});
+  };
 
   return (
-    <Screen header={<AppHeader title="Mapa de cobertura" subtitle="Zona Guayaquil · Durán · Milagro" />}>
-      <View style={{ width: W, height: H, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: '#EAF2F3', borderWidth: 1, borderColor: colors.border }}>
-        {/* cuadrícula de calles */}
-        {Array.from({ length: 7 }).map((_, i) => (
-          <View key={`h${i}`} style={{ position: 'absolute', left: 0, right: 0, top: (H / 7) * i + 18, height: i % 3 === 0 ? 6 : 2, backgroundColor: colors.white }} />
-        ))}
-        {Array.from({ length: 6 }).map((_, i) => (
-          <View key={`v${i}`} style={{ position: 'absolute', top: 0, bottom: 0, left: (W / 6) * i + 22, width: i % 2 === 0 ? 6 : 2, backgroundColor: colors.white }} />
-        ))}
-        {/* río (ilustrativo) */}
-        <View style={{ position: 'absolute', left: W * 0.56, top: 0, bottom: 0, width: 26, backgroundColor: '#BFE3EA' }} />
-        <View style={{ position: 'absolute', left: W * 0.08, top: H * 0.62, width: W * 0.3, height: H * 0.22, borderRadius: radius.lg, backgroundColor: '#D7EBDD' }} />
-        <Text style={{ position: 'absolute', left: W * 0.1, top: H * 0.86, fontFamily: font.semibold, fontSize: 10, color: colors.inkMuted }}>GUAYAQUIL</Text>
-        <Text style={{ position: 'absolute', left: W * 0.66, top: H * 0.66, fontFamily: font.semibold, fontSize: 10, color: colors.inkMuted }}>DURÁN</Text>
-        <Text style={{ position: 'absolute', right: 10, bottom: 8, fontFamily: font.semibold, fontSize: 10, color: colors.inkMuted }}>→ MILAGRO</Text>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <PlacesMap
+        center={center}
+        user={user}
+        places={shown}
+        selectedId={selected}
+        onSelect={(id) => {
+          setSelected(id);
+          if (id) logEvent('lugar_mapa', id.startsWith('v-') ? 'visita' : 'cercano');
+        }}
+        radiusKm={radiusKm}
+        recenterKey={recenter}
+      />
 
-        {upcoming.map((v, i) => {
-          const on = v.id === sel;
-          return (
-            <Pressable
-              key={v.id}
-              onPress={() => setSel(v.id)}
-              accessibilityRole="button"
-              accessibilityLabel={`Visita ${i + 1}: ${personById(v.doctorId).name}`}
-              style={{ position: 'absolute', left: v.pin.x * W - 18, top: v.pin.y * H - 40, alignItems: 'center' }}
-            >
-              <View
-                style={{
-                  width: on ? 40 : 34,
-                  height: on ? 40 : 34,
-                  borderRadius: 20,
-                  backgroundColor: on ? colors.primary : colors.ink,
-                  borderWidth: 3,
-                  borderColor: colors.white,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontFamily: font.bold, color: colors.white, fontSize: 13 }}>{i + 1}</Text>
-              </View>
-              <View style={{ width: 3, height: 8, backgroundColor: on ? colors.primary : colors.ink }} />
-            </Pressable>
-          );
-        })}
+      {/* barra superior flotante */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + space.sm, left: space.md, right: space.md, gap: space.sm }}>
+        <View style={[styles.row, { gap: space.sm }]}>
+          <Fab icon="chevron-back" label="Volver" onPress={() => goBack('/')} />
+          <View style={[{ flex: 1, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 8 }, shadow.card]}>
+            <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.ink }}>Mapa de cobertura</Text>
+            <Text style={{ fontFamily: font.medium, fontSize: 11, color: colors.inkMuted }} numberOfLines={1}>
+              {phase === 'ask'
+                ? 'Esperando permiso de ubicación'
+                : phase === 'locating'
+                  ? 'Buscando tu ubicación…'
+                  : usingSample
+                    ? 'Ubicación de ejemplo: Guayaquil'
+                    : 'Tu ubicación actual'}
+              {loadingPlaces ? ' · buscando lugares…' : source === 'osm' ? ' · datos de OpenStreetMap' : source === 'ejemplo' ? ' · lugares de ejemplo' : ''}
+            </Text>
+          </View>
+          {loadingPlaces ? <ActivityIndicator color={colors.primary} /> : null}
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+          {FILTERS.map((f) => (
+            <Chip key={f.key} label={f.label} selected={filter === f.key} onPress={() => setFilter(f.key)} />
+          ))}
+        </ScrollView>
       </View>
-      <DemoNotice text="Mapa ilustrativo con ubicaciones de ejemplo. No usa GPS ni navegación en tiempo real." />
 
-      {selected ? (
-        <Card>
-          <View style={[styles.row, { justifyContent: 'space-between' }]}>
-            <Text style={type.overline}>
-              {dayLabel(selected.dayOffset)} · {selected.time}
+      {/* botones laterales */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', right: space.md, top: insets.top + 130, gap: space.sm, alignItems: 'flex-end' }}>
+        <Fab
+          icon="locate"
+          label="Volver a mi ubicación"
+          onPress={() => {
+            setSelected(null);
+            if (usingSample) locate();
+            else setRecenter((n) => n + 1);
+          }}
+        />
+        <View style={[{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: 4, gap: 2 }, shadow.card]}>
+          {RADII.map((r) => (
+            <Pressable
+              key={r}
+              onPress={() => setRadiusKm(r)}
+              accessibilityRole="button"
+              accessibilityLabel={`Radio de ${r} kilómetros`}
+              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.md, backgroundColor: radiusKm === r ? colors.primary : 'transparent' }}
+            >
+              <Text style={{ fontFamily: font.bold, fontSize: 12, color: radiusKm === r ? colors.white : colors.ink }}>{r} km</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* panel inferior: lugar seleccionado o lista de cercanos */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingBottom: insets.bottom + space.md }}>
+        {denied && phase === 'ready' ? (
+          <View style={[{ marginHorizontal: space.md, marginBottom: space.sm, backgroundColor: colors.warningSoft, borderRadius: radius.md, padding: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm }]}>
+            <Ionicons name="location-outline" size={18} color={colors.warning} />
+            <Text style={[type.caption, { color: colors.warning, flex: 1 }]}>
+              No tenemos acceso a tu ubicación. Te mostramos una zona de ejemplo.
             </Text>
-            <StatusPill status={selected.status} />
+            <Pressable onPress={() => (Platform.OS === 'web' ? locate() : Linking.openSettings())} hitSlop={6}>
+              <Text style={[type.label, { color: colors.warning }]}>{Platform.OS === 'web' ? 'Reintentar' : 'Ajustes'}</Text>
+            </Pressable>
           </View>
-          <View style={styles.row}>
-            <Avatar initials={personById(selected.doctorId).initials} tone="dark" />
-            <View style={{ flex: 1 }}>
-              <Text style={type.h3}>{personById(selected.doctorId).name}</Text>
-              <Text style={type.caption}>{selected.place}</Text>
+        ) : null}
+
+        {sel ? (
+          <Animated.View
+            style={[
+              {
+                marginHorizontal: space.md,
+                backgroundColor: colors.surface,
+                borderRadius: radius.xl,
+                padding: space.lg,
+                gap: space.sm,
+                opacity: sheet,
+                transform: [{ translateY: sheet.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
+              },
+              shadow.card,
+            ]}
+          >
+            <View style={[styles.row, { justifyContent: 'space-between' }]}>
+              <View style={[styles.row, { gap: 6 }]}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: KIND_STYLE[sel.kind].color }} />
+                <Text style={type.overline}>{KIND_STYLE[sel.kind].label}</Text>
+              </View>
+              <Pressable onPress={() => setSelected(null)} accessibilityLabel="Cerrar" hitSlop={8}>
+                <Ionicons name="close" size={20} color={colors.inkMuted} />
+              </Pressable>
             </View>
-          </View>
-          <View style={styles.row}>
-            <Ionicons name="location-outline" size={14} color={colors.inkMuted} />
-            <Text style={[type.caption, { flex: 1 }]}>{selected.address}</Text>
-          </View>
-          <Button label="Abrir visita" small onPress={() => router.push(`/visita/${selected.id}`)} />
-        </Card>
-      ) : null}
-
-      <Text style={type.h3}>Ruta sugerida</Text>
-      {upcoming.map((v, i) => (
-        <Pressable key={v.id} onPress={() => setSel(v.id)} style={[styles.listItem, v.id === sel && { borderColor: colors.primary }]} accessibilityRole="button">
-          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: v.id === sel ? colors.primary : colors.ink, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: colors.white, fontFamily: font.bold, fontSize: 12 }}>{i + 1}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={type.label}>{personById(v.doctorId).name}</Text>
-            <Text style={type.caption}>
-              {dayLabel(v.dayOffset)} · {v.time} · {v.place}
+            <Text style={type.h2}>{sel.name}</Text>
+            <Text style={type.bodyMuted}>
+              {formatDistance(distanceKm(center, sel))} {usingSample ? 'del punto de ejemplo' : 'de ti'}
+              {sel.subtitle ? ` · ${sel.subtitle}` : ''}
             </Text>
+            <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
+              <View style={{ flex: 1 }}>
+                <Button label="Cómo llegar" icon="navigate-outline" small onPress={() => openDirections(sel)} />
+              </View>
+              {sel.visitId ? (
+                <View style={{ flex: 1 }}>
+                  <Button label="Abrir visita" variant="secondary" icon="calendar-outline" small onPress={() => router.push(`/visita/${sel.visitId}`)} />
+                </View>
+              ) : null}
+            </View>
+          </Animated.View>
+        ) : phase === 'ready' ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.md }}>
+            {shown.slice(0, 12).map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setSelected(p.id)}
+                accessibilityRole="button"
+                style={[{ width: 210, backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.md, gap: 4 }, shadow.card]}
+              >
+                <View style={[styles.row, { gap: 6 }]}>
+                  <Ionicons name={KIND_STYLE[p.kind].icon} size={14} color={KIND_STYLE[p.kind].color} />
+                  <Text style={[type.caption, { color: KIND_STYLE[p.kind].color }]}>{KIND_STYLE[p.kind].label}</Text>
+                  <Text style={[type.caption, { marginLeft: 'auto' }]}>{formatDistance(p.km)}</Text>
+                </View>
+                <Text style={type.label} numberOfLines={2}>
+                  {p.name}
+                </Text>
+              </Pressable>
+            ))}
+            {shown.length === 0 && !loadingPlaces ? (
+              <View style={[{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.md }, shadow.card]}>
+                <Text style={type.bodyMuted}>No hay lugares de este tipo en el radio elegido.</Text>
+              </View>
+            ) : null}
+          </ScrollView>
+        ) : null}
+      </View>
+
+      {/* explicación antes de pedir el permiso de ubicación */}
+      {phase === 'ask' ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay, justifyContent: 'flex-end' }]}>
+          <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: space.xl, paddingBottom: insets.bottom + space.xl, gap: space.md }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="location" size={30} color={colors.primary} />
+            </View>
+            <Text style={type.h2}>Activa tu ubicación</Text>
+            <Text style={type.body}>
+              Multi LAB usa tu ubicación solo mientras usas el mapa, para mostrarte los consultorios, clínicas y hospitales cercanos y ordenar tus visitas por distancia.
+            </Text>
+            <Button label="Permitir ubicación" icon="navigate" onPress={locate} />
+            <Button label="Ahora no, usar zona de ejemplo" variant="ghost" onPress={fallbackToSample} />
           </View>
-        </Pressable>
-      ))}
-    </Screen>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Fab({ icon, label, onPress }: { icon: 'chevron-back' | 'locate'; label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={6}
+      style={({ pressed }) => [
+        { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 },
+        shadow.card,
+      ]}
+    >
+      <Ionicons name={icon} size={22} color={colors.primary} />
+    </Pressable>
   );
 }

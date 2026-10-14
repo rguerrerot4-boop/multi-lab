@@ -92,7 +92,8 @@ export interface Visit {
   status: 'Programada' | 'En curso' | 'Realizada' | 'Reprogramada';
   productIds: string[];
   notes: string;
-  pin: { x: number; y: number }; // posición en el mapa ilustrativo (0-1)
+  lat: number; // coordenadas aproximadas de la zona (dirección ficticia)
+  lon: number;
 }
 
 export interface RequestItem {
@@ -343,7 +344,8 @@ export const visits: Visit[] = [
     status: 'Programada',
     productIds: ['p4', 'p2'],
     notes: 'Presentar el nuevo fotoprotector y dejar material de apoyo.',
-    pin: { x: 0.42, y: 0.38 },
+    lat: -2.161,
+    lon: -79.901,
   },
   {
     id: 'vs2',
@@ -355,7 +357,8 @@ export const visits: Visit[] = [
     status: 'Programada',
     productIds: ['p3'],
     notes: 'Seguimiento de la solicitud de información técnica.',
-    pin: { x: 0.72, y: 0.55 },
+    lat: -2.172,
+    lon: -79.838,
   },
   {
     id: 'vs3',
@@ -367,7 +370,8 @@ export const visits: Visit[] = [
     status: 'Programada',
     productIds: ['p5', 'p1'],
     notes: '',
-    pin: { x: 0.2, y: 0.28 },
+    lat: -2.159,
+    lon: -79.953,
   },
   {
     id: 'vs4',
@@ -379,7 +383,8 @@ export const visits: Visit[] = [
     status: 'Reprogramada',
     productIds: ['p1'],
     notes: 'La doctora pidió mover la visita al jueves.',
-    pin: { x: 0.85, y: 0.8 },
+    lat: -2.134,
+    lon: -79.59,
   },
   {
     id: 'vs5',
@@ -391,7 +396,8 @@ export const visits: Visit[] = [
     status: 'Realizada',
     productIds: ['p1', 'p3'],
     notes: 'Se presentó la línea de limpieza. Interés en material de apoyo.',
-    pin: { x: 0.42, y: 0.38 },
+    lat: -2.161,
+    lon: -79.901,
   },
 ];
 

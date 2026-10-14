@@ -39,7 +39,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
-| Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa de cobertura ilustrativo |
+| Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa interactivo con tu ubicación (GPS), tus visitas y consultorios, clínicas y hospitales cercanos de OpenStreetMap |
 | Otros | Centro de notificaciones, perfil, contactos, historial de visitas y métricas de la prueba |
 
 ## Recorridos para probar
@@ -54,7 +54,8 @@ Para ver ambos lados de una solicitud: créala como profesional, cierra sesión,
 ## Alcance del prototipo
 
 - Funciona **sin servidor**: los datos están en `src/data/mock.ts` y los cambios se guardan solo durante la sesión.
-- **Requerirían integraciones adicionales:** mensajería en tiempo real, documentos autorizados, mapa con GPS y vista 3D con Vectary.
+- **Requerirían integraciones adicionales:** mensajería en tiempo real, documentos autorizados y vista 3D con Vectary.
+- **Mapa:** en Expo Go usa el mapa real del teléfono, pide permiso de ubicación y busca lugares de salud cercanos en OpenStreetMap (gratuito, sin clave). En la vista web el mapa es ilustrativo. Para generar el APK de Android hay que agregar una clave de Google Maps en `app.json` (plugin `react-native-maps`).
 - La pantalla **Perfil → Métricas de la prueba** registra los eventos de interacción de la sesión, para pruebas de usabilidad controladas. No son métricas reales de uso.
 
 ## Estructura
