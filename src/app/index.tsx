@@ -397,23 +397,10 @@ function IntroBubble({
         </Text>
       </Animated.View>
 
-      {/* anillo y gotas del estallido */}
-      <Animated.View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          width: B,
-          height: B,
-          borderRadius: B / 2,
-          borderWidth: 3,
-          borderColor: colors.turquesa,
-          opacity: burst.interpolate({ inputRange: [0, 0.05, 1], outputRange: [0, 0.9, 0] }),
-          transform: [{ scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.25] }) }],
-        }}
-      />
+      {/* gotas del estallido: salen, se encogen y desaparecen del todo (sin anillo) */}
       {DROPS.map((a, i) => {
         const r = (a * Math.PI) / 180;
-        const d = burst.interpolate({ inputRange: [0, 1], outputRange: [B * 0.14, B * (i % 2 ? 0.62 : 0.78)] });
+        const d = burst.interpolate({ inputRange: [0, 1], outputRange: [B * 0.12, B * (i % 2 ? 0.42 : 0.52)], extrapolate: 'clamp' });
         const size = i % 2 ? 7 : 10;
         return (
           <Animated.View
@@ -425,8 +412,12 @@ function IntroBubble({
               height: size,
               borderRadius: size / 2,
               backgroundColor: i % 3 === 0 ? colors.primary : colors.turquesa,
-              opacity: burst.interpolate({ inputRange: [0, 0.08, 0.7, 1], outputRange: [0, 1, 0.8, 0] }),
-              transform: [{ translateX: Animated.multiply(d, Math.cos(r)) }, { translateY: Animated.multiply(d, Math.sin(r)) }],
+              opacity: burst.interpolate({ inputRange: [0, 0.06, 0.35, 0.6], outputRange: [0, 1, 0.7, 0], extrapolate: 'clamp' }),
+              transform: [
+                { translateX: Animated.multiply(d, Math.cos(r)) },
+                { translateY: Animated.multiply(d, Math.sin(r)) },
+                { scale: burst.interpolate({ inputRange: [0, 0.15, 0.6], outputRange: [0.4, 1, 0], extrapolate: 'clamp' }) },
+              ],
             }}
           />
         );
