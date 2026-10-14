@@ -14,7 +14,7 @@ import {
   NEXT_STEPS,
   personById,
   productById,
-  products,
+  repProducts,
   type DeliveryKind,
   type Interest,
 } from '@/data/mock';
@@ -69,7 +69,7 @@ export default function EnVisita() {
   const openReq = requests.filter((q) => q.doctorId === doc.id && q.status !== 'Atendida' && q.status !== 'Cancelada');
   const docNeeds = needs.filter((n) => n.doctorId === doc.id && n.status !== 'Atendida');
   const productIds = r ? Object.keys(r.deliveries) : v.productIds;
-  const others = products.filter((p) => !productIds.includes(p.id));
+  const others = repProducts('v1').filter((p) => !productIds.includes(p.id));
   const total = deliveredTotal(r);
 
   const setQty = (pid: string, kind: DeliveryKind, n: number) =>

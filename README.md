@@ -25,7 +25,7 @@ En la pantalla de inicio de sesión, elige el perfil y pulsa **“Completar con 
 | Perfil | Usuario |
 |---|---|
 | Profesional de salud | Dra. Pamela Toscano |
-| Visitador médico | Juan Mieles |
+| Visitador médico | Juan Carlos Mieles (Laboratorios Celvia) |
 
 En la recuperación de contraseña, el código de verificación de demostración es **123456**.
 
@@ -42,7 +42,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
 | Realidad aumentada | Botón **Ver en AR** en la ficha, el visor 3D y la presentación: explica el uso y abre el visor AR del teléfono para colocar el envase en una superficie plana a tamaño real (Scene Viewer en Android con ARCore, AR Quick Look en iPhone). Modelos en `ar/models` |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
-| Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
+| Solicitudes | Flujo de 4 pasos: el médico elige el **laboratorio** (Celvia, Andina Pharma o Bioandes, cada uno con su visitador), luego un **producto de su área** (Dermatología, Pediatría o Medicina general; las otras áreas quedan ocultas), el tipo y confirma. Seguimiento y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
 | Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa interactivo con tu ubicación (GPS), buscador, tus visitas, consultorios, clínicas y hospitales cercanos de OpenStreetMap, rutas dentro de la app (OSRM) con tiempo en auto y a pie, y Google Maps integrado para buscar consultorios y médicos |
 | Otros | Centro de notificaciones, perfil, contactos, historial de visitas y métricas de la prueba |

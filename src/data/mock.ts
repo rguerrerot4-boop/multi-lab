@@ -72,7 +72,33 @@ export interface Product {
   isNew?: boolean;
   hotspots?: Hotspot[];
   keywords?: string[]; // palabras con las que el médico puede encontrarlo (descriptivas, no indicaciones)
+  areas: Area[]; // especialidades a las que se dirige la información (ficticio)
 }
+
+export type Area = 'Dermatología' | 'Pediatría' | 'Medicina general';
+
+// ---------- Laboratorios (ficticios) ----------
+export interface Lab {
+  id: string;
+  name: string; // nombre corto, igual a Product.lab
+  full: string;
+  repId: string; // visitador asignado en la demo
+  tagline: string;
+  hue: string;
+}
+export const labs: Lab[] = [
+  { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
+  { id: 'andina', name: 'Andina Pharma', full: 'Laboratorio Andina Pharma', repId: 'v2', tagline: 'Línea pediátrica', hue: '#63C9D6' },
+  { id: 'bioandes', name: 'Bioandes', full: 'Bioandes Salud', repId: 'v3', tagline: 'Cuidado de uso diario', hue: '#20343A' },
+];
+export const labByName = (name: string) => labs.find((l) => l.name === name);
+export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
+/** Productos del laboratorio de un visitador */
+export const repProducts = (repId: string) => products.filter((p) => p.lab === labOfRep(repId)?.name);
+
+/** Área del médico según su especialidad */
+export const areaOf = (title: string): Area =>
+  /pediatr/i.test(title) ? 'Pediatría' : /dermat/i.test(title) ? 'Dermatología' : 'Medicina general';
 
 // Puntos interactivos del visor 3D (textos de demostración)
 const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
@@ -161,9 +187,8 @@ export const DOCTOR_INFO: Record<string, { hours: string; prefers: string; patie
 export const INITIAL_KIT: Record<string, Record<DeliveryKind, number>> = {
   p1: { muestra: 18, impreso: 30, digital: 99 },
   p2: { muestra: 12, impreso: 25, digital: 99 },
-  p3: { muestra: 6, impreso: 20, digital: 99 },
+  p3: { muestra: 5, impreso: 20, digital: 99 },
   p4: { muestra: 20, impreso: 40, digital: 99 },
-  p5: { muestra: 4, impreso: 15, digital: 99 },
 };
 
 export interface RequestItem {
@@ -220,12 +245,12 @@ export const people: Person[] = [
   },
   {
     id: 'v1',
-    name: 'Juan Mieles',
+    name: 'Juan Carlos Mieles',
     initials: 'JM',
     role: 'visitador',
     title: 'Visitador médico · Línea dermatológica',
-    org: 'Laboratorio NovaBio (ficticio)',
-    email: 'juan.mieles@demo-multilab.ec',
+    org: 'Laboratorios Celvia (ficticio)',
+    email: 'juancarlos.mieles@demo-multilab.ec',
     phone: '+593 98 000 0202',
     city: 'Guayaquil',
   },
@@ -273,6 +298,17 @@ export const people: Person[] = [
     phone: '+593 98 000 0606',
     city: 'Guayaquil',
   },
+  {
+    id: 'v3',
+    name: 'Gabriela Rosales',
+    initials: 'GR',
+    role: 'visitador',
+    title: 'Visitadora médica · Cuidado diario',
+    org: 'Bioandes Salud (ficticio)',
+    email: 'gabriela.rosales@demo-multilab.ec',
+    phone: '+593 98 000 0707',
+    city: 'Milagro',
+  },
 ];
 
 export const DEMO_USER: Record<Role, string> = { medico: 'm1', visitador: 'v1' };
@@ -284,7 +320,7 @@ export const products: Product[] = [
   {
     id: 'p1',
     name: 'DermaCleanse Gel',
-    lab: 'NovaBio',
+    lab: 'Celvia',
     category: 'Limpieza',
     form: 'Gel limpiador · frasco 200 ml',
     component: 'Agentes limpiadores suaves (ilustrativo)',
@@ -304,11 +340,12 @@ export const products: Product[] = [
     icon: 'water-outline',
     hue: '#63C9D6',
     keywords: ['limpiador', 'limpieza', 'gel', 'rostro', 'piel grasa', 'piel mixta', 'uso diario'],
+    areas: ['Dermatología', 'Medicina general'],
   },
   {
     id: 'p2',
     name: 'BioBarrier Emulsión',
-    lab: 'NovaBio',
+    lab: 'Celvia',
     category: 'Hidratación',
     form: 'Emulsión · tubo 50 ml',
     component: 'Complejo hidratante (ilustrativo)',
@@ -328,12 +365,13 @@ export const products: Product[] = [
     icon: 'leaf-outline',
     hue: '#1E7F8C',
     keywords: ['hidratante', 'hidratación', 'emulsión', 'piel seca', 'textura ligera', 'uso diario'],
+    areas: ['Dermatología', 'Medicina general'],
     isNew: true,
   },
   {
     id: 'p3',
     name: 'CeraRepair Bálsamo',
-    lab: 'NovaBio',
+    lab: 'Celvia',
     category: 'Reparación',
     form: 'Bálsamo · tubo 40 g',
     component: 'Complejo de ceramidas (ilustrativo)',
@@ -353,11 +391,12 @@ export const products: Product[] = [
     icon: 'bandage-outline',
     hue: '#20343A',
     keywords: ['ceramidas', 'bálsamo', 'reparador', 'resequedad', 'piel seca', 'zonas secas', 'barrera'],
+    areas: ['Dermatología'],
   },
   {
     id: 'p4',
     name: 'PhotoBlock SPF 50+',
-    lab: 'NovaBio',
+    lab: 'Celvia',
     category: 'Fotoprotección',
     form: 'Fluido · frasco 50 ml',
     component: 'Filtros solares (ilustrativo)',
@@ -377,6 +416,7 @@ export const products: Product[] = [
     icon: 'sunny-outline',
     hue: '#63C9D6',
     keywords: ['protector solar', 'sol', 'spf', 'fotoprotección', 'bloqueador', 'fluido'],
+    areas: ['Dermatología', 'Medicina general', 'Pediatría'],
     isNew: true,
   },
   {
@@ -400,7 +440,54 @@ export const products: Product[] = [
     icon: 'happy-outline',
     hue: '#1E7F8C',
     keywords: ['niños', 'bebé', 'pediátrico', 'pediatría', 'crema', 'piel sensible'],
+    areas: ['Pediatría'],
+  },  {
+    id: 'p6',
+    name: 'AloeFresh Gel',
+    lab: 'Bioandes',
+    category: 'Hidratación',
+    form: 'Gel · frasco 150 ml',
+    component: 'Extracto de aloe (ilustrativo)',
+    concentration: 'No aplica',
+    tagline: 'Gel refrescante de aloe para uso diario',
+    description: 'Gel cosmético de textura fresca. Producto ficticio de un tercer laboratorio de demostración.',
+    uses: ['Sensación de frescura en la piel', 'Uso cosmético diario (descripción de ejemplo)'],
+    howTo: ['Aplicar una capa fina', 'Dejar absorber sin enjuagar'],
+    precautions: ['Uso externo', 'Evitar el contacto con los ojos'],
+    docs: ['Ficha técnica (demo).pdf'],
+    slides: [
+      { title: 'Frescura inmediata', body: 'Textura en gel que se absorbe rápido.', icon: 'leaf-outline' },
+      { title: 'Presentación', body: 'Frasco de 150 ml.', icon: 'cube-outline' },
+    ],
+    icon: 'leaf-outline',
+    hue: '#1E7F8C',
+    keywords: ['aloe', 'gel', 'refrescante', 'frescura', 'después del sol', 'piel sensible'],
+    areas: ['Medicina general', 'Dermatología'],
   },
+  {
+    id: 'p7',
+    name: 'ManoProtect Crema',
+    lab: 'Bioandes',
+    category: 'Reparación',
+    form: 'Crema de manos · tubo 75 ml',
+    component: 'Base emoliente (ilustrativo)',
+    concentration: 'No aplica',
+    tagline: 'Crema de manos para lavados frecuentes',
+    description: 'Crema de manos de absorción rápida. Producto ficticio pensado para mostrar material de uso diario en consultorio.',
+    uses: ['Cuidado de manos con lavado frecuente (ejemplo)'],
+    howTo: ['Aplicar sobre las manos secas', 'Masajear hasta absorber'],
+    precautions: ['Uso externo', 'Suspender el uso si aparece irritación'],
+    docs: ['Ficha técnica (demo).pdf'],
+    slides: [
+      { title: 'Manos cuidadas', body: 'Pensada para el uso diario del personal de salud.', icon: 'hand-left-outline' },
+      { title: 'Presentación', body: 'Tubo de 75 ml.', icon: 'cube-outline' },
+    ],
+    icon: 'hand-left-outline',
+    hue: '#20343A',
+    keywords: ['manos', 'crema de manos', 'resequedad', 'lavado frecuente', 'piel seca'],
+    areas: ['Medicina general'],
+  },
+
 ];
 
 products.forEach((p) => {
@@ -443,7 +530,7 @@ export const visits: Visit[] = [
     place: 'Centro Médico Los Ceibos',
     address: 'Av. Muestra 900, Guayaquil (dirección ficticia)',
     status: 'Programada',
-    productIds: ['p5', 'p1'],
+    productIds: ['p4', 'p2'],
     notes: '',
     lat: -2.159,
     lon: -79.953,
@@ -483,11 +570,11 @@ export const visits: Visit[] = [
     place: 'Centro Médico Los Ceibos',
     address: 'Av. Muestra 900, Guayaquil (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p5'],
+    productIds: ['p4'],
     notes: 'Pidió la ficha digital antes de la próxima visita.',
     lat: -2.159,
     lon: -79.953,
-    report: pastReport(-3, '10:30', 9, ['p5'], { p5: { muestra: 2, digital: 1 } }, 'Medio', ['Enviar información técnica'], 'Pidió la ficha digital antes de la próxima visita.', 'Dr. Andrés Villacís', 15),
+    report: pastReport(-3, '10:30', 9, ['p4'], { p4: { muestra: 2, digital: 1 } }, 'Medio', ['Enviar información técnica'], 'Pidió la ficha digital antes de la próxima visita.', 'Dr. Andrés Villacís', 15),
   },
   {
     id: 'vs7',
@@ -656,9 +743,9 @@ export const chats: Chat[] = [
 
 // ---------- Notificaciones ----------
 export const notices: Notice[] = [
-  { id: 'n1', forRole: 'medico', kind: 'mensaje', title: 'Nuevo mensaje de Juan Mieles', body: 'Le compartió la ficha de PhotoBlock SPF 50+.', at: 'Hace 1 h', read: false, href: '/chat/c1' },
+  { id: 'n1', forRole: 'medico', kind: 'mensaje', title: 'Nuevo mensaje de Juan Carlos Mieles', body: 'Le compartió la ficha de PhotoBlock SPF 50+.', at: 'Hace 1 h', read: false, href: '/chat/c1' },
   { id: 'n2', forRole: 'medico', kind: 'solicitud', title: 'Solicitud SOL-0142 en proceso', body: 'Su solicitud de material de apoyo avanzó de estado.', at: 'Hace 2 días', read: false, href: '/solicitud/r1' },
-  { id: 'n3', forRole: 'medico', kind: 'visita', title: 'Visita confirmada', body: 'Juan Mieles pasará hoy a las 15:30 por su consultorio.', at: 'Hace 3 h', read: true, href: '/visita/vs1' },
+  { id: 'n3', forRole: 'medico', kind: 'visita', title: 'Visita confirmada', body: 'Juan Carlos Mieles pasará hoy a las 15:30 por su consultorio.', at: 'Hace 3 h', read: true, href: '/visita/vs1' },
   { id: 'n4', forRole: 'visitador', kind: 'solicitud', title: 'Nueva solicitud de Dr. Luis Ortega', body: 'Información técnica de CeraRepair Bálsamo.', at: 'Hace 3 h', read: false, href: '/solicitud/r3' },
   { id: 'n5', forRole: 'visitador', kind: 'visita', title: 'Recordatorio de visita', body: 'Hoy 15:30 con Dra. Pamela Toscano.', at: 'Hace 4 h', read: false, href: '/visita/vs1' },
   { id: 'n6', forRole: 'visitador', kind: 'mensaje', title: '2 mensajes de Dr. Luis Ortega', body: '¿Me la puede traer en la próxima visita?', at: 'Ayer', read: true, href: '/chat/c2' },
@@ -728,11 +815,12 @@ export interface ProductMatch {
   score: number;
 }
 
-/** Productos del catálogo que coinciden con las palabras clave, del más al menos relevante */
-export function matchProducts(keywords: string[]): ProductMatch[] {
+/** Productos que coinciden con las palabras clave, del más al menos relevante (opcional: solo de un laboratorio) */
+export function matchProducts(keywords: string[], lab?: string): ProductMatch[] {
   const keys = keywords.map(normalize).filter(Boolean);
   if (!keys.length) return [];
   return products
+    .filter((p) => !lab || p.lab === lab)
     .map((p) => {
       const tags = (p.keywords ?? []).map(normalize);
       const text = normalize([p.name, p.category, p.tagline, p.description, p.form, p.component, ...p.uses].join(' '));

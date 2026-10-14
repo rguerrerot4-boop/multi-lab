@@ -8,7 +8,7 @@ import { StartVisitSheet } from '@/components/StartVisitSheet';
 import { ReturnCard } from '@/components/ReturnCard';
 import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { formatClock, LiveDot, useNow } from '@/components/visit';
-import { dayLabel, deliveredTotal, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
+import { dayLabel, deliveredTotal, labOfRep, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, shadow, space, type } from '@/theme';
 
@@ -377,7 +377,7 @@ function NeedAlert({ need }: { need: ProductNeed }) {
     ]).start();
   }, [need.id, shake]);
   const doc = personById(need.doctorId);
-  const top = matchProducts(need.keywords)[0];
+  const top = matchProducts(need.keywords, labOfRep('v1')?.name)[0];
   return (
     <Animated.View style={{ transform: [{ translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] }}>
       <PressableScale

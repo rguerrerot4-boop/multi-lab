@@ -5,7 +5,7 @@ import { FlatList, Pressable, ScrollView, Text, TextInput, View, useWindowDimens
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
-import { categories, products } from '@/data/mock';
+import { categories, labOfRep, products } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
 
@@ -13,11 +13,11 @@ const labs = ['Todos', ...Array.from(new Set(products.map((p) => p.lab)))];
 
 // Catálogo multimedia interactivo (compartido por ambos roles)
 export default function Catalogo() {
-  const { role, unreadNotices, logEvent } = useMine();
+  const { role, userId, unreadNotices, logEvent } = useMine();
   const { width } = useWindowDimensions();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('Todos');
-  const [lab, setLab] = useState('Todos');
+  const [lab, setLab] = useState(role === 'visitador' ? labOfRep(userId ?? 'v1')?.name ?? 'Todos' : 'Todos');
   const [grid, setGrid] = useState(true);
   const cols = grid ? (width >= 700 ? 3 : 2) : 1;
 

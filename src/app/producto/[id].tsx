@@ -19,7 +19,7 @@ import {
   Tag,
   styles,
 } from '@/components/ui';
-import { products, productById } from '@/data/mock';
+import { products, productById, labByName } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
 
@@ -76,7 +76,7 @@ export default function Producto() {
         role === 'medico' ? (
           <View style={{ flexDirection: 'row', gap: space.sm }}>
             <View style={{ flex: 1 }}>
-              <Button label="Contactar" variant="secondary" icon="chatbubble-outline" onPress={() => router.push(`/chat/${chatWith('v1')}`)} />
+              <Button label="Contactar" variant="secondary" icon="chatbubble-outline" onPress={() => router.push(`/chat/${chatWith(labByName(p.lab)?.repId ?? 'v1')}`)} />
             </View>
             <View style={{ flex: 1.3 }}>
               <Button label="Solicitar" icon="add" onPress={() => router.push({ pathname: '/solicitud/nueva', params: { productId: p.id } })} />
