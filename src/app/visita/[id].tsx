@@ -3,17 +3,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ProductVisual } from '@/components/ProductVisual';
+import { ReportSummary } from '@/components/VisitReport';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, PressableScale, Screen, StatusPill, styles } from '@/components/ui';
 import { dayLabel, personById, productById, type Visit } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
 
-const STATUSES: Visit['status'][] = ['Programada', 'En curso', 'Realizada', 'Reprogramada'];
+const STATUSES: Visit['status'][] = ['Programada', 'Reprogramada'];
 
 // Detalle de visita: datos, productos a presentar, notas y registro de estado
 export default function VisitaDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { visits, role, setVisitStatus, setVisitNotes, chatWith } = useMine();
+  const { visits, role, setVisitStatus, setVisitNotes, chatWith, startVisit } = useMine();
   const v = visits.find((x) => x.id === id);
   const [notes, setNotes] = useState(v?.notes ?? '');
   const [saved, setSaved] = useState(false);
@@ -36,14 +37,18 @@ export default function VisitaDetalle() {
       header={<AppHeader title="Detalle de visita" subtitle={`${dayLabel(v.dayOffset)} · ${v.time}`} />}
       footer={
         isRep && v.status !== 'Realizada' ? (
-          <Button
-            label="Iniciar presentación"
-            icon="play-circle-outline"
-            onPress={() => {
-              if (v.status === 'Programada') setVisitStatus(v.id, 'En curso');
-              router.push({ pathname: '/presentacion/[id]', params: { id: v.productIds[0], visita: v.id } });
-            }}
-          />
+          v.report && !v.report.endedAt ? (
+            <Button label="Continuar visita" icon="arrow-forward" onPress={() => router.push(`/en-visita/${v.id}`)} />
+          ) : (
+            <Button
+              label="Comenzar visita"
+              icon="play"
+              onPress={() => {
+                startVisit(v.id);
+                router.push(`/en-visita/${v.id}`);
+              }}
+            />
+          )
         ) : undefined
       }
     >
@@ -106,7 +111,12 @@ export default function VisitaDetalle() {
         })}
       </View>
 
-      {isRep ? (
+      {v.report?.endedAt ? (
+        <>
+          <Text style={type.h2}>Registro de la visita</Text>
+          <ReportSummary report={v.report} signerFallback={doc.name} />
+        </>
+      ) : isRep ? (
         <>
           <Text style={type.h2}>Registrar estado</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>

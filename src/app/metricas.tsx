@@ -14,6 +14,9 @@ const LABELS: Record<string, string> = {
   mensaje_enviado: 'Mensajes enviados',
   ficha_compartida: 'Fichas compartidas',
   visita_estado: 'Estados de visita registrados',
+  visita_iniciada: 'Visitas iniciadas',
+  visita_finalizada: 'Visitas firmadas y finalizadas',
+  visita_descartada: 'Visitas descartadas',
 };
 
 // Registro de eventos de la sesión para pruebas de usabilidad controladas

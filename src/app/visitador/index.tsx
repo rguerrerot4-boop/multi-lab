@@ -1,78 +1,183 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Text, View } from 'react-native';
-import { Avatar, BrandHeader, Button, Card, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
-import { personById, productById } from '@/data/mock';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Text, View } from 'react-native';
+import { StartVisitSheet } from '@/components/StartVisitSheet';
+import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
+import { formatClock, LiveDot, useNow } from '@/components/visit';
+import { deliveredTotal, personById, productById, type IconName } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
-import { colors, radius, space, type } from '@/theme';
+import { colors, font, radius, shadow, space, type } from '@/theme';
+
+const WEEK_GOAL = 12;
 
 // Dashboard del visitador médico
 export default function VisitadorInicio() {
-  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats } = useMine();
+  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats, activeVisitId, kit } = useMine();
   const me = personById(userId ?? 'v1');
+  const now = useNow();
+  const [sheet, setSheet] = useState(false);
   const today = myVisits.filter((v) => v.dayOffset === 0).sort((a, b) => a.time.localeCompare(b.time));
-  const next = today.find((v) => v.status === 'Programada' || v.status === 'En curso');
+  const doneToday = today.filter((v) => v.status === 'Realizada').length;
+  const next = today.find((v) => v.status === 'Programada' || v.status === 'Reprogramada');
+  const active = myVisits.find((v) => v.id === activeVisitId && v.report && !v.report.endedAt);
   const pending = myRequests.filter((r) => r.status === 'Pendiente' || r.status === 'Recibida' || r.status === 'En revisión');
   const recentChats = myChats.filter((c) => c.messages.length).slice(0, 2);
+  const deliveredToday = today.reduce((s, v) => s + deliveredTotal(v.report), 0);
+  const weekDone = myVisits.filter((v) => v.status === 'Realizada' && v.dayOffset > -7 && v.dayOffset <= 0).length + 7; // base ficticia de la semana
+  const lowStock = Object.entries(kit).filter(([, k]) => k.muestra <= 5);
+  const hour = new Date(now).getHours();
+  const hello = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
   const date = new Date().toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <Screen header={<BrandHeader unread={unreadNotices} onBell={() => router.push('/notificaciones')} />}>
       <View style={{ gap: 2 }}>
         <Text style={[type.caption, { textTransform: 'capitalize' }]}>{date}</Text>
-        <Text style={type.h1}>Hola, {me.name.split(' ')[0]}</Text>
+        <Text style={type.h1}>
+          {hello}, {me.name.split(' ')[0]}
+        </Text>
         <Text style={type.bodyMuted}>
-          Tienes {today.length} {today.length === 1 ? 'visita' : 'visitas'} hoy y {pending.length} {pending.length === 1 ? 'solicitud pendiente' : 'solicitudes pendientes'}.
+          {today.length ? `Llevas ${doneToday} de ${today.length} visitas de hoy.` : 'No tienes visitas agendadas hoy.'}
         </Text>
       </View>
 
-      {next ? (
-        <View style={{ backgroundColor: colors.primary, borderRadius: radius.lg, padding: space.lg, gap: space.md }}>
+      {/* ---------- Acción rápida principal ---------- */}
+      {active ? (
+        <PressableScale
+          onPress={() => router.push(`/en-visita/${active.id}`)}
+          accessibilityLabel={`Continuar visita con ${personById(active.doctorId).name}`}
+          style={{ backgroundColor: colors.petroleo, borderRadius: radius.xl, padding: space.lg, gap: space.md, ...shadow.card }}
+        >
           <View style={[styles.row, { justifyContent: 'space-between' }]}>
-            <Text style={[type.overline, { color: colors.white }]}>Siguiente visita</Text>
-            <StatusPill status={next.status} />
+            <View style={[styles.row, { gap: 8 }]}>
+              <LiveDot />
+              <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white }}>Visita en curso</Text>
+            </View>
+            <Text style={{ fontFamily: font.bold, fontSize: 20, color: colors.white, fontVariant: ['tabular-nums'] }}>{formatClock(now - active.report!.startedAt)}</Text>
           </View>
           <View style={styles.row}>
-            <Avatar initials={personById(next.doctorId).initials} tone="dark" />
+            <Avatar initials={personById(active.doctorId).initials} size={48} tone="teal" />
             <View style={{ flex: 1 }}>
-              <Text style={[type.h3, { color: colors.white }]}>{personById(next.doctorId).name}</Text>
-              <Text style={[type.caption, { color: '#DDF1F4' }]}>
-                Hoy · {next.time} · {next.place}
+              <Text style={{ fontFamily: font.bold, fontSize: 17, color: colors.white }}>{personById(active.doctorId).name}</Text>
+              <Text style={{ fontFamily: font.medium, fontSize: 12, color: '#A9C2C8' }}>
+                {active.report!.presented.length} presentados · {deliveredTotal(active.report)} entregados
               </Text>
             </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 10 }}>
+              <Text style={[type.label, { color: colors.white }]}>Continuar</Text>
+              <Ionicons name="arrow-forward" size={15} color={colors.white} />
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            {next.productIds.map((id) => (
-              <View key={id} style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Text style={[type.caption, { color: colors.white }]}>{productById(id)?.name}</Text>
-              </View>
-            ))}
-          </View>
-          <Button
-            label="Iniciar presentación"
-            variant="secondary"
-            icon="play-circle-outline"
-            onPress={() => router.push({ pathname: '/presentacion/[id]', params: { id: next.productIds[0], visita: next.id } })}
-          />
-          <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <MiniAction icon="document-text-outline" label="Detalle" onPress={() => router.push(`/visita/${next.id}`)} />
-            <MiniAction icon="map-outline" label="Mapa" onPress={() => router.push(`/mapa?visita=${next.id}`)} />
-          </View>
-        </View>
+        </PressableScale>
       ) : (
-        <Card>
-          <Text style={type.h3}>No tienes más visitas hoy</Text>
-          <Button label="Ver agenda" variant="secondary" onPress={() => router.push('/visitador/agenda')} />
-        </Card>
+        <StartVisitHero
+          onPress={() => setSheet(true)}
+          subtitle={next ? `Siguiente: ${personById(next.doctorId).name} · ${next.time}` : 'Registra una visita sin cita'}
+        />
       )}
 
+      {/* ---------- Indicadores del día ---------- */}
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Shortcut icon="grid-outline" label="Catálogo" onPress={() => router.push('/visitador/catalogo')} />
-        <Shortcut icon="calendar-outline" label="Agenda" onPress={() => router.push('/visitador/agenda')} />
-        <Shortcut icon="map-outline" label="Cobertura" onPress={() => router.push('/mapa')} />
-        <Shortcut icon="people-outline" label="Contactos" onPress={() => router.push('/contactos')} />
+        <Kpi icon="calendar-outline" value={`${doneToday}/${today.length}`} label="Visitas hoy" onPress={() => router.push('/visitador/agenda')} />
+        <Kpi icon="cube-outline" value={String(deliveredToday)} label="Entregados" onPress={() => router.push('/kit')} />
+        <Kpi icon="mail-unread-outline" value={String(pending.length)} label="Solicitudes" warn={pending.length > 0} onPress={() => router.push('/solicitudes')} />
       </View>
 
+      <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: space.md, gap: space.sm }}>
+        <View style={[styles.row, { justifyContent: 'space-between' }]}>
+          <Text style={type.label}>Meta de la semana</Text>
+          <Text style={type.caption}>
+            {Math.min(weekDone, WEEK_GOAL)} de {WEEK_GOAL} visitas
+          </Text>
+        </View>
+        <Progress value={weekDone / WEEK_GOAL} />
+      </View>
+
+      {/* ---------- Accesos rápidos ---------- */}
+      <SectionHeader title="Accesos rápidos" />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: space.md }}>
+        <Shortcut icon="grid-outline" label="Catálogo" onPress={() => router.push('/visitador/catalogo')} />
+        <Shortcut icon="calendar-outline" label="Agenda" onPress={() => router.push('/visitador/agenda')} />
+        <Shortcut icon="map-outline" label="Mapa" onPress={() => router.push('/mapa')} />
+        <Shortcut icon="people-outline" label="Contactos" onPress={() => router.push('/contactos')} />
+        <Shortcut icon="briefcase-outline" label="Mi kit" onPress={() => router.push('/kit')} badge={lowStock.length} />
+        <Shortcut icon="file-tray-full-outline" label="Solicitudes" onPress={() => router.push('/solicitudes')} badge={pending.length} />
+        <Shortcut icon="chatbubbles-outline" label="Mensajes" onPress={() => router.push('/visitador/mensajes')} badge={unreadMessages} />
+        <Shortcut icon="stats-chart-outline" label="Métricas" onPress={() => router.push('/metricas')} />
+      </View>
+
+      {/* ---------- Ruta de hoy ---------- */}
+      <SectionHeader title="Ruta de hoy" action="Ver mapa" onAction={() => router.push('/mapa')} />
+      {today.length ? (
+        <View>
+          {today.map((v, i) => {
+            const d = personById(v.doctorId);
+            const done = v.status === 'Realizada';
+            const live = v.status === 'En curso';
+            return (
+              <View key={v.id} style={{ flexDirection: 'row', gap: space.md }}>
+                <View style={{ alignItems: 'center', width: 22 }}>
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      marginTop: space.md,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: done ? colors.success : live ? colors.petroleo : colors.surface,
+                      borderWidth: 2,
+                      borderColor: done ? colors.success : live ? colors.petroleo : colors.primary,
+                    }}
+                  >
+                    {done ? <Ionicons name="checkmark" size={13} color={colors.white} /> : <Text style={{ fontFamily: font.bold, fontSize: 10, color: live ? colors.white : colors.primary }}>{i + 1}</Text>}
+                  </View>
+                  {i < today.length - 1 ? <View style={{ flex: 1, width: 2, backgroundColor: colors.border }} /> : null}
+                </View>
+                <PressableScale
+                  onPress={() => router.push(live ? `/en-visita/${v.id}` : `/visita/${v.id}`)}
+                  accessibilityLabel={`${d.name}, ${v.time}, ${v.status}`}
+                  style={{ flex: 1, marginBottom: space.sm, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: live ? colors.petroleo : colors.border, padding: space.md, gap: 6 }}
+                >
+                  <View style={[styles.row, { justifyContent: 'space-between' }]}>
+                    <Text style={type.label}>{v.time}</Text>
+                    <StatusPill status={v.status} />
+                  </View>
+                  <Text style={type.h3}>{d.name}</Text>
+                  <Text style={type.caption} numberOfLines={1}>
+                    {v.place} · {v.productIds.map((id) => productById(id)?.name).join(', ') || 'Sin productos'}
+                  </Text>
+                  {done && v.report ? (
+                    <Text style={[type.caption, { color: colors.success }]}>
+                      {deliveredTotal(v.report)} entregados · firmado
+                    </Text>
+                  ) : null}
+                </PressableScale>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={[styles.listItem, { justifyContent: 'center' }]}>
+          <Text style={type.bodyMuted}>Día sin visitas agendadas.</Text>
+        </View>
+      )}
+
+      {/* ---------- Kit ---------- */}
+      {lowStock.length ? (
+        <PressableScale onPress={() => router.push('/kit')} style={[styles.listItem, { backgroundColor: colors.warningSoft, borderColor: colors.warningSoft }]} accessibilityLabel="Ver mi kit">
+          <Ionicons name="alert-circle-outline" size={22} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={type.label}>Quedan pocas muestras</Text>
+            <Text style={type.caption}>{lowStock.map(([pid, k]) => `${productById(pid)?.name} (${k.muestra})`).join(' · ')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.inkSubtle} />
+        </PressableScale>
+      ) : null}
+
+      {/* ---------- Solicitudes ---------- */}
       <SectionHeader title="Solicitudes pendientes" action="Ver todas" onAction={() => router.push('/solicitudes')} />
       {pending.length ? (
         <View style={{ gap: space.sm }}>
@@ -93,22 +198,19 @@ export default function VisitadorInicio() {
           ))}
         </View>
       ) : (
-        <Card>
+        <View style={styles.listItem}>
           <Text style={type.bodyMuted}>Estás al día. No hay solicitudes pendientes.</Text>
-        </Card>
+        </View>
       )}
 
+      {/* ---------- Mensajes ---------- */}
       <SectionHeader title="Mensajes recientes" action={unreadMessages ? `${unreadMessages} sin leer` : 'Ver'} onAction={() => router.push('/visitador/mensajes')} />
       <View style={{ gap: space.sm }}>
         {recentChats.map((c) => {
           const other = personById(c.members.find((m) => m !== userId)!);
           const last = c.messages[c.messages.length - 1];
           return (
-            <PressableScale
-              key={c.id}
-              onPress={() => router.push(`/chat/${c.id}`)}
-              style={[styles.listItem]}
-            >
+            <PressableScale key={c.id} onPress={() => router.push(`/chat/${c.id}`)} style={[styles.listItem]}>
               <Avatar initials={other.initials} tone="dark" size={40} />
               <View style={{ flex: 1 }}>
                 <Text style={type.label}>{other.name}</Text>
@@ -121,29 +223,94 @@ export default function VisitadorInicio() {
           );
         })}
       </View>
+
+      <StartVisitSheet visible={sheet} onClose={() => setSheet(false)} />
     </Screen>
   );
 }
 
-function MiniAction({ icon, label, onPress }: { icon: 'document-text-outline' | 'map-outline'; label: string; onPress: () => void }) {
+/** Botón grande "Comenzar visita" con un pulso suave alrededor del play */
+function StartVisitHero({ onPress, subtitle }: { onPress: () => void; subtitle: string }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
   return (
-    <PressableScale
-      onPress={onPress}
-      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.14)' }}
-    >
-      <Ionicons name={icon} size={16} color={colors.white} />
-      <Text style={[type.label, { color: colors.white }]}>{label}</Text>
+    <PressableScale onPress={onPress} accessibilityLabel="Comenzar visita" style={{ borderRadius: radius.xl, overflow: 'hidden', ...shadow.card }}>
+      <LinearGradient colors={[colors.primary, colors.petroleo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
+        <View style={{ width: 64, height: 64, alignItems: 'center', justifyContent: 'center' }}>
+          <Animated.View
+            style={{
+              position: 'absolute',
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: colors.turquesa,
+              opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
+              transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.5] }) }],
+            }}
+          />
+          <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="play" size={28} color={colors.primary} style={{ marginLeft: 4 }} />
+          </View>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={{ fontFamily: font.bold, fontSize: 21, color: colors.white }}>Comenzar visita</Text>
+          <Text style={{ fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: '#DDF1F4' }}>{subtitle}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={22} color={colors.white} />
+      </LinearGradient>
     </PressableScale>
   );
 }
 
-function Shortcut({ icon, label, onPress }: { icon: 'grid-outline' | 'calendar-outline' | 'map-outline' | 'people-outline'; label: string; onPress: () => void }) {
+function Kpi({ icon, value, label, onPress, warn }: { icon: IconName; value: string; label: string; onPress: () => void; warn?: boolean }) {
   return (
-    <PressableScale onPress={onPress} style={{ flex: 1, alignItems: 'center', gap: 6 }} accessibilityLabel={label}>
-      <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name={icon} size={24} color={colors.primary} />
+    <PressableScale onPress={onPress} accessibilityLabel={`${label}: ${value}`} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: space.md, gap: 4 }}>
+      <View style={[styles.iconTile, { width: 32, height: 32, borderRadius: 10, backgroundColor: warn ? colors.warningSoft : colors.primarySoft }]}>
+        <Ionicons name={icon} size={17} color={warn ? colors.warning : colors.primary} />
       </View>
-      <Text style={type.caption}>{label}</Text>
+      <Text style={type.h2}>{value}</Text>
+      <Text style={type.caption} numberOfLines={1}>
+        {label}
+      </Text>
     </PressableScale>
+  );
+}
+
+function Progress({ value }: { value: number }) {
+  const w = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: Math.min(1, value), duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [value, w]);
+  return (
+    <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.primarySoft, overflow: 'hidden' }}>
+      <Animated.View style={{ height: 8, borderRadius: 4, backgroundColor: colors.primary, width: w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+    </View>
+  );
+}
+
+function Shortcut({ icon, label, onPress, badge }: { icon: IconName; label: string; onPress: () => void; badge?: number }) {
+  return (
+    <View style={{ width: '25%', alignItems: 'center' }}>
+    <PressableScale onPress={onPress} style={{ alignItems: 'center', gap: 6 }} accessibilityLabel={label}>
+      <View>
+        <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={icon} size={24} color={colors.primary} />
+        </View>
+        {badge ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={type.caption} numberOfLines={1}>
+        {label}
+      </Text>
+    </PressableScale>
+    </View>
   );
 }

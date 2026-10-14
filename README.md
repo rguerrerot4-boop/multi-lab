@@ -34,7 +34,8 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Módulo | Pantallas |
 |---|---|
 | Acceso | Splash animado con el logotipo, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
-| Dashboards | Panel del profesional de salud y panel del visitador médico |
+| Dashboards | Panel del profesional de salud y panel del visitador médico (acción rápida **Comenzar visita**, indicadores del día, meta semanal, ruta de hoy, accesos rápidos y aviso de kit) |
+| Visita en curso | Cronómetro, datos del profesional (horario, preferencias, última visita, solicitudes abiertas), productos presentados, **contador de material entregado** (muestras, impresos, ficha digital) con el kit disponible, resultado de la visita, **firma con el dedo** como acuse de recibo y resumen final |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
@@ -44,7 +45,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 
 ## Recorridos para probar
 
-1. **Visitador:** Splash → Iniciar sesión → Iniciar presentación → Compartir ficha por chat → Marcar visita como realizada → Revisar solicitudes.
+1. **Visitador:** Splash → Iniciar sesión → Comenzar visita → Presentar producto → Contar material entregado → Finalizar y firmar → Resumen → Mi kit.
 2. **Profesional de salud:** Iniciar sesión → Catálogo → Ficha → Solicitar → Seguimiento del estado.
 3. **Recuperación de acceso:** Iniciar sesión → ¿Olvidaste tu contraseña? → Código `123456` → Nueva contraseña → Iniciar sesión.
 4. **Organización de visita:** Agenda → Visita → Mapa / Catálogo → Registrar estado.
@@ -56,6 +57,7 @@ Para ver ambos lados de una solicitud: créala como profesional, cierra sesión,
 - Funciona **sin servidor**: los datos están en `src/data/mock.ts` y los cambios se guardan solo durante la sesión.
 - **Requerirían integraciones adicionales:** mensajería en tiempo real, documentos autorizados y vista 3D con Vectary.
 - **Mapa:** en Expo Go usa el mapa real del teléfono, pide permiso de ubicación y busca lugares de salud cercanos en OpenStreetMap (gratuito, sin clave). En la vista web el mapa es ilustrativo. Para generar el APK de Android hay que agregar una clave de Google Maps en `app.json` (plugin `react-native-maps`).
+- El material entregado es de demostración y la firma es solo un acuse de recibo: la app no registra ventas, pedidos ni dispensación, y la firma no tiene validez legal.
 - La pantalla **Perfil → Métricas de la prueba** registra los eventos de interacción de la sesión, para pruebas de usabilidad controladas. No son métricas reales de uso.
 
 ## Estructura

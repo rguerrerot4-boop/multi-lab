@@ -94,7 +94,76 @@ export interface Visit {
   notes: string;
   lat: number; // coordenadas aproximadas de la zona (dirección ficticia)
   lon: number;
+  report?: VisitReport;
 }
+
+// ---------- Registro de visita en curso ----------
+// El visitador registra el material de demostración que deja en el consultorio.
+// No es una venta ni una dispensación: solo un acuse de recibo con firma.
+export type DeliveryKind = 'muestra' | 'impreso' | 'digital';
+
+export const DELIVERY_KINDS: { kind: DeliveryKind; label: string; short: string; one: string; many: string; icon: IconName }[] = [
+  { kind: 'muestra', label: 'Muestras de demostración', short: 'Muestras', one: 'muestra', many: 'muestras', icon: 'cube-outline' },
+  { kind: 'impreso', label: 'Material impreso', short: 'Impresos', one: 'impreso', many: 'impresos', icon: 'document-text-outline' },
+  { kind: 'digital', label: 'Ficha digital enviada', short: 'Digital', one: 'ficha digital', many: 'fichas digitales', icon: 'phone-portrait-outline' },
+];
+
+export type Interest = 'Alto' | 'Medio' | 'Bajo';
+export const NEXT_STEPS = ['Enviar información técnica', 'Agendar seguimiento', 'Dejar más material', 'Sin acciones'] as const;
+export type NextStep = (typeof NEXT_STEPS)[number];
+
+export interface Signature {
+  w: number;
+  h: number;
+  paths: string[]; // trazos SVG
+  name: string;
+  at: number;
+}
+
+export interface VisitReport {
+  startedAt: number;
+  endedAt?: number;
+  presented: string[]; // productos presentados
+  deliveries: Record<string, Partial<Record<DeliveryKind, number>>>; // productId → cantidades
+  interest?: Interest;
+  nextSteps: NextStep[];
+  followUpDays?: number;
+  notes: string;
+  signature?: Signature;
+}
+
+export const emptyReport = (productIds: string[]): VisitReport => ({
+  startedAt: Date.now(),
+  presented: [],
+  deliveries: Object.fromEntries(productIds.map((id) => [id, {}])),
+  nextSteps: [],
+  notes: '',
+});
+
+export const deliveredTotal = (r?: VisitReport, kind?: DeliveryKind) =>
+  r
+    ? Object.values(r.deliveries).reduce(
+        (s, d) => s + (kind ? d[kind] ?? 0 : (d.muestra ?? 0) + (d.impreso ?? 0) + (d.digital ?? 0)),
+        0,
+      )
+    : 0;
+
+// Datos de contexto de cada profesional (ficticios) para la vista de visita
+export const DOCTOR_INFO: Record<string, { hours: string; prefers: string; patients: string; tip: string }> = {
+  m1: { hours: 'Lun a vie · 14:00 a 19:00', prefers: 'Visitas cortas, máximo 10 min', patients: 'Adultos con piel sensible', tip: 'Le interesa el material para la sala de espera.' },
+  m2: { hours: 'Lun a sáb · 08:00 a 13:00', prefers: 'Material visual y digital', patients: 'Niños de 0 a 12 años', tip: 'Prefiere recibir fichas por chat antes de la visita.' },
+  m3: { hours: 'Mar y jue · 09:00 a 16:00', prefers: 'Visitas con cita previa', patients: 'Medicina familiar', tip: 'Pidió reprogramar visitas con un día de aviso.' },
+  m4: { hours: 'Lun a vie · 15:00 a 20:00', prefers: 'Información técnica detallada', patients: 'Dermatología clínica', tip: 'Tiene una solicitud de información técnica abierta.' },
+};
+
+// Kit de material de demostración del visitador (cantidades iniciales ficticias)
+export const INITIAL_KIT: Record<string, Record<DeliveryKind, number>> = {
+  p1: { muestra: 18, impreso: 30, digital: 99 },
+  p2: { muestra: 12, impreso: 25, digital: 99 },
+  p3: { muestra: 6, impreso: 20, digital: 99 },
+  p4: { muestra: 20, impreso: 40, digital: 99 },
+  p5: { muestra: 4, impreso: 15, digital: 99 },
+};
 
 export interface RequestItem {
   id: string;

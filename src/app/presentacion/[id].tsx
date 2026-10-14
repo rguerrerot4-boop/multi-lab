@@ -69,7 +69,7 @@ function Parallax({ children, speed, at = 0, style }: { children: ReactNode; spe
 
 export default function Presentacion() {
   const { id, visita } = useLocalSearchParams<{ id: string; visita?: string }>();
-  const { visits, logEvent, setVisitStatus } = useMine();
+  const { visits, logEvent, updateReport } = useMine();
   const visit = visits.find((v) => v.id === visita);
   const [productId, setProductId] = useState(id);
   const p = productById(productId);
@@ -82,6 +82,17 @@ export default function Presentacion() {
   const scrollRef = useRef<{ scrollTo: (o: { y: number; animated: boolean }) => void } | null>(null);
   const intro = useRef(new Animated.Value(0)).current;
   const started = useRef(Date.now());
+
+  const inVisit = !!visit?.report && !visit.report.endedAt;
+  // durante una visita en curso, el producto presentado se marca solo
+  useEffect(() => {
+    if (!visita || !inVisit) return;
+    updateReport(visita, (r) => ({
+      ...r,
+      presented: r.presented.includes(productId) ? r.presented : [...r.presented, productId],
+      deliveries: r.deliveries[productId] ? r.deliveries : { ...r.deliveries, [productId]: {} },
+    }));
+  }, [visita, inVisit, productId, updateReport]);
 
   useEffect(() => {
     logEvent('presentacion_iniciada', productId);
@@ -346,15 +357,12 @@ export default function Presentacion() {
             <Reveal at={80} style={{ gap: space.sm, marginTop: space.xl, maxWidth: wide, width: '100%', alignSelf: 'center' }}>
               <Button label="Compartir ficha por chat" icon="send-outline" onPress={() => setShare(true)} />
               <Button label="Ver ficha completa" variant="secondary" icon="document-text-outline" onPress={() => router.push(`/producto/${p.id}`)} />
-              {visit && visit.status !== 'Realizada' ? (
+              {visit && inVisit ? (
                 <Button
-                  label={`Marcar visita con ${personById(visit.doctorId).name} como realizada`}
+                  label={`Volver a la visita con ${personById(visit.doctorId).name}`}
                   variant="secondary"
-                  icon="checkmark-done-outline"
-                  onPress={() => {
-                    setVisitStatus(visit.id, 'Realizada');
-                    router.replace(`/visita/${visit.id}`);
-                  }}
+                  icon="arrow-undo-outline"
+                  onPress={close}
                 />
               ) : null}
             </Reveal>
