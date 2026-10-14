@@ -248,6 +248,12 @@ export const Product3D = forwardRef<
     if (Platform.OS !== 'web' || !fullGestures) return;
     const el = host.current as unknown as HTMLElement | null;
     if (!el?.addEventListener) return;
+    // en el navegador, los gestos sobre el visor son solo del visor (sin zoom ni desplazamiento de página)
+    el.style.touchAction = 'none';
+    el.style.overscrollBehavior = 'contain';
+    const stopGesture = (ev: Event) => ev.preventDefault();
+    el.addEventListener('gesturestart', stopGesture);
+    el.addEventListener('gesturechange', stopGesture);
     const onWheel = (ev: WheelEvent) => {
       ev.preventDefault();
       setHint(false);
@@ -258,7 +264,11 @@ export const Product3D = forwardRef<
       });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('gesturestart', stopGesture);
+      el.removeEventListener('gesturechange', stopGesture);
+    };
   }, [fullGestures]);
 
   const hotspots = product.hotspots ?? [];
