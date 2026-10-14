@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,6 +68,17 @@ export default function Visor() {
           </Text>
           <Text style={{ fontFamily: font.medium, fontSize: 11, color: colors.inkMuted }}>Visor 3D simulado · 360°</Text>
         </View>
+        {p ? (
+          <Pressable
+            onPress={() => router.push(`/ar/${p.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver en realidad aumentada"
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 6, height: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.petroleo, opacity: pressed ? 0.75 : 1 })}
+          >
+            <Ionicons name="scan-outline" size={17} color={colors.white} />
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white }}>AR</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {/* texto del punto seleccionado, flotando sobre el modelo */}

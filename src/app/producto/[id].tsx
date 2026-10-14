@@ -61,6 +61,7 @@ export default function Producto() {
     logEvent('visor_3d_abierto', p.id);
     router.push(`/visor/${p.id}`);
   };
+  const openAR = () => router.push(`/ar/${p.id}`);
 
   return (
     <Screen
@@ -93,29 +94,22 @@ export default function Producto() {
         )
       }
     >
-      {/* Imagen del producto con acceso al visor 3D */}
-      <PressableScale onPress={open3D} accessibilityLabel={`Abrir visor 3D de ${p.name}`}>
-        <View>
+      {/* Imagen del producto con acceso al visor 3D y a la realidad aumentada */}
+      <View>
+        <PressableScale onPress={open3D} accessibilityLabel={`Abrir visor 3D de ${p.name}`}>
           <ProductVisual product={p} height={190} />
-          <View
-            style={{
-              position: 'absolute',
-              right: space.md,
-              bottom: space.md,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: colors.white,
-              borderRadius: radius.pill,
-              paddingHorizontal: 12,
-              paddingVertical: 7,
-            }}
-          >
+        </PressableScale>
+        <View style={{ position: 'absolute', right: space.md, bottom: space.md, flexDirection: 'row', gap: space.sm }}>
+          <PressableScale onPress={open3D} accessibilityLabel={`Ver ${p.name} en 3D`} style={heroPill}>
             <Ionicons name="cube-outline" size={16} color={colors.primary} />
-            <Text style={[type.label, { color: colors.primary }]}>Ver en 3D · 360°</Text>
-          </View>
+            <Text style={[type.label, { color: colors.primary }]}>3D · 360°</Text>
+          </PressableScale>
+          <PressableScale onPress={openAR} accessibilityLabel={`Ver ${p.name} en realidad aumentada`} style={[heroPill, { backgroundColor: colors.petroleo }]}>
+            <Ionicons name="scan-outline" size={16} color={colors.white} />
+            <Text style={[type.label, { color: colors.white }]}>Ver en AR</Text>
+          </PressableScale>
         </View>
-      </PressableScale>
+      </View>
 
       <View style={{ gap: space.sm }}>
         <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
@@ -205,6 +199,7 @@ export default function Producto() {
               subtitle="Gira el envase y explora sus puntos (3D simulado)"
               onPress={open3D}
             />
+            <ListItem icon="scan-outline" title="Realidad aumentada" subtitle="Coloca el envase sobre una superficie real con la cámara" onPress={openAR} />
           </View>
         ) : null}
       </Animated.View>
@@ -260,3 +255,13 @@ function Bullet({ text }: { text: string }) {
     </View>
   );
 }
+
+const heroPill = {
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  gap: 6,
+  backgroundColor: colors.white,
+  borderRadius: radius.pill,
+  paddingHorizontal: 12,
+  paddingVertical: 7,
+};

@@ -38,6 +38,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Visita en curso | Cronómetro, datos del profesional (horario, preferencias, última visita, solicitudes abiertas), productos presentados, **contador de material entregado** (muestras, impresos, ficha digital) con el kit disponible, resultado de la visita, **firma con el dedo** como acuse de recibo y resumen final |
 | Registro de visitas | Cada visita finalizada se guarda automáticamente: totales del periodo, buscador, filtros por fecha y por profesional, y detalle con material entregado, resultado y firma |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
+| Realidad aumentada | Botón **Ver en AR** en la ficha, el visor 3D y la presentación: explica el uso y abre el visor AR del teléfono para colocar el envase en una superficie plana a tamaño real (Scene Viewer en Android con ARCore, AR Quick Look en iPhone). Modelos en `ar/models` |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
@@ -57,6 +58,7 @@ Para ver ambos lados de una solicitud: créala como profesional, cierra sesión,
 
 - Funciona **sin servidor**: los datos están en `src/data/mock.ts` y los cambios se guardan solo durante la sesión.
 - **Requerirían integraciones adicionales:** mensajería en tiempo real, documentos autorizados y vista 3D con Vectary.
+- **AR:** funciona en el celular (Expo Go o APK) con internet. En Android necesita “Servicios de Google Play para RA”; en iPhone, iOS 12 o superior. En el navegador solo se ve la vista previa. Para regenerar los modelos: `node --experimental-strip-types scripts/ar/export-products.mts` y `python3 scripts/ar/build_models.py` (requiere `pip install usd-core pillow`).
 - **Mapa:** en Expo Go usa el mapa real del teléfono, pide permiso de ubicación y busca lugares de salud cercanos en OpenStreetMap (gratuito, sin clave). En la vista web el mapa es ilustrativo. Para generar el APK de Android hay que agregar una clave de Google Maps en `app.json` (plugin `react-native-maps`).
 - El material entregado es de demostración y la firma es solo un acuse de recibo: la app no registra ventas, pedidos ni dispensación, y la firma no tiene validez legal.
 - La pantalla **Perfil → Métricas de la prueba** registra los eventos de interacción de la sesión, para pruebas de usabilidad controladas. No son métricas reales de uso.

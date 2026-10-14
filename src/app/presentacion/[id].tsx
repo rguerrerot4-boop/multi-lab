@@ -341,7 +341,10 @@ export default function Presentacion() {
               <Product3D product={p} size={Math.min(width * 0.8, 320)} zoom={1.3} interactive={false} />
             </Reveal>
             <Reveal at={200}>
-              <Button label="Abrir visor 3D · 360°" icon="cube-outline" variant="secondary" onPress={() => router.push(`/visor/${p.id}`)} />
+              <View style={{ gap: space.sm, width: '100%', maxWidth: 360 }}>
+                <Button label="Abrir visor 3D · 360°" icon="cube-outline" variant="secondary" onPress={() => router.push(`/visor/${p.id}`)} />
+                <Button label="Ver en tu espacio (AR)" icon="scan-outline" variant="secondary" onPress={() => router.push(`/ar/${p.id}`)} />
+              </View>
             </Reveal>
           </Section>
 

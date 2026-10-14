@@ -14,6 +14,6 @@ Lee también `AGENTS.md` (reglas de Expo) y `README.md` (estructura y alcance).
 - El logotipo (`assets/logo-full.png`, `assets/logo-mark.png`) no se redibuja, rota, deforma ni recolorea.
 - Los productos, personas y lugares son ficticios y deben seguir marcados así. No inventes indicaciones médicas, estudios clínicos ni certificaciones (HIPAA, GxP, ARCSA…) como si fueran reales.
 - La app no simula venta ni dispensación de medicamentos.
-- No agregues realidad aumentada ni Unity. La vista 3D con Vectary está pendiente de integración.
+- Realidad aumentada: solo con el visor AR del sistema (Scene Viewer en Android, AR Quick Look en iPhone) y los modelos de `ar/models` (generados con `scripts/ar/build_models.py`, servidos por jsDelivr; si cambian, actualiza `AR_COMMIT` en `src/lib/ar.ts`). No uses Unity. La vista 3D con Vectary está pendiente de integración.
 - Permite el desplazamiento vertical; no comprimas el contenido para que quepa en una sola pantalla.
 - Antes de terminar un cambio, ejecuta `npx tsc --noEmit`.
