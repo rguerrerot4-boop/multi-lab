@@ -15,7 +15,7 @@ export default function Perfil() {
     { key: 'mensajes', label: 'Nuevos mensajes' },
     { key: 'solicitudes', label: 'Cambios en solicitudes' },
     { key: 'visitas', label: 'Recordatorios de visitas' },
-    { key: 'novedades', label: 'Novedades del catálogo' },
+    { key: 'novedades', label: role === 'medico' ? 'Respuestas de visitadores' : 'Novedades del catálogo' },
   ];
 
   return (

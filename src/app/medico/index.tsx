@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { MyStatusCard, NeedCard, NeedSheet } from '@/components/doctor';
-import { ProductVisual } from '@/components/ProductVisual';
 import { Avatar, BrandHeader, Button, Card, ListItem, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
-import { dayLabel, personById, productById, products } from '@/data/mock';
+import { dayLabel, personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
 
@@ -19,7 +18,6 @@ export default function MedicoInicio() {
   const active = myRequests.filter((r) => r.status !== 'Atendida' && r.status !== 'Cancelada');
   const next = myVisits.filter((v) => v.dayOffset >= 0 && v.status !== 'Realizada').sort((a, b) => a.dayOffset - b.dayOffset)[0];
   const rep = personById('v1');
-  const news = products.filter((p) => p.isNew);
   const today = new Date().toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
@@ -106,17 +104,6 @@ export default function MedicoInicio() {
         />
         <ListItem icon="time-outline" title="Historial de visitas" subtitle="Visitas recibidas y próximas" onPress={() => router.push('/historial')} />
       </View>
-
-      <SectionHeader title="Novedades del catálogo" action="Ver todo" onAction={() => router.push('/medico/catalogo')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md }}>
-        {news.map((p) => (
-          <PressableScale key={p.id} onPress={() => router.push(`/producto/${p.id}`)} style={{ width: 220 }} accessibilityLabel={`Ver ${p.name}`}>
-            <ProductVisual product={p} height={120} />
-            <Text style={[type.h3, { marginTop: space.sm }]}>{p.name}</Text>
-            <Text style={type.caption}>{p.tagline}</Text>
-          </PressableScale>
-        ))}
-      </ScrollView>
 
       <SectionHeader title="Solicitudes recientes" action="Ver todas" onAction={() => router.push('/medico/solicitudes')} />
       <Card style={{ gap: 0, paddingVertical: space.sm }}>

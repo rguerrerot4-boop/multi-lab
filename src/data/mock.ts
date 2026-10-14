@@ -658,7 +658,7 @@ export const chats: Chat[] = [
 export const notices: Notice[] = [
   { id: 'n1', forRole: 'medico', kind: 'mensaje', title: 'Nuevo mensaje de Juan Mieles', body: 'Le compartió la ficha de PhotoBlock SPF 50+.', at: 'Hace 1 h', read: false, href: '/chat/c1' },
   { id: 'n2', forRole: 'medico', kind: 'solicitud', title: 'Solicitud SOL-0142 en proceso', body: 'Su solicitud de material de apoyo avanzó de estado.', at: 'Hace 2 días', read: false, href: '/solicitud/r1' },
-  { id: 'n3', forRole: 'medico', kind: 'producto', title: 'Novedad en el catálogo', body: 'BioBarrier Emulsión ya está disponible para consulta.', at: 'Hace 3 días', read: true, href: '/producto/p2' },
+  { id: 'n3', forRole: 'medico', kind: 'visita', title: 'Visita confirmada', body: 'Juan Mieles pasará hoy a las 15:30 por su consultorio.', at: 'Hace 3 h', read: true, href: '/visita/vs1' },
   { id: 'n4', forRole: 'visitador', kind: 'solicitud', title: 'Nueva solicitud de Dr. Luis Ortega', body: 'Información técnica de CeraRepair Bálsamo.', at: 'Hace 3 h', read: false, href: '/solicitud/r3' },
   { id: 'n5', forRole: 'visitador', kind: 'visita', title: 'Recordatorio de visita', body: 'Hoy 15:30 con Dra. Pamela Toscano.', at: 'Hace 4 h', read: false, href: '/visita/vs1' },
   { id: 'n6', forRole: 'visitador', kind: 'mensaje', title: '2 mensajes de Dr. Luis Ortega', body: '¿Me la puede traer en la próxima visita?', at: 'Ayer', read: true, href: '/chat/c2' },

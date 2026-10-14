@@ -50,7 +50,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 ## Recorridos para probar
 
 1. **Visitador:** Splash → Iniciar sesión → Comenzar visita → Presentar producto → Contar material entregado → Finalizar y firmar → Resumen → Registro de visitas → Mi kit.
-2. **Profesional de salud:** Iniciar sesión → Catálogo → Ficha → Solicitar → Seguimiento del estado.
+2. **Profesional de salud:** Iniciar sesión → Tu estado → Necesito un producto (palabras clave) → Seguimiento → Devoluciones. El profesional no navega el catálogo: accede a los productos a través del visitador (fichas compartidas por chat y visitas).
 3. **Recuperación de acceso:** Iniciar sesión → ¿Olvidaste tu contraseña? → Código `123456` → Nueva contraseña → Iniciar sesión.
 4. **Organización de visita:** Agenda → Visita → Mapa / Catálogo → Registrar estado.
 
