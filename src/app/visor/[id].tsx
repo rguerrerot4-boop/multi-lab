@@ -1,103 +1,83 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { HotspotCard, Product3D, type Product3DHandle } from '@/components/Product3D';
-import { AppHeader, DemoNotice, EmptyState, Screen, styles } from '@/components/ui';
-import { productById, type IconName } from '@/data/mock';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HotspotCard, Product3D } from '@/components/Product3D';
+import { goBack } from '@/components/ui';
+import { productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
-import { colors, font, radius, space, type } from '@/theme';
+import { colors, font, radius, space } from '@/theme';
 
-// Visor 3D a pantalla completa: giro libre 360°, zoom, puntos interactivos con texto
+// Visor 3D inmersivo: el modelo ocupa toda la pantalla.
+// Gestos: arrastrar para girar 360°, pellizcar (o rueda del ratón) para acercar,
+// doble toque para restablecer, tocar los puntos para ver su texto.
 export default function Visor() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const p = productById(id);
   const { logEvent } = useMine();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [spot, setSpot] = useState<number | null>(null);
-  const [auto, setAuto] = useState(true);
-  const [zoom, setZoom] = useState(1);
-  const viewer = useRef<Product3DHandle>(null);
-  const size = Math.min(width - space.lg * 2, height * 0.5, 460);
 
-  if (!p) {
-    return (
-      <Screen header={<AppHeader title="Visor 3D" />}>
-        <EmptyState icon="cube-outline" title="Producto no encontrado" body="" />
-      </Screen>
-    );
-  }
-
-  const select = (i: number | null) => {
-    setSpot(i);
-    if (i !== null) logEvent('punto_3d', p.hotspots?.[i]?.title);
-  };
+  const close = () => goBack(p ? `/producto/${p.id}` : '/');
 
   return (
-    <Screen header={<AppHeader title="Visor 3D" subtitle={p.name} />}>
-      <View style={{ backgroundColor: colors.surface, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, paddingVertical: space.md, gap: space.md, overflow: 'hidden' }}>
-        <Product3D ref={viewer} product={p} size={size} autoRotate={auto} zoom={zoom} active={spot} onActiveChange={select} />
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <LinearGradient colors={[colors.white, colors.primarySoft]} style={StyleSheet.absoluteFill} />
 
-        <View style={[styles.row, { justifyContent: 'center', gap: space.sm }]}>
-          <Control icon="remove" label="Alejar" onPress={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))} />
-          <Control
-            icon="refresh"
-            label="Restablecer vista"
-            onPress={() => {
-              setSpot(null);
-              setZoom(1);
-              viewer.current?.reset();
-            }}
-          />
-          <Control icon={auto ? 'pause' : 'play'} label={auto ? 'Detener giro automático' : 'Girar automáticamente'} active={auto} onPress={() => setAuto((a) => !a)} />
-          <Control icon="add" label="Acercar" onPress={() => setZoom((z) => Math.min(1.5, +(z + 0.15).toFixed(2)))} />
+      {p ? (
+        <Product3D
+          product={p}
+          width={width}
+          height={height}
+          fullGestures
+          active={spot}
+          onActiveChange={(i) => {
+            setSpot(i);
+            if (i !== null) logEvent('punto_3d', p.hotspots?.[i]?.title);
+          }}
+        />
+      ) : null}
+
+      {/* cerrar y nombre: lo único fijo en pantalla */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + space.sm, left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+        <Pressable
+          onPress={close}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar visor"
+          hitSlop={8}
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <Ionicons name="close" size={22} color={colors.ink} />
+        </Pressable>
+        <View pointerEvents="none" style={{ flex: 1 }}>
+          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.ink }} numberOfLines={1}>
+            {p?.name ?? 'Producto no encontrado'}
+          </Text>
+          <Text style={{ fontFamily: font.medium, fontSize: 11, color: colors.inkMuted }}>Visor 3D simulado · 360°</Text>
         </View>
       </View>
 
-      <View style={{ gap: space.sm }}>
-        <Text style={type.h3}>Puntos del producto</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
-          {(p.hotspots ?? []).map((h, i) => (
-            <Pressable
-              key={h.title}
-              onPress={() => select(spot === i ? null : i)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: spot === i }}
-              style={[styles.chip, spot === i && { backgroundColor: colors.petroleo, borderColor: colors.petroleo }]}
-            >
-              <Text style={{ fontFamily: font.bold, fontSize: 12, color: spot === i ? colors.turquesa : colors.primary }}>{i + 1}</Text>
-              <Text style={[type.label, { color: spot === i ? colors.white : colors.ink }]} numberOfLines={1}>
-                {h.title}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      <HotspotCard hotspot={spot === null ? null : p.hotspots?.[spot] ?? null} index={spot ?? 0} onClose={() => setSpot(null)} />
-      <DemoNotice text="Representación 3D simulada con fines de demostración. El modelo real con Vectary está pendiente." />
-    </Screen>
-  );
-}
-
-function Control({ icon, label, onPress, active }: { icon: IconName; label: string; onPress: () => void; active?: boolean }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={6}
-      style={({ pressed }) => ({
-        width: 46,
-        height: 46,
-        borderRadius: 23,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: active ? colors.primary : colors.primarySoft,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <Ionicons name={icon} size={20} color={active ? colors.white : colors.primary} />
-    </Pressable>
+      {/* texto del punto seleccionado, flotando sobre el modelo */}
+      {p ? (
+        <View pointerEvents="box-none" style={{ position: 'absolute', left: space.lg, right: space.lg, bottom: insets.bottom + space.xl }}>
+          <View style={{ maxWidth: 520, width: '100%', alignSelf: 'center', borderRadius: radius.lg }}>
+            <HotspotCard hotspot={spot === null ? null : p.hotspots?.[spot] ?? null} index={spot ?? 0} onClose={() => setSpot(null)} />
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }

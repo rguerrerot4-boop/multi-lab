@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, Platform, Pressable, Text, View } from 'react-native';
 import Svg, { G, Polygon, Text as SvgText } from 'react-native-svg';
 import type { Hotspot, Product } from '@/data/mock';
 import { colors, font, radius, space, type } from '@/theme';
@@ -92,13 +92,21 @@ export const Product3D = forwardRef<
   {
     product: Product;
     size?: number;
+    width?: number; // para ocupar un área no cuadrada (pantalla completa)
+    height?: number;
+    fullGestures?: boolean; // pellizcar para zoom, doble toque para restablecer, toque para cerrar el punto
     autoRotate?: boolean;
     interactive?: boolean;
     zoom?: number;
     active?: number | null; // punto seleccionado (controlado por la pantalla)
     onActiveChange?: (i: number | null) => void;
   }
->(function Product3D({ product, size = 300, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange }, ref) {
+>(function Product3D(
+  { product, size = 300, width, height, fullGestures = false, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange },
+  ref,
+) {
+  const W = width ?? size;
+  const H = height ?? size;
   const [q, setQState] = useState<Q>(VIEW);
   const qRef = useRef<Q>(VIEW);
   const dragging = useRef(false);
@@ -107,9 +115,21 @@ export const Product3D = forwardRef<
   const tween = useRef<{ from: Q; to: Q; t0: number; dur: number } | null>(null);
   const idleSince = useRef(Date.now());
   const [hint, setHint] = useState(true);
-  const S = size * 0.33 * zoom; // escala de unidades a píxeles
-  const cx = size / 2;
-  const cy = size / 2;
+  const [pinch, setPinch] = useState(1);
+  const pinchRef = useRef({ start: 0, base: 1 });
+  const lastTap = useRef(0);
+  const pinchNow = useRef(1);
+  const onActiveRef = useRef(onActiveChange);
+  onActiveRef.current = onActiveChange;
+  useEffect(() => {
+    pinchNow.current = pinch;
+  }, [pinch]);
+  const moved = useRef(false);
+  // escala de unidades a píxeles (en pantalla completa el modelo ocupa buena parte de la pantalla)
+  const S = (fullGestures ? Math.min(W * 0.52, H * 0.3) : Math.min(W, H) * 0.33) * zoom * pinch;
+  const cx = W / 2;
+  const cy = H / 2;
+  const clampZoom = (z: number) => Math.max(0.6, Math.min(2.2, z));
 
   const setQ = useCallback((nq: Q) => {
     qRef.current = nq;
@@ -125,6 +145,7 @@ export const Product3D = forwardRef<
   useImperativeHandle(ref, () => ({
     reset: () => {
       vel.current = { x: 0, y: 0 };
+      setPinch(1);
       tween.current = { from: qRef.current, to: VIEW, t0: Date.now(), dur: 600 };
     },
   }));
@@ -160,33 +181,85 @@ export const Product3D = forwardRef<
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponder: () => interactive && fullGestures,
         onMoveShouldSetPanResponder: (_, g) => interactive && Math.hypot(g.dx, g.dy) > 4,
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
           dragging.current = true;
-          tween.current = null;
-          vel.current = { x: 0, y: 0 };
+          moved.current = false;
+          pinchRef.current.start = 0;
           last.current = { dx: 0, dy: 0 };
-          setHint(false);
         },
-        onPanResponderMove: (_, g) => {
+        onPanResponderMove: (e, g) => {
+          const touches = e.nativeEvent.touches;
+          if (fullGestures && touches && touches.length >= 2) {
+            // pellizcar para acercar o alejar
+            const d = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+            if (!pinchRef.current.start) pinchRef.current = { start: d, base: pinchRef.current.base };
+            else setPinch(clampZoom((pinchRef.current.base * d) / pinchRef.current.start));
+            moved.current = true;
+            return;
+          }
+          if (Math.hypot(g.dx, g.dy) > 4 && !moved.current) {
+            moved.current = true;
+            tween.current = null;
+            vel.current = { x: 0, y: 0 };
+            setHint(false);
+          }
+          if (!moved.current) return;
           const k = 0.011;
           spin((g.dx - last.current.dx) * k, (g.dy - last.current.dy) * k);
           last.current = { dx: g.dx, dy: g.dy };
         },
         onPanResponderRelease: (_, g) => {
           dragging.current = false;
-          vel.current = { x: g.vx * 0.011, y: g.vy * 0.011 };
           idleSince.current = Date.now();
+          if (pinchRef.current.start) {
+            pinchRef.current = { start: 0, base: pinchNow.current };
+            return;
+          }
+          if (!moved.current && fullGestures) {
+            // toque: doble toque restablece; toque simple cierra el punto abierto
+            const now = Date.now();
+            if (now - lastTap.current < 320) {
+              vel.current = { x: 0, y: 0 };
+              setPinch(1);
+              pinchRef.current.base = 1;
+              tween.current = { from: qRef.current, to: VIEW, t0: now, dur: 600 };
+              onActiveRef.current?.(null);
+            } else onActiveRef.current?.(null);
+            lastTap.current = now;
+            return;
+          }
+          vel.current = { x: g.vx * 0.011, y: g.vy * 0.011 };
         },
         onPanResponderTerminate: () => {
           dragging.current = false;
           idleSince.current = Date.now();
         },
       }),
-    [interactive, spin],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [interactive, spin, fullGestures],
   );
+
+  // rueda del ratón para acercar en la versión web
+  const host = useRef<View>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !fullGestures) return;
+    const el = host.current as unknown as HTMLElement | null;
+    if (!el?.addEventListener) return;
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault();
+      setHint(false);
+      setPinch((z) => {
+        const nz = clampZoom(z * (ev.deltaY > 0 ? 0.92 : 1.08));
+        pinchRef.current.base = nz;
+        return nz;
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [fullGestures]);
 
   const hotspots = product.hotspots ?? [];
 
@@ -231,8 +304,8 @@ export const Product3D = forwardRef<
   const clip = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
 
   return (
-    <View style={{ width: size, height: size, alignSelf: 'center' }} {...pan.panHandlers}>
-      <Svg width={size} height={size}>
+    <View ref={host} style={{ width: W, height: H, alignSelf: 'center' }} {...pan.panHandlers}>
+      <Svg width={W} height={H}>
         {visibleFaces.map((face) => (
           <G key={face}>
             <Polygon points={poly(face)} fill={fill(face)} stroke={shade(base, -0.3)} strokeWidth={0.6} strokeOpacity={0.35} />
@@ -257,7 +330,7 @@ export const Product3D = forwardRef<
                   </SvgText>
                 </G>
                 <G transform={textMatrix('front', 0.08, 0.72, 0.92, 0.86)}>
-                  <SvgText x={0} y={64} fontSize={10.5} fontFamily={font.bold} fill="#FFFFFF" fillOpacity={0.9}>
+                  <SvgText x={0} y={62} fontSize={8} fontFamily={font.bold} fill="#FFFFFF" fillOpacity={0.9}>
                     PRODUCTO FICTICIO
                   </SvgText>
                 </G>
@@ -315,10 +388,12 @@ export const Product3D = forwardRef<
       })}
 
       {hint && interactive ? (
-        <View style={{ position: 'absolute', bottom: 4, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
+        <View style={{ position: 'absolute', bottom: fullGestures ? 28 : 4, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: colors.border }}>
             <Ionicons name="move-outline" size={14} color={colors.primary} />
-            <Text style={[type.caption, { color: colors.ink }]}>Arrastra en cualquier dirección · toca los puntos</Text>
+            <Text style={[type.caption, { color: colors.ink }]}>
+              {fullGestures ? 'Arrastra para girar · pellizca para acercar · toca los puntos' : 'Arrastra en cualquier dirección · toca los puntos'}
+            </Text>
           </View>
         </View>
       ) : null}

@@ -33,6 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="medico" options={{ animation: 'fade' }} />
           <Stack.Screen name="visitador" options={{ animation: 'fade' }} />
           <Stack.Screen name="presentacion/[id]" options={{ animation: 'fade_from_bottom', presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="visor/[id]" options={{ animation: 'fade', presentation: 'fullScreenModal' }} />
         </Stack>
       </AppProvider>
     </SafeAreaProvider>
