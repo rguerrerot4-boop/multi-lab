@@ -7,6 +7,9 @@ import {
   INITIAL_KIT,
   initialDoctorStatus,
   initialNeeds,
+  initialReturns,
+  RETURN_FLOW,
+  type ReturnItem,
   matchProducts,
   type DoctorStatus,
   type NeedUrgency,
@@ -69,6 +72,10 @@ interface AppState {
   createNeed: (input: { keywords: string[]; note: string; urgency: NeedUrgency }) => string;
   markNeedSeen: (id: string) => void;
   respondNeed: (id: string, response: string) => void;
+  returns: ReturnItem[];
+  createReturn: (input: Omit<ReturnItem, 'id' | 'code' | 'doctorId' | 'repId' | 'status' | 'history' | 'createdAt'>) => string;
+  advanceReturn: (id: string, note?: string) => void;
+  cancelReturn: (id: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -87,6 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeVisitId, setActiveVisitId] = useState<string | null>(null);
   const [doctorStatus, setDoctorStatus] = useState(initialDoctorStatus);
   const [needs, setNeeds] = useState(initialNeeds);
+  const [returns, setReturns] = useState(initialReturns);
 
   const userId = role ? DEMO_USER[role] : null;
 
@@ -371,6 +379,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [needs, pushNotice, logEvent],
   );
 
+  // ---------- Devoluciones de material ----------
+  const createReturn: AppState['createReturn'] = useCallback(
+    (input) => {
+      const doctorId = userId ?? 'm1';
+      const id = `dv${Date.now()}`;
+      const code = `DEV-${String(8 + Math.floor(Math.random() * 900)).padStart(4, '0')}`;
+      const now = Date.now();
+      setReturns((list) => [{ ...input, id, code, doctorId, repId: 'v1', status: 'Reportada', history: [{ status: 'Reportada', at: now }], createdAt: now }, ...list]);
+      pushNotice({
+        forRole: 'visitador',
+        kind: 'solicitud',
+        title: `Devolución ${code} de ${personById(doctorId).name}`,
+        body: `${input.reason} · ${input.qty} ${input.material.toLowerCase()} de ${productById(input.productId)?.name ?? ''}`,
+        href: `/devolucion/${id}`,
+      });
+      logEvent('devolucion_creada', input.reason);
+      return id;
+    },
+    [userId, pushNotice, logEvent],
+  );
+
+  const advanceReturn = useCallback(
+    (id: string, note?: string) => {
+      const r = returns.find((x) => x.id === id);
+      if (!r) return;
+      const i = RETURN_FLOW.indexOf(r.status);
+      if (i < 0 || i === RETURN_FLOW.length - 1) return;
+      const next = RETURN_FLOW[i + 1];
+      setReturns((list) => list.map((x) => (x.id === id ? { ...x, status: next, history: [...x.history, { status: next, at: Date.now(), note }] } : x)));
+      pushNotice({
+        forRole: 'medico',
+        kind: 'solicitud',
+        title: `Devolución ${r.code}: ${next}`,
+        body: note || 'Tu reporte de material cambió de estado.',
+        href: `/devolucion/${id}`,
+      });
+      logEvent('devolucion_estado', next);
+    },
+    [returns, pushNotice, logEvent],
+  );
+
+  const cancelReturn = useCallback((id: string) => {
+    setReturns((list) => list.map((x) => (x.id === id ? { ...x, status: 'Cancelada', history: [...x.history, { status: 'Cancelada', at: Date.now() }] } : x)));
+  }, []);
+
   const markNoticeRead = useCallback((id: string) => {
     setNotices((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
   }, []);
@@ -414,8 +467,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       createNeed,
       markNeedSeen,
       respondNeed,
+      returns,
+      createReturn,
+      advanceReturn,
+      cancelReturn,
     }),
-    [doctorStatus, setMyStatus, needs, createNeed, markNeedSeen, respondNeed, kit, activeVisitId, startVisit, addUnscheduledVisit, updateReport, finishVisit, discardVisit, role, userId, requests, chats, visits, notices, events, login, logout, logEvent, createRequest, advanceRequest, cancelRequest, sendMessage, markChatRead, chatWith, setVisitStatus, setVisitNotes, markNoticeRead, markAllNoticesRead],
+    [returns, createReturn, advanceReturn, cancelReturn, doctorStatus, setMyStatus, needs, createNeed, markNeedSeen, respondNeed, kit, activeVisitId, startVisit, addUnscheduledVisit, updateReport, finishVisit, discardVisit, role, userId, requests, chats, visits, notices, events, login, logout, logEvent, createRequest, advanceRequest, cancelRequest, sendMessage, markChatRead, chatWith, setVisitStatus, setVisitNotes, markNoticeRead, markAllNoticesRead],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

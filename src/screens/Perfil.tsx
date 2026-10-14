@@ -65,6 +65,7 @@ export default function Perfil() {
         {role === 'visitador' ? (
           <ListItem icon="reader-outline" title="Registro de visitas" subtitle="Todas tus visitas finalizadas" onPress={() => router.push('/registro')} />
         ) : null}
+        <ListItem icon="arrow-undo-outline" title="Devoluciones" subtitle={role === 'visitador' ? 'Material reportado por tus médicos' : 'Material recibido en mal estado'} onPress={() => router.push('/devoluciones')} />
         <ListItem icon="key-outline" title="Cambiar contraseña" onPress={() => router.push('/auth/recuperar')} />
         <ListItem icon="analytics-outline" title="Métricas de la prueba" subtitle="Eventos registrados en esta sesión" onPress={() => router.push('/metricas')} />
         <ListItem icon="information-circle-outline" title="Acerca de Multi LAB" subtitle="Prototipo académico de titulación" onPress={() => router.push('/acerca')} />

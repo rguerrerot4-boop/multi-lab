@@ -35,6 +35,13 @@
         {
           "locationWhenInUsePermission": "Multi LAB usa tu ubicación para mostrarte los consultorios cercanos y organizar tus visitas."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Multi LAB usa tus fotos para adjuntar evidencia cuando reportas material en mal estado.",
+          "cameraPermission": "Multi LAB usa la cámara para fotografiar el material que llegó en mal estado."
+        }
       ]
     ],
     "scheme": "multilab",

@@ -758,6 +758,69 @@ export function matchProducts(keywords: string[]): ProductMatch[] {
     .sort((a, b) => b.score - a.score);
 }
 
+// ---------- Devoluciones de material ----------
+// El médico reporta material recibido (muestras de demostración o material de apoyo) que llegó en mal estado.
+// No es una devolución de compra: el visitador lo revisa, retira o repone en su próxima visita.
+export type ReturnStatus = 'Reportada' | 'Recibida' | 'En revisión' | 'Retiro agendado' | 'Resuelta' | 'Cancelada';
+export const RETURN_FLOW: ReturnStatus[] = ['Reportada', 'Recibida', 'En revisión', 'Retiro agendado', 'Resuelta'];
+export const RETURN_REASONS: { label: string; icon: IconName }[] = [
+  { label: 'Llegó dañado', icon: 'warning-outline' },
+  { label: 'Empaque abierto', icon: 'cube-outline' },
+  { label: 'Fecha de vencimiento próxima', icon: 'calendar-outline' },
+  { label: 'Producto equivocado', icon: 'swap-horizontal-outline' },
+  { label: 'Cantidad incompleta', icon: 'remove-circle-outline' },
+  { label: 'Otro motivo', icon: 'ellipsis-horizontal-circle-outline' },
+];
+export const RETURN_WANTS = ['Reposición', 'Retiro del material', 'Solo informar'] as const;
+export type ReturnWant = (typeof RETURN_WANTS)[number];
+
+export interface ReturnSource {
+  kind: 'visita' | 'solicitud';
+  id: string; // id de visita o solicitud
+  label: string; // "Visita del 7 oct" / "SOL-0142"
+}
+
+export interface ReturnItem {
+  id: string;
+  code: string;
+  doctorId: string;
+  repId: string;
+  source: ReturnSource;
+  productId: string;
+  material: string; // "Muestras de demostración", "Material impreso"...
+  qty: number;
+  reason: string;
+  detail: string;
+  want: ReturnWant;
+  photos: string[];
+  status: ReturnStatus;
+  history: { status: ReturnStatus; at: number; note?: string }[];
+  createdAt: number;
+}
+
+export const initialReturns: ReturnItem[] = [
+  {
+    id: 'dv1',
+    code: 'DEV-0007',
+    doctorId: 'm4',
+    repId: 'v1',
+    source: { kind: 'visita', id: 'vs7', label: 'Visita del ' + new Date(Date.now() - 5 * 864e5).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }) },
+    productId: 'p2',
+    material: 'Muestras de demostración',
+    qty: 1,
+    reason: 'Empaque abierto',
+    detail: 'Una de las muestras llegó con el sello roto.',
+    want: 'Reposición',
+    photos: [],
+    status: 'Recibida',
+    history: [
+      { status: 'Reportada', at: Date.now() - 26 * 3600000 },
+      { status: 'Recibida', at: Date.now() - 20 * 3600000 },
+    ],
+    createdAt: Date.now() - 26 * 3600000,
+  },
+];
+
 // ---------- Utilidades ----------
 export const personById = (id: string) => people.find((p) => p.id === id)!;
 export const productById = (id: string) => products.find((p) => p.id === id);

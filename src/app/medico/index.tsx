@@ -11,8 +11,9 @@ import { colors, radius, space, type } from '@/theme';
 
 // Dashboard del profesional de la salud
 export default function MedicoInicio() {
-  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, chatWith, needs } = useMine();
+  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, chatWith, needs, returns } = useMine();
   const [needOpen, setNeedOpen] = useState(false);
+  const openReturns = returns.filter((r) => r.doctorId === (userId ?? 'm1') && r.status !== 'Resuelta' && r.status !== 'Cancelada').length;
   const myNeeds = needs.filter((n) => n.doctorId === (userId ?? 'm1'));
   const me = personById(userId ?? 'm1');
   const active = myRequests.filter((r) => r.status !== 'Atendida' && r.status !== 'Cancelada');
@@ -96,9 +97,13 @@ export default function MedicoInicio() {
 
       <SectionHeader title="Accesos rápidos" />
       <View style={{ gap: space.sm }}>
-        <ListItem icon="grid-outline" title="Explorar catálogo" subtitle="Fichas y recursos multimedia" onPress={() => router.push('/medico/catalogo')} />
         <ListItem icon="add-circle-outline" title="Nueva solicitud" subtitle="Información o material de apoyo" onPress={() => router.push('/solicitud/nueva')} />
-        <ListItem icon="people-outline" title="Mis visitadores" subtitle="Contactos y laboratorios" onPress={() => router.push('/contactos')} />
+        <ListItem
+          icon="arrow-undo-outline"
+          title="Devoluciones"
+          subtitle={openReturns ? `${openReturns} en curso · Reportar material en mal estado` : 'Reportar material que llegó en mal estado'}
+          onPress={() => router.push('/devoluciones')}
+        />
         <ListItem icon="time-outline" title="Historial de visitas" subtitle="Visitas recibidas y próximas" onPress={() => router.push('/historial')} />
       </View>
 

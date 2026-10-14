@@ -400,6 +400,9 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; icon: IconName }> =
   'En curso': { bg: colors.accentSoft, fg: colors.ink, icon: 'play-circle-outline' },
   Realizada: { bg: colors.successSoft, fg: colors.success, icon: 'checkmark-done-outline' },
   Reprogramada: { bg: colors.warningSoft, fg: colors.warning, icon: 'swap-horizontal-outline' },
+  Reportada: { bg: colors.warningSoft, fg: colors.warning, icon: 'alert-circle-outline' },
+  'Retiro agendado': { bg: colors.primarySoft, fg: colors.primary, icon: 'calendar-outline' },
+  Resuelta: { bg: colors.successSoft, fg: colors.success, icon: 'checkmark-circle-outline' },
 };
 
 export function StatusPill({ status }: { status: RequestStatus | string }) {

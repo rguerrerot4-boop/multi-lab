@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 import { DoctorStatusPill, NeedCard } from '@/components/doctor';
 import { StartVisitSheet } from '@/components/StartVisitSheet';
+import { ReturnCard } from '@/components/ReturnCard';
 import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { formatClock, LiveDot, useNow } from '@/components/visit';
 import { dayLabel, deliveredTotal, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
@@ -15,7 +16,8 @@ const WEEK_GOAL = 12;
 
 // Dashboard del visitador médico
 export default function VisitadorInicio() {
-  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats, activeVisitId, kit, needs, doctorStatus } = useMine();
+  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats, activeVisitId, kit, needs, doctorStatus, returns } = useMine();
+  const openReturns = returns.filter((r) => r.repId === (userId ?? 'v1') && r.status !== 'Resuelta' && r.status !== 'Cancelada');
   const openNeeds = needs.filter((n) => n.status !== 'Atendida');
   const newNeed = needs.find((n) => n.status === 'Enviada');
   const me = personById(userId ?? 'v1');
@@ -210,6 +212,18 @@ export default function VisitadorInicio() {
           <View style={{ gap: space.sm }}>
             {openNeeds.map((n) => (
               <NeedCard key={n.id} need={n} forRep />
+            ))}
+          </View>
+        </>
+      ) : null}
+
+      {/* ---------- Devoluciones de material ---------- */}
+      {openReturns.length ? (
+        <>
+          <SectionHeader title={`Devoluciones abiertas · ${openReturns.length}`} action="Ver todas" onAction={() => router.push('/devoluciones')} />
+          <View style={{ gap: space.sm }}>
+            {openReturns.slice(0, 3).map((r) => (
+              <ReturnCard key={r.id} r={r} forRep />
             ))}
           </View>
         </>
