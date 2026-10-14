@@ -7,11 +7,14 @@ import { INITIAL_KIT, products } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
 
+// el inventario inicial es el de esta sesión: solo se cuentan las entregas firmadas desde que se abrió la app
+const SESSION_START = Date.now();
+
 // Kit de material de demostración que lleva el visitador
 export default function Kit() {
   const { kit, myVisits } = useMine();
   const delivered = (pid: string, kind: 'muestra' | 'impreso') =>
-    myVisits.reduce((s, v) => s + (v.report?.endedAt ? v.report.deliveries[pid]?.[kind] ?? 0 : 0), 0);
+    myVisits.reduce((s, v) => s + (v.report?.endedAt && v.report.endedAt > SESSION_START ? v.report.deliveries[pid]?.[kind] ?? 0 : 0), 0);
   const totalSamples = Object.values(kit).reduce((s, k) => s + k.muestra, 0);
   const totalPrinted = Object.values(kit).reduce((s, k) => s + k.impreso, 0);
 
@@ -74,7 +77,7 @@ function Bar({ label, value, max, given }: { label: string; value: number; max: 
         <Text style={type.label}>{label}</Text>
         <Text style={type.caption}>
           {value} de {max}
-          {given ? ` · ${given} entregados` : ''}
+          {given ? ` · ${given} entregados hoy` : ''}
         </Text>
       </View>
       <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.primarySoft, overflow: 'hidden' }}>

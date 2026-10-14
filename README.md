@@ -36,6 +36,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Acceso | Splash animado con el logotipo, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
 | Dashboards | Panel del profesional de salud y panel del visitador médico (acción rápida **Comenzar visita**, indicadores del día, meta semanal, ruta de hoy, accesos rápidos y aviso de kit) |
 | Visita en curso | Cronómetro, datos del profesional (horario, preferencias, última visita, solicitudes abiertas), productos presentados, **contador de material entregado** (muestras, impresos, ficha digital) con el kit disponible, resultado de la visita, **firma con el dedo** como acuse de recibo y resumen final |
+| Registro de visitas | Cada visita finalizada se guarda automáticamente: totales del periodo, buscador, filtros por fecha y por profesional, y detalle con material entregado, resultado y firma |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
@@ -45,7 +46,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 
 ## Recorridos para probar
 
-1. **Visitador:** Splash → Iniciar sesión → Comenzar visita → Presentar producto → Contar material entregado → Finalizar y firmar → Resumen → Mi kit.
+1. **Visitador:** Splash → Iniciar sesión → Comenzar visita → Presentar producto → Contar material entregado → Finalizar y firmar → Resumen → Registro de visitas → Mi kit.
 2. **Profesional de salud:** Iniciar sesión → Catálogo → Ficha → Solicitar → Seguimiento del estado.
 3. **Recuperación de acceso:** Iniciar sesión → ¿Olvidaste tu contraseña? → Código `123456` → Nueva contraseña → Iniciar sesión.
 4. **Organización de visita:** Agenda → Visita → Mapa / Catálogo → Registrar estado.

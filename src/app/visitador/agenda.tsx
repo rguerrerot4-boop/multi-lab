@@ -22,7 +22,10 @@ export default function Agenda() {
           <Text style={type.h1}>Agenda</Text>
           <Text style={[type.bodyMuted, { textTransform: 'capitalize' }]}>{month}</Text>
         </View>
-        <Button label="Mapa" icon="map-outline" variant="secondary" small onPress={() => router.push('/mapa')} />
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
+          <Button label="Registro" icon="reader-outline" variant="secondary" small onPress={() => router.push('/registro')} />
+          <Button label="Mapa" icon="map-outline" variant="secondary" small onPress={() => router.push('/mapa')} />
+        </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>

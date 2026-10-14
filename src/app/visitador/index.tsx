@@ -6,7 +6,7 @@ import { Animated, Easing, Text, View } from 'react-native';
 import { StartVisitSheet } from '@/components/StartVisitSheet';
 import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { formatClock, LiveDot, useNow } from '@/components/visit';
-import { deliveredTotal, personById, productById, type IconName } from '@/data/mock';
+import { dayLabel, deliveredTotal, personById, productById, type IconName } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, shadow, space, type } from '@/theme';
 
@@ -25,7 +25,10 @@ export default function VisitadorInicio() {
   const pending = myRequests.filter((r) => r.status === 'Pendiente' || r.status === 'Recibida' || r.status === 'En revisión');
   const recentChats = myChats.filter((c) => c.messages.length).slice(0, 2);
   const deliveredToday = today.reduce((s, v) => s + deliveredTotal(v.report), 0);
-  const weekDone = myVisits.filter((v) => v.status === 'Realizada' && v.dayOffset > -7 && v.dayOffset <= 0).length + 7; // base ficticia de la semana
+  const weekDone = myVisits.filter((v) => v.status === 'Realizada' && v.dayOffset > -7 && v.dayOffset <= 0).length + 5; // base ficticia de la semana
+  const doneAll = myVisits.filter((v) => v.status === 'Realizada').sort((a, b) => (b.report?.startedAt ?? 0) - (a.report?.startedAt ?? 0));
+  const doneCount = doneAll.length;
+  const lastDone = doneAll[0];
   const lowStock = Object.entries(kit).filter(([, k]) => k.muestra <= 5);
   const hour = new Date(now).getHours();
   const hello = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
@@ -105,7 +108,7 @@ export default function VisitadorInicio() {
         <Shortcut icon="briefcase-outline" label="Mi kit" onPress={() => router.push('/kit')} badge={lowStock.length} />
         <Shortcut icon="file-tray-full-outline" label="Solicitudes" onPress={() => router.push('/solicitudes')} badge={pending.length} />
         <Shortcut icon="chatbubbles-outline" label="Mensajes" onPress={() => router.push('/visitador/mensajes')} badge={unreadMessages} />
-        <Shortcut icon="stats-chart-outline" label="Métricas" onPress={() => router.push('/metricas')} />
+        <Shortcut icon="reader-outline" label="Registro" onPress={() => router.push('/registro')} />
       </View>
 
       {/* ---------- Ruta de hoy ---------- */}
@@ -164,6 +167,21 @@ export default function VisitadorInicio() {
           <Text style={type.bodyMuted}>Día sin visitas agendadas.</Text>
         </View>
       )}
+
+      {lastDone ? (
+        <PressableScale onPress={() => router.push('/registro')} style={styles.listItem} accessibilityLabel="Abrir registro de visitas">
+          <View style={styles.iconTile}>
+            <Ionicons name="reader-outline" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={type.label}>Registro de visitas · {doneCount}</Text>
+            <Text style={type.caption} numberOfLines={1}>
+              Última: {personById(lastDone.doctorId).name} · {dayLabel(lastDone.dayOffset)}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.inkSubtle} />
+        </PressableScale>
+      ) : null}
 
       {/* ---------- Kit ---------- */}
       {lowStock.length ? (

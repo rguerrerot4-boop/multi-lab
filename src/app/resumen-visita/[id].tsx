@@ -95,7 +95,7 @@ export default function ResumenVisita() {
           <Text style={type.label}>{doc.name}</Text>
         </View>
         <Text style={[type.bodyMuted, { textAlign: 'center' }]}>
-          {total ? `Dejaste ${total} ${total === 1 ? 'material' : 'materiales'} y quedó firmado el acuse de recibo.` : 'La visita quedó firmada y guardada en tu historial.'}
+          {total ? `Dejaste ${total} ${total === 1 ? 'material' : 'materiales'} y quedó guardada en tu registro con la firma.` : 'La visita quedó firmada y guardada en tu registro.'}
         </Text>
       </View>
 
@@ -107,6 +107,7 @@ export default function ResumenVisita() {
         variant={sent ? 'ghost' : 'secondary'}
         onPress={() => (sent ? router.push(`/chat/${chatWith(doc.id)}`) : share())}
       />
+      <Button label="Ver registro de visitas" icon="reader-outline" variant="ghost" onPress={() => router.push('/registro')} />
       <Text style={{ fontFamily: font.medium, fontSize: 12, color: colors.inkSubtle, textAlign: 'center' }}>Datos ficticios · Prototipo académico</Text>
     </Screen>
   );

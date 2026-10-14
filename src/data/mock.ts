@@ -467,8 +467,106 @@ export const visits: Visit[] = [
     notes: 'Se presentó la línea de limpieza. Interés en material de apoyo.',
     lat: -2.161,
     lon: -79.901,
+    report: pastReport(-7, '16:00', 12, ['p1', 'p3'], { p1: { muestra: 4, impreso: 2 }, p3: { impreso: 3, digital: 1 } }, 'Alto', ['Dejar más material'], 'Se presentó la línea de limpieza. Interés en material de apoyo.', 'Dra. Pamela Toscano'),
+  },
+  {
+    id: 'vs6',
+    doctorId: 'm2',
+    dayOffset: -3,
+    time: '10:30',
+    place: 'Centro Médico Los Ceibos',
+    address: 'Av. Muestra 900, Guayaquil (dirección ficticia)',
+    status: 'Realizada',
+    productIds: ['p5'],
+    notes: 'Pidió la ficha digital antes de la próxima visita.',
+    lat: -2.159,
+    lon: -79.953,
+    report: pastReport(-3, '10:30', 9, ['p5'], { p5: { muestra: 2, digital: 1 } }, 'Medio', ['Enviar información técnica'], 'Pidió la ficha digital antes de la próxima visita.', 'Dr. Andrés Villacís', 15),
+  },
+  {
+    id: 'vs7',
+    doctorId: 'm4',
+    dayOffset: -5,
+    time: '17:15',
+    place: 'Clínica Dermasur',
+    address: 'Calle Demo 45, Durán (dirección ficticia)',
+    status: 'Realizada',
+    productIds: ['p3', 'p2'],
+    notes: 'Quiere comparar texturas en la próxima visita.',
+    lat: -2.172,
+    lon: -79.838,
+    report: pastReport(-5, '17:15', 18, ['p3', 'p2'], { p3: { muestra: 2, impreso: 1 }, p2: { muestra: 3 } }, 'Alto', ['Agendar seguimiento'], 'Quiere comparar texturas en la próxima visita.', 'Dr. Luis Ortega', 7),
+  },
+  {
+    id: 'vs8',
+    doctorId: 'm3',
+    dayOffset: -12,
+    time: '09:20',
+    place: 'Consultorio Benítez',
+    address: 'Calle Ficticia 12, Milagro (dirección ficticia)',
+    status: 'Realizada',
+    productIds: ['p1'],
+    notes: '',
+    lat: -2.134,
+    lon: -79.59,
+    report: pastReport(-12, '09:20', 7, ['p1'], { p1: { impreso: 2 } }, 'Bajo', ['Sin acciones'], '', 'Dra. Carla Benítez'),
+  },
+  {
+    id: 'vs9',
+    doctorId: 'm1',
+    dayOffset: -21,
+    time: '15:45',
+    place: 'Consultorio Dermatológico Toscano',
+    address: 'Av. Ejemplo 123, Guayaquil (dirección ficticia)',
+    status: 'Realizada',
+    productIds: ['p4'],
+    notes: 'Primera visita. Presentación general del laboratorio.',
+    lat: -2.161,
+    lon: -79.901,
+    report: pastReport(-21, '15:45', 15, ['p4'], { p4: { muestra: 3, impreso: 2, digital: 1 } }, 'Medio', ['Agendar seguimiento'], 'Primera visita. Presentación general del laboratorio.', 'Dra. Pamela Toscano', 15),
   },
 ];
+
+// Registros de visitas pasadas (datos de demostración con una firma de ejemplo)
+function pastReport(
+  offset: number,
+  time: string,
+  minutes: number,
+  presented: string[],
+  deliveries: VisitReport['deliveries'],
+  interest: Interest,
+  nextSteps: NextStep[],
+  notes: string,
+  signer: string,
+  followUpDays?: number,
+): VisitReport {
+  const [h, m] = time.split(':').map(Number);
+  const start = dateFor(offset);
+  start.setHours(h, m, 0, 0);
+  const startedAt = start.getTime();
+  const endedAt = startedAt + minutes * 60000;
+  return {
+    startedAt,
+    endedAt,
+    presented,
+    deliveries,
+    interest,
+    nextSteps,
+    followUpDays,
+    notes,
+    signature: {
+      w: 340,
+      h: 200,
+      name: signer,
+      at: endedAt,
+      paths: [
+        'M40 130 Q60 70 80 120 Q95 160 115 110 Q130 70 150 125 Q165 150 185 105',
+        'M190 115 Q215 80 235 120 Q250 145 275 100 L300 95',
+        'M70 150 L290 140',
+      ],
+    },
+  };
+}
 
 // ---------- Solicitudes ----------
 export const requests: RequestItem[] = [
