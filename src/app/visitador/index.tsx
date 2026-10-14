@@ -375,15 +375,13 @@ function Shortcut({ icon, label, onPress, badge }: { icon: IconName; label: stri
 function NeedAlert({ need }: { need: ProductNeed }) {
   const shake = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.sequence([
-      Animated.delay(400),
-      ...[1, -1, 1, -1, 0].map((v) => Animated.timing(shake, { toValue: v, duration: 70, useNativeDriver: true })),
-    ]).start();
+    shake.setValue(-1);
+    Animated.timing(shake, { toValue: 0, duration: 520, delay: 250, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [need.id, shake]);
   const doc = personById(need.doctorId);
   const top = matchProducts(need.keywords, labOfRep('v1')?.name)[0];
   return (
-    <Animated.View style={{ transform: [{ translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] }}>
+    <Animated.View style={{ opacity: shake.interpolate({ inputRange: [-1, 0], outputRange: [0, 1] }), transform: [{ translateY: shake.interpolate({ inputRange: [-1, 0], outputRange: [-10, 0] }) }] }}>
       <PressableScale
         onPress={() => router.push(`/necesidad/${need.id}`)}
         accessibilityLabel={`${doc.name} solicita un producto`}

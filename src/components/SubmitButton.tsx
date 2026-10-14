@@ -8,7 +8,7 @@ import { colors, font, shadow } from '@/theme';
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const H = 54;
 const CHECK_LEN = 24;
-const PIECES = 30;
+const PIECES = 20;
 const CONFETTI = [colors.primary, colors.turquesa, colors.petroleo, '#3FA7B5', '#A7E3EA'];
 
 type Phase = 'idle' | 'loading' | 'done';
@@ -52,10 +52,10 @@ export function SubmitButton({
     () =>
       Array.from({ length: PIECES }, (_, i) => {
         const ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.3;
-        const speed = 160 + Math.random() * 140;
+        const speed = 120 + Math.random() * 100;
         const vx = Math.cos(ang) * speed;
         const vy = Math.sin(ang) * speed;
-        const g = 330 + Math.random() * 80;
+        const g = 240 + Math.random() * 60;
         const ts = [0, 0.25, 0.5, 0.75, 1];
         return {
           color: CONFETTI[i % CONFETTI.length],
@@ -83,38 +83,38 @@ export function SubmitButton({
       setTimeout(() => onDone?.(result.current), 700);
       return;
     }
-    dotsLoop.current = Animated.loop(Animated.timing(dots, { toValue: 1, duration: 700, easing: Easing.linear, useNativeDriver: true }));
+    dotsLoop.current = Animated.loop(Animated.timing(dots, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }));
     dotsLoop.current.start();
-    Animated.timing(shrink, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(shrink, { toValue: 1, duration: 320, easing: Easing.inOut(Easing.cubic), useNativeDriver: false }).start();
     setTimeout(() => {
       dotsLoop.current?.stop();
       setPhase('done');
       AccessibilityInfo.announceForAccessibility?.(doneLabel);
       Animated.parallel([
-        Animated.timing(confetti, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: true }),
-        Animated.spring(shrink, { toValue: 0, useNativeDriver: false, speed: 12, bounciness: 10 }),
-        Animated.timing(doneIn, { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.timing(confetti, { toValue: 1, duration: 1800, easing: Easing.linear, useNativeDriver: true }),
+        Animated.timing(shrink, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(doneIn, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         Animated.sequence([
           Animated.delay(150),
-          Animated.timing(check, { toValue: 0, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+          Animated.timing(check, { toValue: 0, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
         ]),
       ]).start(() => setTimeout(() => onDone?.(result.current), 350));
     }, 1100);
   };
 
-  const width = w ? shrink.interpolate({ inputRange: [0, 1], outputRange: [w, w * 0.8] }) : undefined;
+  const width = w ? shrink.interpolate({ inputRange: [0, 1], outputRange: [w, w * 0.88] }) : undefined;
   const dot = (i: number) =>
     dots.interpolate({
       inputRange: [0, 0.15 + i * 0.15, 0.3 + i * 0.15, 0.45 + i * 0.15, 1],
-      outputRange: [0, 0, -6, 0, 0],
+      outputRange: [0, 0, -4, 0, 0],
     });
 
   return (
     <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ alignItems: 'center', height: H, justifyContent: 'center' }}>
       <Pressable
         onPress={start}
-        onPressIn={() => Animated.spring(press, { toValue: 0.96, useNativeDriver: false, speed: 50, bounciness: 0 }).start()}
-        onPressOut={() => Animated.spring(press, { toValue: 1, useNativeDriver: false, speed: 14, bounciness: 14 }).start()}
+        onPressIn={() => Animated.timing(press, { toValue: 0.98, duration: 110, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()}
+        onPressOut={() => Animated.timing(press, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start()}
         disabled={disabled || phase !== 'idle'}
         accessibilityRole="button"
         accessibilityLabel={phase === 'done' ? doneLabel : label}
@@ -149,7 +149,7 @@ export function SubmitButton({
               ))}
             </View>
           ) : (
-            <Animated.View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, opacity: doneIn, transform: [{ scale: doneIn.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] }}>
+            <Animated.View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, opacity: doneIn, transform: [{ scale: doneIn.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }}>
               <Svg width={20} height={20} viewBox="0 0 20 20">
                 <AnimatedPath d="M3.5 10.5 L8 15 L16.5 5.5" stroke={colors.turquesa} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray={CHECK_LEN} strokeDashoffset={check} />
               </Svg>

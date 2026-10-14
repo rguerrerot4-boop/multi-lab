@@ -7,10 +7,21 @@ import {
 } from '@expo-google-fonts/montserrat';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from '@/store/AppStore';
 import { colors } from '@/theme';
+
+// En navegador: sin el resaltado gris/azul al tocar y sin contorno de foco al usar el dedo o el ratón
+if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('ml-touch-css')) {
+  const st = document.createElement('style');
+  st.id = 'ml-touch-css';
+  st.textContent =
+    '*{-webkit-tap-highlight-color:transparent;}' +
+    '*:focus:not(:focus-visible){outline:none;}' +
+    '[role="button"],[role="tab"],[role="radio"],[role="checkbox"]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}';
+  document.head.appendChild(st);
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({ Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold });

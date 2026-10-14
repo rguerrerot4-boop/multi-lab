@@ -45,10 +45,10 @@ export function BubbleTabBar({
     }
     pop.setValue(0);
     Animated.parallel([
-      Animated.spring(x, { toValue: index, useNativeDriver: true, speed: 14, bounciness: 9 }),
+      Animated.timing(x, { toValue: index, duration: 380, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
       Animated.sequence([
-        Animated.delay(90),
-        Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 14 }),
+        Animated.delay(140),
+        Animated.timing(pop, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
     ]).start();
   }, [index, x, pop]);
@@ -110,7 +110,7 @@ export function BubbleTabBar({
               elevation: 6,
             }}
           >
-            <Animated.View style={{ transform: [{ scale: pop }, { rotate: pop.interpolate({ inputRange: [0, 1], outputRange: ['-25deg', '0deg'] }) }] }}>
+            <Animated.View style={{ opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] }) }] }}>
               <Ionicons name={active?.iconOn ?? 'ellipse'} size={23} color={colors.white} />
             </Animated.View>
           </View>
@@ -146,4 +146,3 @@ export function BubbleTabBar({
   );
 }
 
-export const BUBBLE_EASING = Easing.out(Easing.cubic);

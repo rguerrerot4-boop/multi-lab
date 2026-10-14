@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, PanResponder, Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
+import { Animated, Easing, PanResponder, Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { Signature } from '@/data/mock';
 import { colors, font, radius, space, type } from '@/theme';
@@ -71,8 +71,8 @@ export function Counter({
       first.current = false;
       return;
     }
-    bump.setValue(1.35);
-    Animated.spring(bump, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 12 }).start();
+    bump.setValue(1.15);
+    Animated.timing(bump, { toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [value, bump]);
 
   const btn = (icon: 'remove' | 'add', disabled: boolean, next: number, a11y: string) => (

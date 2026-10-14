@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   Image,
   Pressable,
   ScrollView,
@@ -158,7 +159,7 @@ export function PressableScale({
   accessibilityLabel?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const to = (v: number) => Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  const to = (v: number) => Animated.timing(scale, { toValue: v, duration: v < 1 ? 110 : 240, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   // las propiedades de tamaño se aplican al contenedor para que flex/width funcionen dentro de filas
   const flat = StyleSheet.flatten(style) ?? {};
   const outer = { flex: flat.flex, width: flat.width, alignSelf: flat.alignSelf };
@@ -166,7 +167,7 @@ export function PressableScale({
     <Pressable
       style={outer}
       onPress={onPress}
-      onPressIn={() => to(0.97)}
+      onPressIn={() => to(0.98)}
       onPressOut={() => to(1)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
@@ -177,9 +178,9 @@ export function PressableScale({
 }
 
 // ---------- Botón ----------
-// Micro-interacción: al presionar se hunde con rebote, sale una onda desde el dedo
-// y el ícono se desliza un poco en la dirección de la acción.
+// Micro-interacción suave: al presionar se hunde levemente y el ícono se desliza un poco.
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+const EASE_OUT = Easing.out(Easing.cubic);
 export function Button({
   label,
   onPress,
@@ -200,90 +201,55 @@ export function Button({
   small?: boolean;
 }) {
   const v = {
-    primary: { bg: colors.primary, fg: colors.white, border: colors.primary, ripple: 'rgba(255,255,255,0.35)' },
-    secondary: { bg: colors.surface, fg: colors.primary, border: colors.primary, ripple: 'rgba(30,127,140,0.18)' },
-    ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent', ripple: 'rgba(30,127,140,0.14)' },
-    danger: { bg: colors.surface, fg: colors.danger, border: colors.dangerSoft, ripple: 'rgba(179,38,30,0.14)' },
+    primary: { bg: colors.primary, pressed: colors.primaryPressed, fg: colors.white, border: colors.primary },
+    secondary: { bg: colors.surface, pressed: colors.primarySoft, fg: colors.primary, border: colors.primary },
+    ghost: { bg: 'transparent', pressed: colors.primarySoft, fg: colors.primary, border: 'transparent' },
+    danger: { bg: colors.surface, pressed: colors.dangerSoft, fg: colors.danger, border: colors.dangerSoft },
   }[variant];
   const off = disabled || loading;
-  const scale = useRef(new Animated.Value(1)).current;
-  const nudge = useRef(new Animated.Value(0)).current;
-  const ripple = useRef(new Animated.Value(0)).current;
-  const [spot, setSpot] = useState({ x: 0, y: 0, size: 0 });
-  const box = useRef({ w: 0, h: 0 });
+  const t = useRef(new Animated.Value(0)).current; // 0 suelto · 1 presionado
 
-  const pressIn = (e: { nativeEvent: { locationX?: number; locationY?: number } }) => {
-    const { w, h } = box.current;
-    const x = e.nativeEvent.locationX ?? w / 2;
-    const y = e.nativeEvent.locationY ?? h / 2;
-    const size = Math.max(w, h) * 2.4;
-    setSpot({ x, y, size });
-    ripple.setValue(0);
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 0.95, useNativeDriver: true, speed: 50, bounciness: 0 }),
-      Animated.timing(ripple, { toValue: 1, duration: 520, useNativeDriver: true }),
-      Animated.spring(nudge, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 0 }),
-    ]).start();
-  };
-  const pressOut = () => {
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 14 }),
-      Animated.spring(nudge, { toValue: 0, useNativeDriver: true, speed: 14, bounciness: 12 }),
-    ]).start();
-  };
+  const to = (value: number, duration: number) => Animated.timing(t, { toValue: value, duration, easing: EASE_OUT, useNativeDriver: true }).start();
+  const scale = t.interpolate({ inputRange: [0, 1], outputRange: [1, 0.97] });
+  const shift = t.interpolate({ inputRange: [0, 1], outputRange: [0, 3] });
 
-  const iconShift = nudge.interpolate({ inputRange: [0, 1], outputRange: [0, 4] });
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={off ? undefined : pressIn}
-      onPressOut={off ? undefined : pressOut}
+      onPressIn={off ? undefined : () => to(1, 110)}
+      onPressOut={off ? undefined : () => to(0, 240)}
       disabled={off}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!off }}
       accessibilityLabel={label}
     >
-      <Animated.View
-        onLayout={(e) => (box.current = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-        style={[
-          styles.btn,
-          small && { minHeight: 40, paddingHorizontal: space.md },
-          { backgroundColor: v.bg, borderColor: v.border, opacity: off ? 0.5 : 1, overflow: 'hidden', transform: [{ scale }] },
-          variant === 'primary' && !off ? shadow.card : null,
-        ]}
-      >
+      {({ pressed }) => (
         <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            left: spot.x - spot.size / 2,
-            top: spot.y - spot.size / 2,
-            width: spot.size,
-            height: spot.size,
-            borderRadius: spot.size / 2,
-            backgroundColor: v.ripple,
-            opacity: ripple.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0.9, 0.5, 0] }),
-            transform: [{ scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.05, 1] }) }],
-          }}
-        />
-        {loading ? (
-          <ActivityIndicator color={v.fg} />
-        ) : (
-          <>
-            {icon ? (
-              <Animated.View style={{ transform: [{ translateX: Animated.multiply(iconShift, -1) }] }}>
-                <Ionicons name={icon} size={small ? 16 : 18} color={v.fg} />
-              </Animated.View>
-            ) : null}
-            <Text style={[styles.btnText, { color: v.fg, fontSize: small ? 13 : 15 }]}>{label}</Text>
-            {iconRight ? (
-              <Animated.View style={{ transform: [{ translateX: iconShift }] }}>
-                <Ionicons name={iconRight} size={small ? 16 : 18} color={v.fg} />
-              </Animated.View>
-            ) : null}
-          </>
-        )}
-      </Animated.View>
+          style={[
+            styles.btn,
+            small && { minHeight: 40, paddingHorizontal: space.md },
+            { backgroundColor: pressed && !off ? v.pressed : v.bg, borderColor: v.border, opacity: off ? 0.5 : 1, transform: [{ scale }] },
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={v.fg} />
+          ) : (
+            <>
+              {icon ? (
+                <Animated.View style={{ transform: [{ translateX: Animated.multiply(shift, -1) }] }}>
+                  <Ionicons name={icon} size={small ? 16 : 18} color={v.fg} />
+                </Animated.View>
+              ) : null}
+              <Text style={[styles.btnText, { color: v.fg, fontSize: small ? 13 : 15 }]}>{label}</Text>
+              {iconRight ? (
+                <Animated.View style={{ transform: [{ translateX: shift }] }}>
+                  <Ionicons name={iconRight} size={small ? 16 : 18} color={v.fg} />
+                </Animated.View>
+              ) : null}
+            </>
+          )}
+        </Animated.View>
+      )}
     </Pressable>
   );
 }
