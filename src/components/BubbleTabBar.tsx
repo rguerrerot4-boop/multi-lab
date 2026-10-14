@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { IconName } from '@/data/mock';
 import { colors, font } from '@/theme';
@@ -15,7 +15,7 @@ export interface BubbleTab {
 
 const BAR_H = 62;
 const BUBBLE = 50;
-const RING = 6; // borde del color de fondo: simula el recorte de la barra
+const RING = 6; // borde blanco: la barra se "levanta" alrededor de la burbuja
 const LIFT = 20;
 
 /**
@@ -45,10 +45,11 @@ export function BubbleTabBar({
     }
     pop.setValue(0);
     Animated.parallel([
-      Animated.timing(x, { toValue: index, duration: 380, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+      // rápido y con un solo rebote al llegar
+      Animated.spring(x, { toValue: index, useNativeDriver: true, stiffness: 320, damping: 19, mass: 0.9 }),
       Animated.sequence([
-        Animated.delay(140),
-        Animated.timing(pop, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.delay(70),
+        Animated.spring(pop, { toValue: 1, useNativeDriver: true, stiffness: 380, damping: 16 }),
       ]),
     ]).start();
   }, [index, x, pop]);
@@ -89,7 +90,12 @@ export function BubbleTabBar({
             width: outer,
             height: outer,
             borderRadius: outer / 2,
-            backgroundColor: colors.bg,
+            backgroundColor: colors.surface,
+            shadowColor: colors.petroleo,
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: -3 },
+            elevation: 8,
             alignItems: 'center',
             justifyContent: 'center',
             transform: [{ translateX }],
@@ -110,7 +116,7 @@ export function BubbleTabBar({
               elevation: 6,
             }}
           >
-            <Animated.View style={{ opacity: pop, transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] }) }] }}>
+            <Animated.View style={{ opacity: pop.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }), transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
               <Ionicons name={active?.iconOn ?? 'ellipse'} size={23} color={colors.white} />
             </Animated.View>
           </View>
