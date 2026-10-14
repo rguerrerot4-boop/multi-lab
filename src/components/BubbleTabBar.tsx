@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { IconName } from '@/data/mock';
 import { colors, font } from '@/theme';
@@ -45,11 +45,11 @@ export function BubbleTabBar({
     }
     pop.setValue(0);
     Animated.parallel([
-      // rápido y con un solo rebote al llegar
-      Animated.spring(x, { toValue: index, useNativeDriver: true, stiffness: 320, damping: 19, mass: 0.9 }),
+      // se desliza rápido sin pasarse de la pestaña y, al llegar, rebota una vez hacia arriba
+      Animated.timing(x, { toValue: index, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.sequence([
-        Animated.delay(70),
-        Animated.spring(pop, { toValue: 1, useNativeDriver: true, stiffness: 380, damping: 16 }),
+        Animated.delay(150),
+        Animated.spring(pop, { toValue: 1, useNativeDriver: true, stiffness: 420, damping: 13 }),
       ]),
     ]).start();
   }, [index, x, pop]);
@@ -59,6 +59,7 @@ export function BubbleTabBar({
   const translateX = x.interpolate({
     inputRange: tabs.map((_, i) => i),
     outputRange: tabs.map((_, i) => i * slot + slot / 2 - outer / 2),
+    extrapolate: 'clamp',
   });
   const active = tabs[index];
 
@@ -79,50 +80,6 @@ export function BubbleTabBar({
       }}
       accessibilityRole="tablist"
     >
-      {/* burbuja deslizante */}
-      {w && slot && tabs.length > 1 ? (
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -LIFT - RING,
-            left: 0,
-            width: outer,
-            height: outer,
-            borderRadius: outer / 2,
-            backgroundColor: colors.surface,
-            shadowColor: colors.petroleo,
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: -3 },
-            elevation: 8,
-            alignItems: 'center',
-            justifyContent: 'center',
-            transform: [{ translateX }],
-          }}
-        >
-          <View
-            style={{
-              width: BUBBLE,
-              height: BUBBLE,
-              borderRadius: BUBBLE / 2,
-              backgroundColor: colors.primary,
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: colors.primary,
-              shadowOpacity: 0.35,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            }}
-          >
-            <Animated.View style={{ opacity: pop.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }), transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
-              <Ionicons name={active?.iconOn ?? 'ellipse'} size={23} color={colors.white} />
-            </Animated.View>
-          </View>
-        </Animated.View>
-      ) : null}
-
       <View style={{ flex: 1, flexDirection: 'row' }}>
         {tabs.map((t, i) => {
           const on = i === index;
@@ -148,6 +105,50 @@ export function BubbleTabBar({
           );
         })}
       </View>
+      {/* burbuja deslizante */}
+      {w && slot && tabs.length > 1 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: -LIFT - RING,
+            left: 0,
+            width: outer,
+            height: outer,
+            borderRadius: outer / 2,
+            backgroundColor: colors.surface,
+            shadowColor: colors.petroleo,
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: -3 },
+            elevation: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: [{ translateX }, { translateY: pop.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }],
+          }}
+        >
+          <View
+            style={{
+              width: BUBBLE,
+              height: BUBBLE,
+              borderRadius: BUBBLE / 2,
+              backgroundColor: colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: colors.primary,
+              shadowOpacity: 0.35,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+            }}
+          >
+            <Animated.View style={{ opacity: pop.interpolate({ inputRange: [0, 0.6, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }), transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }}>
+              <Ionicons name={active?.iconOn ?? 'ellipse'} size={23} color={colors.white} />
+            </Animated.View>
+          </View>
+        </Animated.View>
+      ) : null}
+
     </View>
   );
 }
