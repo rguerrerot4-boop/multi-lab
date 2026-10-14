@@ -18,6 +18,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   st.id = 'ml-touch-css';
   st.textContent =
     '*{-webkit-tap-highlight-color:transparent;}' +
+    // la página no se desplaza ni rebota: solo se desplaza el contenido de cada pantalla
+    'html,body{overscroll-behavior:none;}body{position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;}' +
     '*:focus:not(:focus-visible){outline:none;}' +
     '[role="button"],[role="tab"],[role="radio"],[role="checkbox"]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}';
   document.head.appendChild(st);
