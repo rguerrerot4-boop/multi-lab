@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
+import { BubbleTabBar } from '@/components/BubbleTabBar';
 import type { IconName, Role } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font } from '@/theme';
@@ -21,6 +22,25 @@ export function RoleTabs({ role, tabs }: { role: Role; tabs: TabDef[] }) {
 
   return (
     <Tabs
+      tabBar={(props) => {
+        const routes = props.state.routes;
+        const items = routes.map((r) => {
+          const t = tabs.find((x) => x.name === r.name);
+          const count = t?.badge === 'messages' ? unreadMessages : t?.badge === 'requests' ? pending : 0;
+          return { name: r.name, title: t?.title ?? r.name, icon: t?.icon ?? 'ellipse-outline', iconOn: t?.iconOn ?? 'ellipse', badge: count || undefined };
+        });
+        return (
+          <BubbleTabBar
+            tabs={items}
+            index={props.state.index}
+            onPress={(i) => {
+              const route = routes[i];
+              const ev = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+              if (!ev.defaultPrevented && props.state.index !== i) props.navigation.navigate(route.name);
+            }}
+          />
+        );
+      }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
