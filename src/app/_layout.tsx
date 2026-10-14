@@ -28,7 +28,8 @@ export default function RootLayout() {
       <AppProvider>
         <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'slide_from_right' }}>
-          <Stack.Screen name="index" options={{ animation: 'fade' }} />
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
+          <Stack.Screen name="auth/login" options={{ animation: 'fade', animationDuration: 450 }} />
           <Stack.Screen name="medico" options={{ animation: 'fade' }} />
           <Stack.Screen name="visitador" options={{ animation: 'fade' }} />
           <Stack.Screen name="presentacion/[id]" options={{ animation: 'fade_from_bottom', presentation: 'fullScreenModal' }} />

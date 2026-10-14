@@ -74,7 +74,7 @@ export default function Perfil() {
         icon="log-out-outline"
         onPress={() => {
           logout();
-          router.replace('/');
+          router.replace('/auth/login');
         }}
       />
     </Screen>

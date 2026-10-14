@@ -49,7 +49,7 @@ export default function Login() {
   };
 
   return (
-    <Screen header={<AppHeader onBack={() => router.replace('/')} />}>
+    <Screen header={<AppHeader back={false} />}>
       {showAviso && aviso ? (
         <View style={[styles.row, { backgroundColor: colors.successSoft, padding: space.md, borderRadius: 12 }]}>
           <Ionicons name="checkmark-circle" size={22} color={colors.success} />

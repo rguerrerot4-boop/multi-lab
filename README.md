@@ -33,7 +33,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 
 | Módulo | Pantallas |
 |---|---|
-| Acceso | Bienvenida, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
+| Acceso | Splash animado con el logotipo, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
 | Dashboards | Panel del profesional de salud y panel del visitador médico |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
 | Presentación | Modo presentación a pantalla completa con diapositivas, cronómetro y acciones de cierre de visita |
@@ -44,7 +44,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 
 ## Recorridos para probar
 
-1. **Visitador:** Bienvenida → Iniciar sesión → Iniciar presentación → Compartir ficha por chat → Marcar visita como realizada → Revisar solicitudes.
+1. **Visitador:** Splash → Iniciar sesión → Iniciar presentación → Compartir ficha por chat → Marcar visita como realizada → Revisar solicitudes.
 2. **Profesional de salud:** Iniciar sesión → Catálogo → Ficha → Solicitar → Seguimiento del estado.
 3. **Recuperación de acceso:** Iniciar sesión → ¿Olvidaste tu contraseña? → Código `123456` → Nueva contraseña → Iniciar sesión.
 4. **Organización de visita:** Agenda → Visita → Mapa / Catálogo → Registrar estado.

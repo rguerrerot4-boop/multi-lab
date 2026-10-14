@@ -16,7 +16,7 @@ export interface TabDef {
 // Barra de navegación inferior por rol. Si no hay sesión del rol correcto, vuelve a la bienvenida.
 export function RoleTabs({ role, tabs }: { role: Role; tabs: TabDef[] }) {
   const { role: current, unreadMessages, myRequests } = useMine();
-  if (current !== role) return <Redirect href="/" />;
+  if (current !== role) return <Redirect href="/auth/login" />;
   const pending = myRequests.filter((r) => r.status === 'Pendiente').length;
 
   return (
