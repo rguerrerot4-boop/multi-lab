@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { SubmitButton } from '@/components/SubmitButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductVisual } from '@/components/ProductVisual';
 import { Button, Chip, Field, PressableScale, styles } from '@/components/ui';
@@ -163,10 +164,6 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
     setText('');
   };
   const allKeys = text.trim().length > 1 ? [...keys, text.trim()] : keys;
-  const send = () => {
-    const id = createNeed({ keywords: allKeys, note: note.trim(), urgency });
-    setSent(id);
-  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -245,7 +242,14 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
               </View>
               <Field label="Comentario (opcional)" value={note} onChangeText={setNote} placeholder="Ej.: quiero conocer texturas o material de apoyo" multiline />
               <Text style={type.caption}>No incluyas datos de pacientes. Esto no es un pedido ni una compra.</Text>
-              <Button label="Publicar solicitud" icon="cloud-upload-outline" disabled={!allKeys.length} onPress={send} />
+              <SubmitButton
+                label="Publicar solicitud"
+                icon="cloud-upload-outline"
+                doneLabel="Solicitud publicada"
+                disabled={!allKeys.length}
+                onSubmit={() => createNeed({ keywords: allKeys, note: note.trim(), urgency })}
+                onDone={(id) => setSent(String(id))}
+              />
             </ScrollView>
           )}
         </View>

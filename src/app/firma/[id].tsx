@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SubmitButton } from '@/components/SubmitButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader, Button, Card, EmptyState, Field, Screen, styles } from '@/components/ui';
 import { SignaturePad } from '@/components/visit';
@@ -98,7 +99,14 @@ export default function Firma() {
           </Text>
         </Pressable>
 
-        <Button label="Confirmar y finalizar visita" icon="checkmark-done-outline" disabled={!ready} onPress={confirm} />
+        <SubmitButton
+          label="Confirmar y finalizar visita"
+          icon="checkmark-done-outline"
+          doneLabel="Visita registrada"
+          disabled={!ready}
+          onSubmit={() => null}
+          onDone={confirm}
+        />
         <Text style={[type.caption, { textAlign: 'center' }]}>Prototipo académico: la firma se guarda solo durante la sesión y no tiene validez legal.</Text>
       </ScrollView>
     </SafeAreaView>

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { SubmitButton } from '@/components/SubmitButton';
 import { ago, DoctorStatusPill, needLabel } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, Screen, styles } from '@/components/ui';
@@ -49,10 +50,12 @@ export default function Necesidad() {
       header={<AppHeader title={isRep ? 'Solicitud de producto' : 'Mi solicitud de producto'} subtitle={`${isRep ? doc.name : 'Publicada'} · ${ago(need.createdAt)}`} />}
       footer={
         isRep && need.status !== 'Atendida' ? (
-          <Button
+          <SubmitButton
             label="Responder al médico"
             icon="send-outline"
-            onPress={() => respondNeed(need.id, extra.trim() ? `${answer}. ${extra.trim()}` : answer)}
+            doneLabel="Respuesta enviada"
+            onSubmit={() => null}
+            onDone={() => respondNeed(need.id, extra.trim() ? `${answer}. ${extra.trim()}` : answer)}
           />
         ) : undefined
       }

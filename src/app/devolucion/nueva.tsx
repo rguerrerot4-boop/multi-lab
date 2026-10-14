@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Image, Platform, Pressable, Text, View } from 'react-native';
+import { SubmitButton } from '@/components/SubmitButton';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Button, Card, Chip, EmptyState, Field, Screen, styles } from '@/components/ui';
 import { Counter } from '@/components/visit';
@@ -76,16 +77,20 @@ export default function NuevaDevolucion() {
     }
   };
 
-  const send = () => {
-    if (!item || !reason) return;
-    const id = createReturn({ source: item.source, productId: item.productId, material: item.material, qty, reason, detail: detail.trim(), want, photos });
-    router.replace(`/devolucion/${id}`);
-  };
 
   return (
     <Screen
       header={<AppHeader title="Reportar material" subtitle="Devolución o reposición" />}
-      footer={<Button label="Enviar reporte" icon="arrow-undo-outline" disabled={!ready} onPress={send} />}
+      footer={
+        <SubmitButton
+          label="Enviar reporte"
+          icon="arrow-undo-outline"
+          doneLabel="Reporte enviado"
+          disabled={!ready}
+          onSubmit={() => (item && reason ? createReturn({ source: item.source, productId: item.productId, material: item.material, qty, reason, detail: detail.trim(), want, photos }) : null)}
+          onDone={(id) => id && router.replace(`/devolucion/${String(id)}`)}
+        />
+      }
     >
       <View style={[styles.demo, { backgroundColor: colors.primarySoft }]}>
         <Ionicons name="information-circle-outline" size={16} color={colors.primary} />

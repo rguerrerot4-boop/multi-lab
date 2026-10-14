@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { SubmitButton } from '@/components/SubmitButton';
 import { ProductVisual } from '@/components/ProductVisual';
 import { Steps } from '@/components/Steps';
 import { AppHeader, Avatar, Button, Card, DemoNotice, Field, Screen, styles, UrgencyPill } from '@/components/ui';
@@ -84,7 +85,16 @@ export default function NuevaSolicitud() {
       footer={
         <>
           {error ? <Text style={[type.caption, { color: colors.danger, textAlign: 'center' }]}>{error}</Text> : null}
-          <Button label={step < 3 ? 'Continuar' : 'Enviar solicitud'} iconRight={step < 3 ? 'arrow-forward' : 'send'} onPress={next} />
+          {step < 3 ? (
+            <Button label="Continuar" iconRight="arrow-forward" onPress={next} />
+          ) : (
+            <SubmitButton
+              label="Enviar solicitud"
+              doneLabel="Solicitud enviada"
+              onSubmit={() => (lab ? createRequest({ productId: pid, type: kind!, notes, repId: lab.repId, urgency: urgency ?? undefined }) : null)}
+              onDone={(id) => id && router.replace({ pathname: '/solicitud/[id]', params: { id: String(id), nueva: '1' } })}
+            />
+          )}
         </>
       }
     >
