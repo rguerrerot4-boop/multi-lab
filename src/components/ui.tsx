@@ -415,6 +415,24 @@ export function StatusPill({ status }: { status: RequestStatus | string }) {
   );
 }
 
+const URGENCY_STYLE: Record<string, { bg: string; fg: string; icon: IconName }> = {
+  Urgente: { bg: colors.dangerSoft, fg: colors.danger, icon: 'flash' },
+  'Esta semana': { bg: colors.warningSoft, fg: colors.warning, icon: 'calendar-outline' },
+  'Sin prisa': { bg: colors.primarySoft, fg: colors.primary, icon: 'time-outline' },
+};
+
+/** Nivel de necesidad de una solicitud (Urgente, Esta semana, Sin prisa) */
+export function UrgencyPill({ urgency }: { urgency?: string }) {
+  if (!urgency) return null;
+  const s = URGENCY_STYLE[urgency] ?? URGENCY_STYLE['Sin prisa'];
+  return (
+    <View style={[styles.pill, { backgroundColor: s.bg }]} accessibilityLabel={`Nivel de necesidad: ${urgency}`}>
+      <Ionicons name={s.icon} size={12} color={s.fg} />
+      <Text style={[styles.pillText, { color: s.fg }]}>{urgency}</Text>
+    </View>
+  );
+}
+
 export function Tag({ label, tone = 'soft' }: { label: string; tone?: 'soft' | 'accent' | 'dark' }) {
   const bg = tone === 'soft' ? colors.primarySoft : tone === 'accent' ? colors.turquesa : colors.ink;
   const fg = tone === 'dark' ? colors.white : colors.ink;

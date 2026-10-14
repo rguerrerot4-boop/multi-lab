@@ -27,6 +27,7 @@ import {
   type Notice,
   type RequestItem,
   type RequestType,
+  type RequestUrgency,
   type Role,
   type Visit,
 } from '@/data/mock';
@@ -50,7 +51,7 @@ interface AppState {
   login: (role: Role) => void;
   logout: () => void;
   logEvent: (name: string, detail?: string) => void;
-  createRequest: (input: { productId: string; type: RequestType; notes: string; repId?: string }) => string;
+  createRequest: (input: { productId: string; type: RequestType; notes: string; repId?: string; urgency?: RequestUrgency }) => string;
   advanceRequest: (id: string) => void;
   cancelRequest: (id: string) => void;
   sendMessage: (chatId: string, text: string, productId?: string) => void;
@@ -120,7 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createRequest: AppState['createRequest'] = useCallback(
-    ({ productId, type, notes, repId = 'v1' }) => {
+    ({ productId, type, notes, repId = 'v1', urgency }) => {
       const id = `r${Date.now()}`;
       const code = `SOL-${String(146 + Math.floor(Math.random() * 800)).padStart(4, '0')}`;
       const item: RequestItem = {
@@ -128,6 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         code,
         productId,
         type,
+        urgency,
         notes,
         doctorId: userId ?? 'm1',
         repId,
@@ -140,8 +142,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pushNotice({
         forRole: 'visitador',
         kind: 'solicitud',
-        title: `Nueva solicitud de ${personById(item.doctorId).name}`,
-        body: `${type} · ${product?.name ?? ''}`,
+        title: `${urgency === 'Urgente' ? 'Urgente · ' : ''}Nueva solicitud de ${personById(item.doctorId).name}`,
+        body: `${type} · ${product?.name ?? ''}${urgency ? ` · ${urgency}` : ''}`,
         href: `/solicitud/${id}`,
       });
       logEvent('solicitud_creada', type);

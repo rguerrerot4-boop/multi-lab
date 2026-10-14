@@ -6,7 +6,7 @@ import { Animated, Easing, Text, View } from 'react-native';
 import { DoctorStatusPill, NeedCard } from '@/components/doctor';
 import { StartVisitSheet } from '@/components/StartVisitSheet';
 import { ReturnCard } from '@/components/ReturnCard';
-import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
+import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles, UrgencyPill } from '@/components/ui';
 import { formatClock, LiveDot, useNow } from '@/components/visit';
 import { dayLabel, deliveredTotal, labOfRep, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -27,7 +27,10 @@ export default function VisitadorInicio() {
   const doneToday = today.filter((v) => v.status === 'Realizada').length;
   const next = today.find((v) => v.status === 'Programada' || v.status === 'Reprogramada');
   const active = myVisits.find((v) => v.id === activeVisitId && v.report && !v.report.endedAt);
-  const pending = myRequests.filter((r) => r.status === 'Pendiente' || r.status === 'Recibida' || r.status === 'En revisión');
+  const URG = { Urgente: 0, 'Esta semana': 1, 'Sin prisa': 2 } as Record<string, number>;
+  const pending = myRequests
+    .filter((r) => r.status === 'Pendiente' || r.status === 'Recibida' || r.status === 'En revisión')
+    .sort((a, b) => (URG[a.urgency ?? 'Sin prisa'] ?? 2) - (URG[b.urgency ?? 'Sin prisa'] ?? 2));
   const recentChats = myChats.filter((c) => c.messages.length).slice(0, 2);
   const deliveredToday = today.reduce((s, v) => s + deliveredTotal(v.report), 0);
   const weekDone = myVisits.filter((v) => v.status === 'Realizada' && v.dayOffset > -7 && v.dayOffset <= 0).length + 5; // base ficticia de la semana
@@ -246,6 +249,7 @@ export default function VisitadorInicio() {
               <Text style={type.bodyMuted}>
                 {r.type} · {productById(r.productId)?.name}
               </Text>
+              <UrgencyPill urgency={r.urgency} />
             </PressableScale>
           ))}
         </View>

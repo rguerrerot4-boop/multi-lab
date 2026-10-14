@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { AppHeader, BrandHeader, Button, Chip, EmptyState, PressableScale, Screen, StatusPill, styles } from '@/components/ui';
+import { AppHeader, BrandHeader, Button, Chip, EmptyState, PressableScale, Screen, StatusPill, styles, UrgencyPill } from '@/components/ui';
 import { personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
@@ -70,7 +70,10 @@ export default function Solicitudes({ withBack = false }: { withBack?: boolean }
                   <StatusPill status={r.status} />
                 </View>
                 <Text style={type.h3}>{p?.name}</Text>
-                <Text style={type.bodyMuted}>{r.type}</Text>
+                <View style={[styles.row, { flexWrap: 'wrap' }]}>
+                  <Text style={type.bodyMuted}>{r.type}</Text>
+                  <UrgencyPill urgency={r.urgency} />
+                </View>
                 <Text style={type.caption}>
                   {role === 'medico' ? 'Visitador' : 'Solicitado por'}: {other.name} · {r.createdAt}
                 </Text>

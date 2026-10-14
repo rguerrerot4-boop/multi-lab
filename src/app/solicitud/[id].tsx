@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, Text, View } from 'react-native';
 import { ProductVisual } from '@/components/ProductVisual';
-import { AppHeader, Avatar, Button, Card, EmptyState, Screen, StatusPill, styles } from '@/components/ui';
+import { AppHeader, Avatar, Button, Card, EmptyState, Screen, StatusPill, styles, UrgencyPill } from '@/components/ui';
 import { personById, productById, REQUEST_FLOW } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, space, type } from '@/theme';
@@ -62,6 +62,7 @@ export default function SolicitudDetalle() {
           <Text style={type.overline}>{r.type}</Text>
           <StatusPill status={r.status} />
         </View>
+        <UrgencyPill urgency={r.urgency} />
         {p ? (
           <View style={styles.row}>
             <View style={{ width: 64 }}>

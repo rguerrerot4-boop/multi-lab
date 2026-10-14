@@ -24,7 +24,15 @@ export const REQUEST_FLOW: RequestStatus[] = [
   'Atendida',
 ];
 
-export type RequestType = 'Información técnica' | 'Material de apoyo' | 'Agendar visita';
+export type RequestType = 'Información técnica' | 'Material de apoyo' | 'Muestra original' | 'Agendar visita';
+
+// Nivel de necesidad de una solicitud
+export type RequestUrgency = 'Urgente' | 'Esta semana' | 'Sin prisa';
+export const REQUEST_URGENCY: { value: RequestUrgency; desc: string; icon: IconName }[] = [
+  { value: 'Urgente', desc: 'Lo necesito hoy o mañana', icon: 'flash-outline' },
+  { value: 'Esta semana', desc: 'En los próximos días', icon: 'calendar-outline' },
+  { value: 'Sin prisa', desc: 'Cuando el visitador pueda', icon: 'time-outline' },
+];
 
 export interface Person {
   id: string;
@@ -196,6 +204,7 @@ export interface RequestItem {
   code: string;
   productId: string;
   type: RequestType;
+  urgency?: RequestUrgency;
   notes: string;
   doctorId: string;
   repId: string;
@@ -668,6 +677,7 @@ export const requests: RequestItem[] = [
     code: 'SOL-0142',
     productId: 'p3',
     type: 'Material de apoyo',
+    urgency: 'Sin prisa',
     notes: 'Material impreso para la sala de espera.',
     doctorId: 'm1',
     repId: 'v1',
@@ -703,6 +713,7 @@ export const requests: RequestItem[] = [
     code: 'SOL-0145',
     productId: 'p3',
     type: 'Información técnica',
+    urgency: 'Esta semana',
     notes: '¿Tienen material comparativo de la línea?',
     doctorId: 'm4',
     repId: 'v1',

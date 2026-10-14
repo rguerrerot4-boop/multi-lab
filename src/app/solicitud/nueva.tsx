@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ProductVisual } from '@/components/ProductVisual';
 import { Steps } from '@/components/Steps';
-import { AppHeader, Avatar, Button, Card, DemoNotice, Field, Screen, styles } from '@/components/ui';
-import { areaOf, labByName, labs, personById, productById, products, type Product, type RequestType } from '@/data/mock';
+import { AppHeader, Avatar, Button, Card, DemoNotice, Field, Screen, styles, UrgencyPill } from '@/components/ui';
+import { areaOf, labByName, labs, personById, productById, products, REQUEST_URGENCY, type Product, type RequestType, type RequestUrgency } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
 
-const TYPES: { value: RequestType; desc: string; icon: 'document-text-outline' | 'folder-open-outline' | 'calendar-outline' }[] = [
+const TYPES: { value: RequestType; desc: string; icon: 'document-text-outline' | 'folder-open-outline' | 'calendar-outline' | 'cube-outline' }[] = [
   { value: 'Información técnica', desc: 'Ficha técnica, estudios o documentación autorizada.', icon: 'document-text-outline' },
   { value: 'Material de apoyo', desc: 'Material informativo autorizado por el laboratorio.', icon: 'folder-open-outline' },
+  { value: 'Muestra original', desc: 'Que el visitador traiga una muestra original del producto en su visita.', icon: 'cube-outline' },
   { value: 'Agendar visita', desc: 'Pedir que el visitador presente el producto.', icon: 'calendar-outline' },
 ];
 
@@ -28,6 +29,7 @@ export default function NuevaSolicitud() {
   const [showOthers, setShowOthers] = useState(false);
   const [kind, setKind] = useState<RequestType | null>(null);
   const [notes, setNotes] = useState('');
+  const [urgency, setUrgency] = useState<RequestUrgency | null>(null);
   const [error, setError] = useState<string>();
   const lab = labByName(labName);
   const p = productById(pid);
@@ -42,10 +44,11 @@ export default function NuevaSolicitud() {
     if (step === 0 && !labName) return setError('Elige un laboratorio.');
     if (step === 1 && !pid) return setError('Elige un producto.');
     if (step === 2 && !kind) return setError('Elige el tipo de solicitud.');
+    if (step === 2 && !urgency) return setError('Elige el nivel de necesidad.');
     setError(undefined);
     if (step < 3) setStep(step + 1);
     else if (lab) {
-      const id = createRequest({ productId: pid, type: kind!, notes, repId: lab.repId });
+      const id = createRequest({ productId: pid, type: kind!, notes, repId: lab.repId, urgency: urgency ?? undefined });
       router.replace({ pathname: '/solicitud/[id]', params: { id, nueva: '1' } });
     }
   };
@@ -177,6 +180,38 @@ export default function NuevaSolicitud() {
               </Pressable>
             );
           })}
+          <Text style={[type.h2, { marginTop: space.sm }]}>Nivel de necesidad</Text>
+          <View style={{ flexDirection: 'row', gap: space.sm }}>
+            {REQUEST_URGENCY.map((u) => {
+              const on = urgency === u.value;
+              const tone = u.value === 'Urgente' ? { bg: colors.dangerSoft, fg: colors.danger } : u.value === 'Esta semana' ? { bg: colors.warningSoft, fg: colors.warning } : { bg: colors.primarySoft, fg: colors.primary };
+              return (
+                <Pressable
+                  key={u.value}
+                  onPress={() => setUrgency(u.value)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: on }}
+                  accessibilityLabel={`${u.value}: ${u.desc}`}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingVertical: space.md,
+                    paddingHorizontal: 6,
+                    borderRadius: radius.md,
+                    borderWidth: 1.5,
+                    borderColor: on ? tone.fg : colors.border,
+                    backgroundColor: on ? tone.bg : colors.surface,
+                    opacity: pressed ? 0.75 : 1,
+                  })}
+                >
+                  <Ionicons name={u.icon} size={20} color={on ? tone.fg : colors.inkSubtle} />
+                  <Text style={[type.label, { color: on ? tone.fg : colors.ink, textAlign: 'center' }]}>{u.value}</Text>
+                  <Text style={[type.caption, { textAlign: 'center', fontSize: 11, lineHeight: 14 }]}>{u.desc}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
           <Field label="Comentario (opcional)" value={notes} onChangeText={setNotes} placeholder="Agrega detalles para el visitador" multiline />
           <DemoNotice text="Las solicitudes no incluyen venta ni dispensación de medicamentos." />
         </View>
@@ -196,6 +231,10 @@ export default function NuevaSolicitud() {
               </View>
             </View>
             <Row label="Tipo" value={kind ?? ''} />
+            <View style={{ gap: 4 }}>
+              <Text style={type.caption}>Nivel de necesidad</Text>
+              <UrgencyPill urgency={urgency ?? undefined} />
+            </View>
             <Row label="Comentario" value={notes || 'Sin comentario'} />
           </Card>
           <Card>
