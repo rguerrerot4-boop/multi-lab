@@ -36,7 +36,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Acceso | Splash animado con el logotipo, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
 | Dashboards | Panel del profesional de salud y panel del visitador médico |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
-| Presentación | Modo presentación a pantalla completa con diapositivas, cronómetro y acciones de cierre de visita |
+| Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 3 pasos y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
 | Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa de cobertura ilustrativo |
