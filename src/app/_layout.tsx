@@ -5,7 +5,7 @@ import {
   Montserrat_700Bold,
   useFonts,
 } from '@expo-google-fonts/montserrat';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,6 +23,11 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
     '*:focus:not(:focus-visible){outline:none;}' +
     '[role="button"],[role="tab"],[role="radio"],[role="checkbox"]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}';
   document.head.appendChild(st);
+}
+
+// Solo para generar capturas de documentación (build web con EXPO_PUBLIC_CAPTURE=1)
+if (Platform.OS === 'web' && process.env.EXPO_PUBLIC_CAPTURE === '1' && typeof window !== 'undefined') {
+  (window as unknown as { __mlNav: (href: string) => void }).__mlNav = (href) => router.push(href as never);
 }
 
 export default function RootLayout() {
