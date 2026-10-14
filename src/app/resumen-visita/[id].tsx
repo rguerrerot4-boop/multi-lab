@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
+import { SuccessCheck } from '@/components/SuccessCheck';
 import { Avatar, Button, EmptyState, Screen, styles } from '@/components/ui';
 import { formatClock } from '@/components/visit';
 import { ReportSummary } from '@/components/VisitReport';
@@ -72,23 +73,8 @@ export default function ResumenVisita() {
         </View>
       }
     >
-      <View style={{ alignItems: 'center', gap: space.sm, paddingTop: space.lg }}>
-        <View style={{ width: 96, height: 96, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View
-            style={{
-              position: 'absolute',
-              width: 96,
-              height: 96,
-              borderRadius: 48,
-              backgroundColor: colors.turquesa,
-              opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
-              transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.6] }) }],
-            }}
-          />
-          <Animated.View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pop }] }}>
-            <Ionicons name="checkmark" size={44} color={colors.white} />
-          </Animated.View>
-        </View>
+      <View style={{ alignItems: 'center', gap: space.sm }}>
+        <SuccessCheck size={88} />
         <Text style={[type.h1, { textAlign: 'center' }]}>Visita registrada</Text>
         <View style={styles.row}>
           <Avatar initials={doc.initials} size={28} tone="dark" />

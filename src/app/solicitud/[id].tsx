@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
+import { SuccessOverlay } from '@/components/SuccessCheck';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, EmptyState, Screen, StatusPill, styles, UrgencyPill } from '@/components/ui';
 import { personById, productById, REQUEST_FLOW } from '@/data/mock';
@@ -10,6 +12,7 @@ import { colors, space, type } from '@/theme';
 // Detalle y seguimiento de una solicitud
 export default function SolicitudDetalle() {
   const { id, nueva } = useLocalSearchParams<{ id: string; nueva?: string }>();
+  const [celebrate, setCelebrate] = useState(!!nueva);
   const { requests, role, advanceRequest, cancelRequest, chatWith } = useMine();
   const r = requests.find((x) => x.id === id);
 
@@ -127,6 +130,12 @@ export default function SolicitudDetalle() {
         </View>
         <Button label="Enviar mensaje" variant="secondary" icon="chatbubble-outline" small onPress={() => router.push(`/chat/${chatWith(other.id)}`)} />
       </Card>
+      <SuccessOverlay
+        visible={celebrate}
+        title="¡Solicitud enviada!"
+        body={`${other.name} ya fue notificado. Te avisaremos cada vez que cambie el estado.`}
+        onClose={() => setCelebrate(false)}
+      />
     </Screen>
   );
 }

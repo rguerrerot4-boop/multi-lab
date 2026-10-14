@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { SuccessCheck } from '@/components/SuccessCheck';
 import { SubmitButton } from '@/components/SubmitButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProductVisual } from '@/components/ProductVisual';
@@ -174,10 +175,8 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong }} />
           </View>
           {sent ? (
-            <View style={{ padding: space.xl, gap: space.md, alignItems: 'center' }}>
-              <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="cloud-done" size={34} color={colors.white} />
-              </View>
+            <View style={{ padding: space.lg, paddingTop: 0, gap: space.sm, alignItems: 'center' }}>
+              <SuccessCheck size={84} />
               <Text style={[type.h2, { textAlign: 'center' }]}>Solicitud publicada</Text>
               <View style={[styles.pill, { alignSelf: 'center', backgroundColor: colors.successSoft }]}>
                 <Ionicons name="checkmark-circle" size={13} color={colors.success} />

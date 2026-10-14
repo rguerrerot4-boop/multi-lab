@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
+import { SuccessOverlay } from '@/components/SuccessCheck';
 import { ago } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, Screen, StatusPill, styles } from '@/components/ui';
@@ -19,7 +20,8 @@ const NEXT_ACTION: Partial<Record<ReturnStatus, { label: string; notes: string[]
 
 // Detalle y seguimiento de una devolución de material
 export default function Devolucion() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, nuevo } = useLocalSearchParams<{ id: string; nuevo?: string }>();
+  const [celebrate, setCelebrate] = useState(!!nuevo);
   const { returns, role, advanceReturn, cancelReturn, chatWith } = useMine();
   const r = returns.find((x) => x.id === id);
   const isRep = role === 'visitador';
@@ -159,6 +161,7 @@ export default function Devolucion() {
         </View>
       ) : null}
       <Text style={[type.caption, { textAlign: 'center' }]}>Material de demostración de productos ficticios. No es una devolución de compra.</Text>
+      <SuccessOverlay visible={celebrate} title="¡Reporte enviado!" body={`Tu visitador revisará la devolución ${r.code}.`} onClose={() => setCelebrate(false)} />
     </Screen>
   );
 }

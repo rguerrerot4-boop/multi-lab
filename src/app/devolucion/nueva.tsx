@@ -88,7 +88,7 @@ export default function NuevaDevolucion() {
           doneLabel="Reporte enviado"
           disabled={!ready}
           onSubmit={() => (item && reason ? createReturn({ source: item.source, productId: item.productId, material: item.material, qty, reason, detail: detail.trim(), want, photos }) : null)}
-          onDone={(id) => id && router.replace(`/devolucion/${String(id)}`)}
+          onDone={(id) => id && router.replace({ pathname: '/devolucion/[id]', params: { id: String(id), nuevo: '1' } })}
         />
       }
     >

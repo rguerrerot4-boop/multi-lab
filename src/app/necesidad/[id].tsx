@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { SuccessOverlay } from '@/components/SuccessCheck';
 import { SubmitButton } from '@/components/SubmitButton';
 import { ago, DoctorStatusPill, needLabel } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
@@ -21,6 +22,7 @@ export default function Necesidad() {
   const [answer, setAnswer] = useState<string>(NEED_RESPONSES[0]);
   const [extra, setExtra] = useState('');
   const [shared, setShared] = useState<string[]>([]);
+  const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
     if (isRep && need?.status === 'Enviada') markNeedSeen(need.id);
@@ -55,7 +57,10 @@ export default function Necesidad() {
             icon="send-outline"
             doneLabel="Respuesta enviada"
             onSubmit={() => null}
-            onDone={() => respondNeed(need.id, extra.trim() ? `${answer}. ${extra.trim()}` : answer)}
+            onDone={() => {
+              respondNeed(need.id, extra.trim() ? `${answer}. ${extra.trim()}` : answer);
+              setCelebrate(true);
+            }}
           />
         ) : undefined
       }
@@ -186,6 +191,7 @@ export default function Necesidad() {
         </>
       ) : null}
       <Text style={[type.caption, { textAlign: 'center' }]}>Solicitud informativa con productos ficticios. No es un pedido ni una compra.</Text>
+      <SuccessOverlay visible={celebrate} title="¡Respuesta enviada!" body={`${doc.name} recibirá tu respuesta.`} onClose={() => setCelebrate(false)} />
     </Screen>
   );
 }
