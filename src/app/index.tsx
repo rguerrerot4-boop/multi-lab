@@ -15,6 +15,7 @@ import { colors, font } from '@/theme';
 // El logotipo nunca se rota ni se deforma: solo se mueve, aparece y escala de forma uniforme.
 
 const ease = Easing.out(Easing.cubic);
+const glide = Easing.bezier(0.16, 1, 0.3, 1); // llegada rápida que frena suave
 
 export default function Splash() {
   const { width, height } = useWindowDimensions();
@@ -36,6 +37,7 @@ export default function Splash() {
     top: new Animated.Value(0),
     bottom: new Animated.Value(0),
     play: new Animated.Value(0),
+    bump: new Animated.Value(0),
     shift: new Animated.Value(0),
     multi: new Animated.Value(0),
     lab: new Animated.Value(0),
@@ -73,11 +75,21 @@ export default function Splash() {
         return;
       }
       running.current = Animated.sequence([
-        // 1. cápsulas
-        Animated.parallel([t(v.left, 600, 0), t(v.top, 600, 80), t(v.right, 600, 160), t(v.bottom, 600, 240)]),
-        // 2. play
-        t(v.play, 360, 0, Easing.out(Easing.back(1.8))),
-        Animated.delay(100),
+        // 1 + 2. las cápsulas llegan casi juntas y, justo cuando encajan, el play aparece con efecto pop
+        // en el centro: así los cruces entre cápsulas quedan cubiertos por el play casi de inmediato
+        Animated.parallel([
+          t(v.left, 640, 0, glide),
+          t(v.top, 640, 50, glide),
+          t(v.right, 640, 100, glide),
+          t(v.bottom, 640, 150, glide),
+          Animated.sequence([
+            Animated.delay(330),
+            Animated.timing(v.bump, { toValue: 1, duration: 110, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+            Animated.timing(v.bump, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          ]),
+          Animated.spring(v.play, { toValue: 1, delay: 210, friction: 4.2, tension: 70, useNativeDriver: true }),
+        ]),
+        Animated.delay(140),
         // 3. nombre
         Animated.parallel([
           t(v.shift, 600, 0, Easing.inOut(Easing.cubic)),
@@ -112,8 +124,9 @@ export default function Splash() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // las cápsulas aparecen opacas casi de inmediato (sin fundidos a medias que ensucian los cruces)
   const enter = (val: Animated.Value, dx: number, dy: number) => ({
-    opacity: val,
+    opacity: val.interpolate({ inputRange: [0, 0.12], outputRange: [0, 1], extrapolate: 'clamp' }),
     transform: [
       { translateX: val.interpolate({ inputRange: [0, 1], outputRange: [dx * s, 0] }) },
       { translateY: val.interpolate({ inputRange: [0, 1], outputRange: [dy * s, 0] }) },
@@ -125,15 +138,23 @@ export default function Splash() {
     transformOrigin: `${(MARK_CENTER.x - VB.x) * s}px ${(MARK_CENTER.y - VB.y) * s}px`,
     transform: [
       { translateX: v.shift.interpolate({ inputRange: [0, 1], outputRange: [markShift, 0] }) },
-      { scale: v.shift.interpolate({ inputRange: [0, 1], outputRange: [1.8, 1] }) },
+      {
+        scale: Animated.multiply(
+          v.shift.interpolate({ inputRange: [0, 1], outputRange: [1.8, 1] }),
+          v.bump.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] }),
+        ),
+      },
     ],
   };
   const playScale = Animated.multiply(
-    v.play.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
+    // el resorte pasa de 1 y regresa: efecto pop
+    v.play.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1], extrapolate: 'extend' }),
     v.press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.86] }),
   );
   const playStyle = {
-    opacity: Animated.multiply(v.play, v.expand.interpolate({ inputRange: [0, 0.15], outputRange: [1, 0], extrapolate: 'clamp' })),
+    opacity: Animated.multiply(
+      v.play.interpolate({ inputRange: [0, 0.12], outputRange: [0, 1], extrapolate: 'clamp' }),
+      v.expand.interpolate({ inputRange: [0, 0.15], outputRange: [1, 0], extrapolate: 'clamp' })),
     transform: [{ scale: playScale }],
   };
   const word = (val: Animated.Value) => ({
@@ -160,10 +181,10 @@ export default function Splash() {
           >
             <Animated.View style={{ width: W, height: H, opacity: logoFade }}>
               <Animated.View style={[{ position: 'absolute', left: 0, top: 0, width: W, height: H }, markGroup]}>
-                <LogoLayer name="left" scale={s} style={enter(v.left, -46, 0)} />
-                <LogoLayer name="right" scale={s} style={enter(v.right, 46, 0)} />
-                <LogoLayer name="top" scale={s} style={enter(v.top, 0, -46)} />
-                <LogoLayer name="bottom" scale={s} style={enter(v.bottom, 0, 46)} />
+                <LogoLayer name="left" scale={s} style={enter(v.left, -70, 0)} />
+                <LogoLayer name="right" scale={s} style={enter(v.right, 70, 0)} />
+                <LogoLayer name="top" scale={s} style={enter(v.top, 0, -70)} />
+                <LogoLayer name="bottom" scale={s} style={enter(v.bottom, 0, 70)} />
                 {/* onda de selección */}
                 <Animated.View
                   pointerEvents="none"
