@@ -101,8 +101,8 @@ export function FlipCard({
         </Pressable>
         <View style={{ gap: 6 }}>
           <Pressable onPress={onOpen} style={[s.backBtn, { backgroundColor: colors.turquesa }]} accessibilityRole="button">
-            <Ionicons name="cube-outline" size={15} color={colors.petroleo} />
-            <Text style={[s.backBtnText, { color: colors.petroleo }]}>Ficha y 3D</Text>
+            <Ionicons name="document-text-outline" size={15} color={colors.petroleo} />
+            <Text style={[s.backBtnText, { color: colors.petroleo }]}>Ver ficha</Text>
           </Pressable>
           <Pressable onPress={onAction} style={[s.backBtn, { borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' }]} accessibilityRole="button">
             <Ionicons name={actionIcon} size={15} color={colors.white} />
