@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, LayoutAnimation, Platform, Pressable, ScrollView, Text, UIManager, View, useWindowDimensions } from 'react-native';
+import { HotspotCard, Product3D } from '@/components/Product3D';
 import { ProductVisual } from '@/components/ProductVisual';
 import { ShareSheet } from '@/components/ShareSheet';
 import {
@@ -38,6 +39,8 @@ export default function Producto() {
   const { width } = useWindowDimensions();
   const [tab, setTab] = useState<TabKey>('resumen');
   const [view, setView] = useState(0);
+  const [mode, setMode] = useState<'3d' | 'galeria'>('3d');
+  const [spot, setSpot] = useState<number | null>(null);
   const [share, setShare] = useState(false);
   const [open, setOpen] = useState<string | null>('datos');
   const fade = useRef(new Animated.Value(1)).current;
@@ -98,40 +101,85 @@ export default function Producto() {
         )
       }
     >
-      {/* Galería con vistas deslizables */}
+      {/* Vista del producto: 3D interactivo o galería */}
       <View style={{ gap: space.sm }}>
-        <ScrollView
-          ref={gallery}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(e) => setView(Math.round(e.nativeEvent.contentOffset.x / galleryW))}
-          style={{ borderRadius: radius.lg }}
-        >
-          {VIEWS.map((v, i) => (
-            <View key={v} style={{ width: galleryW }}>
-              <ProductVisual product={p} height={220} view={i} />
-            </View>
-          ))}
-        </ScrollView>
-        <View style={[styles.row, { justifyContent: 'center' }]}>
-          {VIEWS.map((v, i) => (
-            <Pressable
-              key={v}
-              onPress={() => goView(i)}
-              accessibilityRole="button"
-              accessibilityLabel={`Vista ${v}`}
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: radius.pill,
-                backgroundColor: view === i ? colors.primary : colors.primarySoft,
+        <Segmented
+          value={mode}
+          onChange={(m) => {
+            setMode(m);
+            setSpot(null);
+            logEvent('ficha_vista', m);
+          }}
+          options={[
+            { value: '3d', label: 'Explorar 3D', icon: 'cube-outline' },
+            { value: 'galeria', label: 'Galería', icon: 'images-outline' },
+          ]}
+        />
+        {mode === '3d' ? (
+          <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, paddingVertical: space.sm, gap: space.sm, overflow: 'hidden' }}>
+            <Product3D
+              product={p}
+              size={Math.min(galleryW - 8, 340)}
+              active={spot}
+              onActiveChange={(i) => {
+                setSpot(i);
+                if (i !== null) logEvent('punto_3d', p.hotspots?.[i]?.title);
               }}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.md }}>
+              {(p.hotspots ?? []).map((h, i) => (
+                <Pressable
+                  key={h.title}
+                  onPress={() => setSpot(spot === i ? null : i)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: spot === i }}
+                  style={[styles.chip, spot === i && { backgroundColor: colors.petroleo, borderColor: colors.petroleo }]}
+                >
+                  <Text style={{ fontFamily: font.bold, fontSize: 12, color: spot === i ? colors.turquesa : colors.primary }}>{i + 1}</Text>
+                  <Text style={[type.label, { color: spot === i ? colors.white : colors.ink }]} numberOfLines={1}>
+                    {h.title}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : (
+          <>
+            <ScrollView
+              ref={gallery}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(e) => setView(Math.round(e.nativeEvent.contentOffset.x / galleryW))}
+              style={{ borderRadius: radius.lg }}
             >
-              <Text style={{ fontFamily: font.semibold, fontSize: 11, color: view === i ? colors.white : colors.primary }}>{v}</Text>
-            </Pressable>
-          ))}
-        </View>
+              {VIEWS.map((v, i) => (
+                <View key={v} style={{ width: galleryW }}>
+                  <ProductVisual product={p} height={220} view={i} />
+                </View>
+              ))}
+            </ScrollView>
+            <View style={[styles.row, { justifyContent: 'center' }]}>
+              {VIEWS.map((v, i) => (
+                <Pressable
+                  key={v}
+                  onPress={() => goView(i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Vista ${v}`}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    borderRadius: radius.pill,
+                    backgroundColor: view === i ? colors.primary : colors.primarySoft,
+                  }}
+                >
+                  <Text style={{ fontFamily: font.semibold, fontSize: 11, color: view === i ? colors.white : colors.primary }}>{v}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+        <HotspotCard hotspot={spot === null ? null : p.hotspots?.[spot] ?? null} index={spot ?? 0} onClose={() => setSpot(null)} />
       </View>
 
       <View style={{ gap: space.sm }}>
@@ -218,9 +266,12 @@ export default function Producto() {
             <ListItem icon="albums-outline" title="Modo presentación" subtitle={`${p.slides.length} diapositivas interactivas`} onPress={() => router.push(`/presentacion/${p.id}`)} />
             <ListItem
               icon="cube-outline"
-              title="Vista 3D"
-              subtitle="Pendiente de integración con Vectary"
-              right={<Tag label="Próximamente" />}
+              title="Vista 3D simulada"
+              subtitle="Disponible arriba en «Explorar 3D». Modelo real con Vectary: pendiente"
+              onPress={() => {
+                setMode('3d');
+                setSpot(0);
+              }}
             />
           </View>
         ) : null}

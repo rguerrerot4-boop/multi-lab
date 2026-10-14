@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ProductCard } from '@/components/ProductVisual';
+import { FlipCard } from '@/components/FlipCard';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
 import { categories, products } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -115,10 +115,11 @@ export default function Catalogo() {
         }
         renderItem={({ item }) => (
           <View style={{ flex: 1 / cols }}>
-            <ProductCard
+            <FlipCard
               product={item}
-              onPress={() => open(item.id)}
+              onOpen={() => open(item.id)}
               actionLabel={role === 'visitador' ? 'Presentar' : 'Solicitar'}
+              actionIcon={role === 'visitador' ? 'play-circle-outline' : 'add-circle-outline'}
               onAction={() =>
                 role === 'visitador'
                   ? router.push(`/presentacion/${item.id}`)

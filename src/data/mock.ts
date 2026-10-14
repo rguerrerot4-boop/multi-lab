@@ -44,6 +44,14 @@ export interface Slide {
   icon: IconName;
 }
 
+export interface Hotspot {
+  face: 'front' | 'right' | 'back' | 'left' | 'top';
+  u: number; // posición horizontal en la cara (0-1)
+  v: number; // posición vertical en la cara (0-1)
+  title: string;
+  text: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -62,7 +70,17 @@ export interface Product {
   icon: IconName;
   hue: string; // color de la composición visual
   isNew?: boolean;
+  hotspots?: Hotspot[];
 }
+
+// Puntos interactivos del visor 3D (textos de demostración)
+const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
+  { face: 'front', u: 0.5, v: 0.4, title: p.name, text: `${p.tagline}. ${p.description.split('.')[0]}.` },
+  { face: 'front', u: 0.82, v: 0.8, title: 'Presentación', text: `${p.form}. Componente principal: ${p.component}.` },
+  { face: 'right', u: 0.5, v: 0.55, title: 'Usos descritos', text: `${p.uses.join(' · ')}. Texto de ejemplo, no son indicaciones aprobadas.` },
+  { face: 'back', u: 0.3, v: 0.3, title: 'Modo de uso', text: p.howTo.map((h, i) => `${i + 1}. ${h}`).join('  ') },
+  { face: 'left', u: 0.5, v: 0.7, title: 'Precauciones', text: p.precautions.join(' · ') },
+];
 
 export interface Visit {
   id: string;
@@ -308,6 +326,10 @@ export const products: Product[] = [
     hue: '#1E7F8C',
   },
 ];
+
+products.forEach((p) => {
+  p.hotspots = spots(p);
+});
 
 // ---------- Visitas ----------
 export const visits: Visit[] = [

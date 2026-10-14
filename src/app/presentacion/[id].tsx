@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ProductVisual } from '@/components/ProductVisual';
+import { Product3D } from '@/components/Product3D';
 import { ShareSheet } from '@/components/ShareSheet';
 import { Button, goBack } from '@/components/ui';
 import { personById, productById, type IconName } from '@/data/mock';
@@ -124,7 +124,9 @@ export default function Presentacion() {
             <Animated.View style={{ gap: space.lg, opacity: i === index ? anim : 1, transform: [{ translateY: i === index ? translateY : 0 }] }}>
               {pg.kind === 'cover' ? (
                 <>
-                  <ProductVisual product={p} height={Math.min(300, height * 0.36)} />
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radius.lg, paddingVertical: space.sm }}>
+                    <Product3D product={p} size={Math.min(300, height * 0.36, width - space.xl * 2)} interactive={false} />
+                  </View>
                   <Text style={[type.overline, { color: colors.turquesa }]}>
                     {p.category} · {p.lab} (ficticio)
                   </Text>
