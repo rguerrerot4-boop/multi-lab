@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ProductVisual } from '@/components/ProductVisual';
 import { ReportSummary } from '@/components/VisitReport';
+import { DoctorStatusPill } from '@/components/doctor';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, PressableScale, Screen, StatusPill, styles } from '@/components/ui';
 import { dayLabel, personById, productById, type Visit } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -14,7 +15,7 @@ const STATUSES: Visit['status'][] = ['Programada', 'Reprogramada'];
 // Detalle de visita: datos, productos a presentar, notas y registro de estado
 export default function VisitaDetalle() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { visits, role, setVisitStatus, setVisitNotes, chatWith, startVisit } = useMine();
+  const { visits, role, setVisitStatus, setVisitNotes, chatWith, startVisit, doctorStatus } = useMine();
   const v = visits.find((x) => x.id === id);
   const [notes, setNotes] = useState(v?.notes ?? '');
   const [saved, setSaved] = useState(false);
@@ -64,6 +65,11 @@ export default function VisitaDetalle() {
           <View style={{ flex: 1 }}>
             <Text style={type.h2}>{counterpart.name}</Text>
             <Text style={type.caption}>{counterpart.title}</Text>
+            {isRep ? (
+              <View style={{ marginTop: 4 }}>
+                <DoctorStatusPill status={doctorStatus[doc.id]} withTime />
+              </View>
+            ) : null}
           </View>
         </View>
         <View style={styles.row}>

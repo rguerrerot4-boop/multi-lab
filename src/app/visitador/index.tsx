@@ -3,10 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
+import { DoctorStatusPill, NeedCard } from '@/components/doctor';
 import { StartVisitSheet } from '@/components/StartVisitSheet';
 import { Avatar, BrandHeader, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { formatClock, LiveDot, useNow } from '@/components/visit';
-import { dayLabel, deliveredTotal, personById, productById, type IconName } from '@/data/mock';
+import { dayLabel, deliveredTotal, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, shadow, space, type } from '@/theme';
 
@@ -14,7 +15,9 @@ const WEEK_GOAL = 12;
 
 // Dashboard del visitador médico
 export default function VisitadorInicio() {
-  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats, activeVisitId, kit } = useMine();
+  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, myChats, activeVisitId, kit, needs, doctorStatus } = useMine();
+  const openNeeds = needs.filter((n) => n.status !== 'Atendida');
+  const newNeed = needs.find((n) => n.status === 'Enviada');
   const me = personById(userId ?? 'v1');
   const now = useNow();
   const [sheet, setSheet] = useState(false);
@@ -45,6 +48,8 @@ export default function VisitadorInicio() {
           {today.length ? `Llevas ${doneToday} de ${today.length} visitas de hoy.` : 'No tienes visitas agendadas hoy.'}
         </Text>
       </View>
+
+      {newNeed ? <NeedAlert need={newNeed} /> : null}
 
       {/* ---------- Acción rápida principal ---------- */}
       {active ? (
@@ -148,7 +153,10 @@ export default function VisitadorInicio() {
                     <Text style={type.label}>{v.time}</Text>
                     <StatusPill status={v.status} />
                   </View>
-                  <Text style={type.h3}>{d.name}</Text>
+                  <View style={[styles.row, { justifyContent: 'space-between', flexWrap: 'wrap' }]}>
+                    <Text style={type.h3}>{d.name}</Text>
+                    {!done ? <DoctorStatusPill status={doctorStatus[d.id]} /> : null}
+                  </View>
                   <Text style={type.caption} numberOfLines={1}>
                     {v.place} · {v.productIds.map((id) => productById(id)?.name).join(', ') || 'Sin productos'}
                   </Text>
@@ -193,6 +201,18 @@ export default function VisitadorInicio() {
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.inkSubtle} />
         </PressableScale>
+      ) : null}
+
+      {/* ---------- Búsquedas de producto de los médicos ---------- */}
+      {openNeeds.length ? (
+        <>
+          <SectionHeader title={`Médicos buscan productos · ${openNeeds.length}`} />
+          <View style={{ gap: space.sm }}>
+            {openNeeds.map((n) => (
+              <NeedCard key={n.id} need={n} forRep />
+            ))}
+          </View>
+        </>
       ) : null}
 
       {/* ---------- Solicitudes ---------- */}
@@ -330,5 +350,46 @@ function Shortcut({ icon, label, onPress, badge }: { icon: IconName; label: stri
       </Text>
     </PressableScale>
     </View>
+  );
+}
+
+/** Alerta destacada cuando un médico avisa que necesita un producto */
+function NeedAlert({ need }: { need: ProductNeed }) {
+  const shake = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(400),
+      ...[1, -1, 1, -1, 0].map((v) => Animated.timing(shake, { toValue: v, duration: 70, useNativeDriver: true })),
+    ]).start();
+  }, [need.id, shake]);
+  const doc = personById(need.doctorId);
+  const top = matchProducts(need.keywords)[0];
+  return (
+    <Animated.View style={{ transform: [{ translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] }}>
+      <PressableScale
+        onPress={() => router.push(`/necesidad/${need.id}`)}
+        accessibilityLabel={`${doc.name} necesita un producto`}
+        style={{ backgroundColor: colors.warningSoft, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.warning, padding: space.md, gap: space.sm }}
+      >
+        <View style={styles.row}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.warning, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="notifications" size={20} color={colors.white} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={type.label}>{doc.name} necesita un producto</Text>
+            <Text style={type.caption} numberOfLines={1}>
+              “{need.keywords.join(', ')}” · {need.urgency}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.warning} />
+        </View>
+        <View style={[styles.row, { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.sm }]}>
+          <Ionicons name={top ? 'cube-outline' : 'help-circle-outline'} size={18} color={colors.primary} />
+          <Text style={[type.caption, { flex: 1, color: colors.ink }]} numberOfLines={2}>
+            {top ? `Tienes ${top.product.name} (coincide con ${top.hits.join(', ')})` : 'Ningún producto de tu catálogo coincide. Respóndele igual.'}
+          </Text>
+        </View>
+      </PressableScale>
+    </Animated.View>
   );
 }

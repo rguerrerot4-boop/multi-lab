@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DoctorStatusPill } from '@/components/doctor';
 import { Avatar, Button, Chip, styles } from '@/components/ui';
 import { people, personById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -10,7 +11,7 @@ import { colors, radius, space, type } from '@/theme';
 
 /** Hoja para elegir con quién empezar la visita: las de hoy o una sin cita */
 export function StartVisitSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { myVisits, startVisit, addUnscheduledVisit } = useMine();
+  const { myVisits, startVisit, addUnscheduledVisit, doctorStatus } = useMine();
   const insets = useSafeAreaInsets();
   const today = myVisits
     .filter((v) => v.dayOffset === 0 && v.status !== 'Realizada')
@@ -73,6 +74,9 @@ export function StartVisitSheet({ visible, onClose }: { visible: boolean; onClos
                     <Text style={type.caption} numberOfLines={1}>
                       {v.time} · {v.place}
                     </Text>
+                    <View style={{ marginTop: 4 }}>
+                      <DoctorStatusPill status={doctorStatus[d.id]} />
+                    </View>
                   </View>
                   <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={22} color={on ? colors.primary : colors.inkSubtle} />
                 </Pressable>

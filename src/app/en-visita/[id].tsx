@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, goBack, IconButton, PressableScale, Screen, styles } from '@/components/ui';
+import { DoctorStatusPill } from '@/components/doctor';
 import { Counter, formatClock, LiveDot, useNow } from '@/components/visit';
 import {
   dayLabel,
@@ -29,7 +30,7 @@ const FOLLOW_UP = [
 // Visita en curso: datos del profesional, productos, contador de material entregado y resultado.
 export default function EnVisita() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { visits, requests, kit, startVisit, updateReport, discardVisit, chatWith } = useMine();
+  const { visits, requests, kit, startVisit, updateReport, discardVisit, chatWith, doctorStatus, needs } = useMine();
   const v = visits.find((x) => x.id === id);
   const now = useNow();
   const [adding, setAdding] = useState(false);
@@ -66,6 +67,7 @@ export default function EnVisita() {
   const past = visits.filter((x) => x.doctorId === doc.id && x.status === 'Realizada' && x.id !== v.id).sort((a, b) => b.dayOffset - a.dayOffset);
   const lastVisit = past[0];
   const openReq = requests.filter((q) => q.doctorId === doc.id && q.status !== 'Atendida' && q.status !== 'Cancelada');
+  const docNeeds = needs.filter((n) => n.doctorId === doc.id && n.status !== 'Atendida');
   const productIds = r ? Object.keys(r.deliveries) : v.productIds;
   const others = products.filter((p) => !productIds.includes(p.id));
   const total = deliveredTotal(r);
@@ -104,6 +106,9 @@ export default function EnVisita() {
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: '#A9C2C8' }} numberOfLines={1}>
             {v.place} · {doc.city}
           </Text>
+          <View style={{ marginTop: 4 }}>
+            <DoctorStatusPill status={doctorStatus[doc.id]} />
+          </View>
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -154,6 +159,13 @@ export default function EnVisita() {
             {lastVisit?.notes ? <Text style={type.bodyMuted}>Última nota: “{lastVisit.notes}”</Text> : null}
           </View>
         ) : null}
+        {docNeeds.map((n) => (
+          <PressableScale key={n.id} onPress={() => router.push(`/necesidad/${n.id}`)} style={[styles.row, { backgroundColor: colors.warningSoft, borderRadius: radius.md, padding: space.md }]}>
+            <Ionicons name="search-outline" size={18} color={colors.warning} />
+            <Text style={[type.label, { flex: 1 }]}>Busca: “{n.keywords.join(', ')}”</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkSubtle} />
+          </PressableScale>
+        ))}
         {openReq.map((q) => (
           <PressableScale key={q.id} onPress={() => router.push(`/solicitud/${q.id}`)} style={[styles.row, { backgroundColor: colors.warningSoft, borderRadius: radius.md, padding: space.md }]}>
             <Ionicons name="alert-circle-outline" size={18} color={colors.warning} />

@@ -5,6 +5,12 @@ import {
   emptyReport,
   deliveredTotal,
   INITIAL_KIT,
+  initialDoctorStatus,
+  initialNeeds,
+  matchProducts,
+  type DoctorStatus,
+  type NeedUrgency,
+  type ProductNeed,
   type DeliveryKind,
   type VisitReport,
   notices as initialNotices,
@@ -57,6 +63,12 @@ interface AppState {
   updateReport: (id: string, fn: (r: VisitReport) => VisitReport) => void;
   finishVisit: (id: string, patch?: Partial<VisitReport>) => void;
   discardVisit: (id: string) => void;
+  doctorStatus: Record<string, DoctorStatus>;
+  setMyStatus: (status: Omit<DoctorStatus, 'at'>) => void;
+  needs: ProductNeed[];
+  createNeed: (input: { keywords: string[]; note: string; urgency: NeedUrgency }) => string;
+  markNeedSeen: (id: string) => void;
+  respondNeed: (id: string, response: string) => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -73,6 +85,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<UxEvent[]>([]);
   const [kit, setKit] = useState(INITIAL_KIT);
   const [activeVisitId, setActiveVisitId] = useState<string | null>(null);
+  const [doctorStatus, setDoctorStatus] = useState(initialDoctorStatus);
+  const [needs, setNeeds] = useState(initialNeeds);
 
   const userId = role ? DEMO_USER[role] : null;
 
@@ -304,6 +318,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [logEvent],
   );
 
+  // ---------- Estado del médico y necesidades de producto ----------
+  const setMyStatus = useCallback(
+    (st: Omit<DoctorStatus, 'at'>) => {
+      const me = userId ?? 'm1';
+      setDoctorStatus((m) => ({ ...m, [me]: { ...st, at: Date.now() } }));
+      logEvent('estado_medico', st.state);
+    },
+    [userId, logEvent],
+  );
+
+  const createNeed = useCallback(
+    ({ keywords, note, urgency }: { keywords: string[]; note: string; urgency: NeedUrgency }) => {
+      const doctorId = userId ?? 'm1';
+      const id = `nd${Date.now()}`;
+      setNeeds((list) => [{ id, doctorId, keywords, note, urgency, status: 'Enviada', createdAt: Date.now() }, ...list]);
+      const matches = matchProducts(keywords);
+      pushNotice({
+        forRole: 'visitador',
+        kind: 'producto',
+        title: `${personById(doctorId).name} necesita un producto`,
+        body: matches.length
+          ? `Coincide con ${matches.slice(0, 2).map((m) => m.product.name).join(' y ')} · “${keywords.join(', ')}”`
+          : `Busca: “${keywords.join(', ')}”. Ningún producto de tu catálogo coincide.`,
+        href: `/necesidad/${id}`,
+      });
+      logEvent('necesidad_creada', keywords.join(', '));
+      return id;
+    },
+    [userId, pushNotice, logEvent],
+  );
+
+  const markNeedSeen = useCallback((id: string) => {
+    setNeeds((list) => list.map((n) => (n.id === id && n.status === 'Enviada' ? { ...n, status: 'Vista' } : n)));
+  }, []);
+
+  const respondNeed = useCallback(
+    (id: string, response: string) => {
+      const need = needs.find((n) => n.id === id);
+      setNeeds((list) => list.map((n) => (n.id === id ? { ...n, status: 'Atendida', response, respondedAt: Date.now() } : n)));
+      if (need) {
+        pushNotice({
+          forRole: 'medico',
+          kind: 'producto',
+          title: `${personById('v1').name} respondió tu búsqueda`,
+          body: `“${need.keywords.join(', ')}”: ${response}`,
+          href: `/necesidad/${id}`,
+        });
+      }
+      logEvent('necesidad_atendida', response);
+    },
+    [needs, pushNotice, logEvent],
+  );
+
   const markNoticeRead = useCallback((id: string) => {
     setNotices((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
   }, []);
@@ -341,8 +408,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateReport,
       finishVisit,
       discardVisit,
+      doctorStatus,
+      setMyStatus,
+      needs,
+      createNeed,
+      markNeedSeen,
+      respondNeed,
     }),
-    [kit, activeVisitId, startVisit, addUnscheduledVisit, updateReport, finishVisit, discardVisit, role, userId, requests, chats, visits, notices, events, login, logout, logEvent, createRequest, advanceRequest, cancelRequest, sendMessage, markChatRead, chatWith, setVisitStatus, setVisitNotes, markNoticeRead, markAllNoticesRead],
+    [doctorStatus, setMyStatus, needs, createNeed, markNeedSeen, respondNeed, kit, activeVisitId, startVisit, addUnscheduledVisit, updateReport, finishVisit, discardVisit, role, userId, requests, chats, visits, notices, events, login, logout, logEvent, createRequest, advanceRequest, cancelRequest, sendMessage, markChatRead, chatWith, setVisitStatus, setVisitNotes, markNoticeRead, markAllNoticesRead],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

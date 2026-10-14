@@ -71,6 +71,7 @@ export interface Product {
   hue: string; // color de la composición visual
   isNew?: boolean;
   hotspots?: Hotspot[];
+  keywords?: string[]; // palabras con las que el médico puede encontrarlo (descriptivas, no indicaciones)
 }
 
 // Puntos interactivos del visor 3D (textos de demostración)
@@ -302,6 +303,7 @@ export const products: Product[] = [
     ],
     icon: 'water-outline',
     hue: '#63C9D6',
+    keywords: ['limpiador', 'limpieza', 'gel', 'rostro', 'piel grasa', 'piel mixta', 'uso diario'],
   },
   {
     id: 'p2',
@@ -325,6 +327,7 @@ export const products: Product[] = [
     ],
     icon: 'leaf-outline',
     hue: '#1E7F8C',
+    keywords: ['hidratante', 'hidratación', 'emulsión', 'piel seca', 'textura ligera', 'uso diario'],
     isNew: true,
   },
   {
@@ -349,6 +352,7 @@ export const products: Product[] = [
     ],
     icon: 'bandage-outline',
     hue: '#20343A',
+    keywords: ['ceramidas', 'bálsamo', 'reparador', 'resequedad', 'piel seca', 'zonas secas', 'barrera'],
   },
   {
     id: 'p4',
@@ -372,6 +376,7 @@ export const products: Product[] = [
     ],
     icon: 'sunny-outline',
     hue: '#63C9D6',
+    keywords: ['protector solar', 'sol', 'spf', 'fotoprotección', 'bloqueador', 'fluido'],
     isNew: true,
   },
   {
@@ -394,6 +399,7 @@ export const products: Product[] = [
     ],
     icon: 'happy-outline',
     hue: '#1E7F8C',
+    keywords: ['niños', 'bebé', 'pediátrico', 'pediatría', 'crema', 'piel sensible'],
   },
 ];
 
@@ -657,6 +663,100 @@ export const notices: Notice[] = [
   { id: 'n5', forRole: 'visitador', kind: 'visita', title: 'Recordatorio de visita', body: 'Hoy 15:30 con Dra. Pamela Toscano.', at: 'Hace 4 h', read: false, href: '/visita/vs1' },
   { id: 'n6', forRole: 'visitador', kind: 'mensaje', title: '2 mensajes de Dr. Luis Ortega', body: '¿Me la puede traer en la próxima visita?', at: 'Ayer', read: true, href: '/chat/c2' },
 ];
+
+// ---------- Estado del profesional ----------
+export type DoctorState = 'libre' | 'consulta' | 'ausente';
+export interface DoctorStatus {
+  state: DoctorState;
+  until?: string; // texto corto: "hasta 16:30"
+  at: number;
+}
+export const DOCTOR_STATES: { state: DoctorState; label: string; short: string; icon: IconName }[] = [
+  { state: 'libre', label: 'Libre para visitas', short: 'Libre', icon: 'checkmark-circle' },
+  { state: 'consulta', label: 'En consulta', short: 'En consulta', icon: 'medkit' },
+  { state: 'ausente', label: 'No disponible', short: 'No disponible', icon: 'moon' },
+];
+export const initialDoctorStatus: Record<string, DoctorStatus> = {
+  m1: { state: 'libre', at: Date.now() - 20 * 60000 },
+  m2: { state: 'consulta', until: 'hasta 12:00', at: Date.now() - 45 * 60000 },
+  m3: { state: 'ausente', at: Date.now() - 3 * 3600000 },
+  m4: { state: 'consulta', until: 'por 1 hora', at: Date.now() - 10 * 60000 },
+};
+
+// ---------- Necesidad de producto (palabras clave del médico) ----------
+// El médico describe lo que busca y el visitador recibe los productos de su catálogo que coinciden.
+// No es un pedido ni una compra: el visitador responde con información, muestras o una visita.
+export type NeedUrgency = 'Sin prisa' | 'Esta semana' | 'Lo antes posible';
+export type NeedStatus = 'Enviada' | 'Vista' | 'Atendida';
+export const NEED_RESPONSES = ['Le comparto la ficha por chat', 'Llevaré muestras en la próxima visita', 'Agendemos una visita', 'No tengo un producto que coincida'] as const;
+export interface ProductNeed {
+  id: string;
+  doctorId: string;
+  keywords: string[];
+  note: string;
+  urgency: NeedUrgency;
+  status: NeedStatus;
+  createdAt: number;
+  response?: string;
+  respondedAt?: number;
+}
+export const NEED_SUGGESTIONS = ['piel seca', 'protector solar', 'hidratante', 'niños', 'limpieza', 'ceramidas', 'piel sensible', 'textura ligera'];
+
+export const initialNeeds: ProductNeed[] = [
+  {
+    id: 'nd1',
+    doctorId: 'm4',
+    keywords: ['ceramidas', 'zonas secas'],
+    note: 'Busco algo de textura densa para mostrar en consulta.',
+    urgency: 'Esta semana',
+    status: 'Enviada',
+    createdAt: Date.now() - 2 * 3600000,
+  },
+];
+
+/** quita tildes y mayúsculas para comparar palabras */
+export const normalize = (t: string) =>
+  t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+export interface ProductMatch {
+  product: Product;
+  hits: string[]; // palabras clave del médico que coincidieron
+  score: number;
+}
+
+/** Productos del catálogo que coinciden con las palabras clave, del más al menos relevante */
+export function matchProducts(keywords: string[]): ProductMatch[] {
+  const keys = keywords.map(normalize).filter(Boolean);
+  if (!keys.length) return [];
+  return products
+    .map((p) => {
+      const tags = (p.keywords ?? []).map(normalize);
+      const text = normalize([p.name, p.category, p.tagline, p.description, p.form, p.component, ...p.uses].join(' '));
+      let score = 0;
+      const hits: string[] = [];
+      keywords.forEach((k, i) => {
+        const key = keys[i];
+        if (!key) return;
+        const words = key.split(/\s+/).filter((w) => w.length > 2);
+        let pts = 0;
+        if (tags.some((t) => t === key)) pts = 3;
+        else if (tags.some((t) => t.includes(key) || ` ${key} `.includes(` ${t} `))) pts = 2;
+        else if (text.includes(key)) pts = 2;
+        else if (words.length && words.every((w) => text.includes(w) || tags.some((t) => t.includes(w)))) pts = 1;
+        if (pts) {
+          score += pts;
+          hits.push(k);
+        }
+      });
+      return { product: p, hits, score };
+    })
+    .filter((m) => m.score > 0)
+    .sort((a, b) => b.score - a.score);
+}
 
 // ---------- Utilidades ----------
 export const personById = (id: string) => people.find((p) => p.id === id)!;

@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { MyStatusCard, NeedCard, NeedSheet } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { Avatar, BrandHeader, Button, Card, ListItem, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { dayLabel, personById, productById, products } from '@/data/mock';
@@ -9,7 +11,9 @@ import { colors, radius, space, type } from '@/theme';
 
 // Dashboard del profesional de la salud
 export default function MedicoInicio() {
-  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, chatWith } = useMine();
+  const { userId, unreadNotices, unreadMessages, myRequests, myVisits, chatWith, needs } = useMine();
+  const [needOpen, setNeedOpen] = useState(false);
+  const myNeeds = needs.filter((n) => n.doctorId === (userId ?? 'm1'));
   const me = personById(userId ?? 'm1');
   const active = myRequests.filter((r) => r.status !== 'Atendida' && r.status !== 'Cancelada');
   const next = myVisits.filter((v) => v.dayOffset >= 0 && v.status !== 'Realizada').sort((a, b) => a.dayOffset - b.dayOffset)[0];
@@ -26,6 +30,34 @@ export default function MedicoInicio() {
           {me.title} · {me.org}
         </Text>
       </View>
+
+      <MyStatusCard />
+
+      <PressableScale
+        onPress={() => setNeedOpen(true)}
+        accessibilityLabel="Necesito un producto"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.primary, borderRadius: radius.lg, padding: space.lg }}
+      >
+        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="search" size={22} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[type.h3, { color: colors.white }]}>Necesito un producto</Text>
+          <Text style={[type.caption, { color: '#DDF1F4' }]}>Describe con palabras clave y avisamos a tu visitador</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.white} />
+      </PressableScale>
+
+      {myNeeds.length ? (
+        <>
+          <SectionHeader title="Mis búsquedas de producto" />
+          <View style={{ gap: space.sm }}>
+            {myNeeds.slice(0, 3).map((n) => (
+              <NeedCard key={n.id} need={n} />
+            ))}
+          </View>
+        </>
+      ) : null}
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <Kpi n={active.length} label="Solicitudes activas" icon="document-text-outline" onPress={() => router.push('/medico/solicitudes')} />
@@ -98,6 +130,7 @@ export default function MedicoInicio() {
           </PressableScale>
         ))}
       </Card>
+      <NeedSheet visible={needOpen} onClose={() => setNeedOpen(false)} />
     </Screen>
   );
 }
