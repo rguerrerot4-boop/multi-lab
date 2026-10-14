@@ -206,7 +206,7 @@ export default function VisitadorInicio() {
       {/* ---------- Búsquedas de producto de los médicos ---------- */}
       {openNeeds.length ? (
         <>
-          <SectionHeader title={`Médicos buscan productos · ${openNeeds.length}`} />
+          <SectionHeader title={`Solicitudes por palabras clave · ${openNeeds.length}`} />
           <View style={{ gap: space.sm }}>
             {openNeeds.map((n) => (
               <NeedCard key={n.id} need={n} forRep />
@@ -368,7 +368,7 @@ function NeedAlert({ need }: { need: ProductNeed }) {
     <Animated.View style={{ transform: [{ translateX: shake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] }}>
       <PressableScale
         onPress={() => router.push(`/necesidad/${need.id}`)}
-        accessibilityLabel={`${doc.name} necesita un producto`}
+        accessibilityLabel={`${doc.name} solicita un producto`}
         style={{ backgroundColor: colors.warningSoft, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.warning, padding: space.md, gap: space.sm }}
       >
         <View style={styles.row}>
@@ -376,7 +376,7 @@ function NeedAlert({ need }: { need: ProductNeed }) {
             <Ionicons name="notifications" size={20} color={colors.white} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={type.label}>{doc.name} necesita un producto</Text>
+            <Text style={type.label}>{doc.name} solicita un producto</Text>
             <Text style={type.caption} numberOfLines={1}>
               “{need.keywords.join(', ')}” · {need.urgency}
             </Text>
@@ -386,7 +386,7 @@ function NeedAlert({ need }: { need: ProductNeed }) {
         <View style={[styles.row, { backgroundColor: colors.surface, borderRadius: radius.md, padding: space.sm }]}>
           <Ionicons name={top ? 'cube-outline' : 'help-circle-outline'} size={18} color={colors.primary} />
           <Text style={[type.caption, { flex: 1, color: colors.ink }]} numberOfLines={2}>
-            {top ? `Tienes ${top.product.name} (coincide con ${top.hits.join(', ')})` : 'Ningún producto de tu catálogo coincide. Respóndele igual.'}
+            {top ? `Coincide con uno de tus productos: ${top.product.name} (por “${top.hits.join(', ')}”)` : 'No coincide con tus productos. Respóndele igual.'}
           </Text>
         </View>
       </PressableScale>

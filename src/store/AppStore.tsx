@@ -337,10 +337,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       pushNotice({
         forRole: 'visitador',
         kind: 'producto',
-        title: `${personById(doctorId).name} necesita un producto`,
+        title: `${personById(doctorId).name} solicita un producto`,
         body: matches.length
-          ? `Coincide con ${matches.slice(0, 2).map((m) => m.product.name).join(' y ')} · “${keywords.join(', ')}”`
-          : `Busca: “${keywords.join(', ')}”. Ningún producto de tu catálogo coincide.`,
+          ? `Palabras clave: “${keywords.join(', ')}”. Coincide con tu producto ${matches[0].product.name}${matches.length > 1 ? ` y ${matches.length - 1} más` : ''}.`
+          : `Palabras clave: “${keywords.join(', ')}”. No coincide con tus productos.`,
         href: `/necesidad/${id}`,
       });
       logEvent('necesidad_creada', keywords.join(', '));
@@ -361,7 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         pushNotice({
           forRole: 'medico',
           kind: 'producto',
-          title: `${personById('v1').name} respondió tu búsqueda`,
+          title: `${personById('v1').name} respondió tu solicitud`,
           body: `“${need.keywords.join(', ')}”: ${response}`,
           href: `/necesidad/${id}`,
         });

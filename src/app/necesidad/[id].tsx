@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import { ago, DoctorStatusPill, MatchList } from '@/components/doctor';
+import { ago, DoctorStatusPill } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, Screen, styles } from '@/components/ui';
 import { matchProducts, NEED_RESPONSES, personById, type NeedStatus } from '@/data/mock';
@@ -27,7 +27,7 @@ export default function Necesidad() {
 
   if (!need) {
     return (
-      <Screen header={<AppHeader title="Búsqueda de producto" />}>
+      <Screen header={<AppHeader title="Solicitud de producto" />}>
         <EmptyState icon="search-outline" title="No encontrada" body="" />
       </Screen>
     );
@@ -46,7 +46,7 @@ export default function Necesidad() {
 
   return (
     <Screen
-      header={<AppHeader title="Búsqueda de producto" subtitle={`${isRep ? doc.name : 'Enviada'} · ${ago(need.createdAt)}`} />}
+      header={<AppHeader title={isRep ? 'Solicitud de producto' : 'Mi solicitud de producto'} subtitle={`${isRep ? doc.name : 'Enviada'} · ${ago(need.createdAt)}`} />}
       footer={
         isRep && need.status !== 'Atendida' ? (
           <Button
@@ -115,13 +115,15 @@ export default function Necesidad() {
         </Card>
       ) : null}
 
-      {/* coincidencias */}
+      {/* coincidencias: solo las ve el visitador */}
+      {isRep ? (
+      <>
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
-        <Text style={type.h2}>{isRep ? 'Productos que coinciden' : 'Coincidencias en el catálogo'}</Text>
+        <Text style={type.h2}>Coincide con tus productos</Text>
         <Text style={type.label}>{matches.length}</Text>
       </View>
       {matches.length ? (
-        isRep ? (
+        (
           <View style={{ gap: space.sm }}>
             {matches.map((m, i) => (
               <Card key={m.product.id} style={i === 0 ? { borderColor: colors.primary, borderWidth: 1.5 } : undefined}>
@@ -160,14 +162,14 @@ export default function Necesidad() {
               </Card>
             ))}
           </View>
-        ) : (
-          <MatchList matches={matches} onPress={(pid) => router.push(`/producto/${pid}`)} />
         )
       ) : (
         <Card>
-          <Text style={type.bodyMuted}>Ningún producto del catálogo coincide con estas palabras.{isRep ? ' Puedes responder igual para que el médico sepa que lo viste.' : ''}</Text>
+          <Text style={type.bodyMuted}>Ninguno de tus productos coincide con estas palabras. Puedes responder igual para que el médico sepa que lo viste.</Text>
         </Card>
       )}
+      </>
+      ) : null}
 
       {isRep && need.status !== 'Atendida' ? (
         <>
@@ -180,7 +182,7 @@ export default function Necesidad() {
           <Field label="Mensaje adicional (opcional)" value={extra} onChangeText={setExtra} placeholder="Ej.: paso el jueves por la tarde" multiline />
         </>
       ) : null}
-      <Text style={[type.caption, { textAlign: 'center' }]}>Búsqueda informativa con productos ficticios. No es un pedido ni una compra.</Text>
+      <Text style={[type.caption, { textAlign: 'center' }]}>Solicitud informativa con productos ficticios. No es un pedido ni una compra.</Text>
     </Screen>
   );
 }

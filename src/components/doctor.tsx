@@ -14,7 +14,6 @@ import {
   type DoctorState,
   type DoctorStatus,
   type NeedUrgency,
-  type ProductMatch,
   type ProductNeed,
 } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -126,37 +125,6 @@ export function MyStatusCard() {
   );
 }
 
-/** Lista corta de coincidencias del catálogo */
-export function MatchList({ matches, onPress, compact }: { matches: ProductMatch[]; onPress?: (id: string) => void; compact?: boolean }) {
-  return (
-    <View style={{ gap: space.sm }}>
-      {matches.map((m, i) => (
-        <PressableScale key={m.product.id} onPress={() => onPress?.(m.product.id)} style={[styles.listItem, i === 0 && { borderColor: colors.primary }]} accessibilityLabel={`${m.product.name}, coincide con ${m.hits.join(', ')}`}>
-          <View style={{ width: compact ? 40 : 52 }}>
-            <ProductVisual product={m.product} height={compact ? 40 : 52} />
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <View style={[styles.row, { gap: 6 }]}>
-              <Text style={[type.h3, { flexShrink: 1 }]} numberOfLines={1}>
-                {m.product.name}
-              </Text>
-              {i === 0 ? (
-                <View style={[styles.pill, { backgroundColor: colors.primary, paddingVertical: 2 }]}>
-                  <Text style={[styles.pillText, { color: colors.white, fontSize: 10 }]}>Mejor coincidencia</Text>
-                </View>
-              ) : null}
-            </View>
-            <Text style={type.caption} numberOfLines={1}>
-              Coincide con: {m.hits.join(', ')}
-            </Text>
-          </View>
-          {onPress ? <Ionicons name="chevron-forward" size={18} color={colors.inkSubtle} /> : null}
-        </PressableScale>
-      ))}
-    </View>
-  );
-}
-
 const URGENCY: NeedUrgency[] = ['Sin prisa', 'Esta semana', 'Lo antes posible'];
 
 /** Ventana del médico: "Necesito un producto" con palabras clave */
@@ -194,7 +162,6 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
     setText('');
   };
   const allKeys = text.trim().length > 1 ? [...keys, text.trim()] : keys;
-  const matches = matchProducts(allKeys);
   const send = () => {
     const id = createNeed({ keywords: allKeys, note: note.trim(), urgency });
     setSent(id);
@@ -215,9 +182,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
               </View>
               <Text style={[type.h2, { textAlign: 'center' }]}>Tu visitador ya fue avisado</Text>
               <Text style={[type.bodyMuted, { textAlign: 'center' }]}>
-                {matches.length
-                  ? `Le llegó una alerta con ${matches.length === 1 ? 'el producto que coincide' : `los ${matches.length} productos que coinciden`} con “${allKeys.join(', ')}”.`
-                  : `Le llegó tu búsqueda “${allKeys.join(', ')}”. Te responderá aunque no haya coincidencias en su catálogo.`}
+                Le llegó tu solicitud con las palabras clave “{allKeys.join(', ')}”. Te avisaremos cuando la vea y te responda.
               </Text>
               <View style={{ width: '100%', gap: space.sm }}>
                 <Button
@@ -234,7 +199,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
           ) : (
             <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ padding: space.lg, gap: space.md }} keyboardShouldPersistTaps="handled">
               <Text style={type.h2}>Necesito un producto</Text>
-              <Text style={type.bodyMuted}>Escribe palabras clave de lo que buscas. Tu visitador recibirá los productos de su catálogo que coincidan.</Text>
+              <Text style={type.bodyMuted}>Describe con palabras clave lo que necesitas. Tu visitador recibirá la solicitud y verá si coincide con alguno de sus productos.</Text>
 
               <Text style={type.label}>Palabras clave</Text>
               <View style={[styles.input, { flexWrap: 'wrap', paddingVertical: 8, borderColor: keys.length ? colors.primary : colors.border, minHeight: 54 }]}>
@@ -269,20 +234,6 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
                 ))}
               </View>
 
-              <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: space.md, gap: space.sm }}>
-                <View style={[styles.row, { justifyContent: 'space-between' }]}>
-                  <Text style={type.label}>Coincidencias en el catálogo</Text>
-                  <Text style={[type.caption, { color: matches.length ? colors.primary : colors.inkMuted }]}>{allKeys.length ? `${matches.length}` : '—'}</Text>
-                </View>
-                {!allKeys.length ? (
-                  <Text style={type.caption}>Aparecerán aquí mientras escribes.</Text>
-                ) : matches.length ? (
-                  <MatchList matches={matches.slice(0, 3)} compact />
-                ) : (
-                  <Text style={type.caption}>Sin coincidencias. Igual puedes enviarlo: tu visitador te responderá.</Text>
-                )}
-              </View>
-
               <Text style={type.label}>¿Para cuándo?</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                 {URGENCY.map((u) => (
@@ -291,7 +242,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
               </View>
               <Field label="Comentario (opcional)" value={note} onChangeText={setNote} placeholder="Ej.: quiero conocer texturas o material de apoyo" multiline />
               <Text style={type.caption}>No incluyas datos de pacientes. Esto no es un pedido ni una compra.</Text>
-              <Button label="Avisar a mi visitador" icon="notifications-outline" disabled={!allKeys.length} onPress={send} />
+              <Button label="Enviar solicitud al visitador" icon="notifications-outline" disabled={!allKeys.length} onPress={send} />
             </ScrollView>
           )}
         </View>
@@ -308,7 +259,7 @@ const NEED_STYLE: Record<ProductNeed['status'], { bg: string; fg: string }> = {
 
 /** Tarjeta de una búsqueda de producto (para ambos roles) */
 export function NeedCard({ need, forRep }: { need: ProductNeed; forRep?: boolean }) {
-  const matches = matchProducts(need.keywords);
+  const matches = forRep ? matchProducts(need.keywords) : [];
   const doc = personById(need.doctorId);
   const st = NEED_STYLE[need.status];
   return (
@@ -319,7 +270,7 @@ export function NeedCard({ need, forRep }: { need: ProductNeed; forRep?: boolean
     >
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
         <Text style={type.label} numberOfLines={1}>
-          {forRep ? doc.name : 'Tu búsqueda'} · {ago(need.createdAt)}
+          {forRep ? doc.name : 'Tu solicitud'} · {ago(need.createdAt)}
         </Text>
         <View style={[styles.pill, { backgroundColor: st.bg }]}>
           <Text style={[styles.pillText, { color: st.fg }]}>{need.status === 'Enviada' && forRep ? 'Nueva' : need.status}</Text>
@@ -334,8 +285,7 @@ export function NeedCard({ need, forRep }: { need: ProductNeed; forRep?: boolean
         ))}
       </View>
       <Text style={type.caption} numberOfLines={2}>
-        {matches.length ? `Coincide con: ${matches.map((m) => m.product.name).join(', ')}` : 'Sin coincidencias en el catálogo'}
-        {' · '}
+        {forRep ? (matches.length ? `Coincide con tus productos: ${matches.map((m) => m.product.name).join(', ')} · ` : 'No coincide con tus productos · ') : ''}
         {need.urgency}
       </Text>
       {need.response ? (
