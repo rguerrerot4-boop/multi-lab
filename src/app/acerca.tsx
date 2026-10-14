@@ -6,7 +6,7 @@ export default function Acerca() {
   return (
     <Screen header={<AppHeader title="Acerca de Multi LAB" />}>
       <Card style={{ alignItems: 'center' }}>
-        <Image source={logoFull} style={{ width: 200, height: 48 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
+        <Image source={logoFull} style={{ width: 200, height: 52 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
         <Text style={[type.bodyMuted, { textAlign: 'center' }]}>
           Experiencia multimedia interactiva para la presentación digital de productos farmacéuticos dirigida a visitadores médicos y
           profesionales de la salud.

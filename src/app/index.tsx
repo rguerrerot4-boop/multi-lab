@@ -22,7 +22,7 @@ export default function Welcome() {
       <View style={{ flex: 1, padding: space.xl, justifyContent: 'space-between' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.xl }}>
           <Animated.View style={{ opacity: fade, alignItems: 'center', gap: space.md, transform: [{ translateY: lift }] }}>
-            <Image source={logoFull} style={{ width: 280, height: 68, marginBottom: space.md }} resizeMode="contain" accessibilityLabel="Multi LAB" />
+            <Image source={logoFull} style={{ width: 280, height: 73, marginBottom: space.md }} resizeMode="contain" accessibilityLabel="Multi LAB" />
             <Text style={[type.h2, { textAlign: 'center' }]}>Menos materiales.{'\n'}Más conexión.</Text>
             <Text style={[type.bodyMuted, { textAlign: 'center', maxWidth: 320 }]}>
               Presenta productos, comunícate y da seguimiento a cada visita médica desde un solo lugar.

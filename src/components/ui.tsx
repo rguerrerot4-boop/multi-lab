@@ -89,7 +89,7 @@ export function AppHeader({
             {title}
           </Text>
         ) : (
-          <Image source={logoFull} style={{ width: 112, height: 27 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
+          <Image source={logoFull} style={{ width: 112, height: 29 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
         )}
         {subtitle ? (
           <Text style={[type.caption, { textAlign: 'center' }]} numberOfLines={1}>
@@ -105,7 +105,7 @@ export function AppHeader({
 export function BrandHeader({ unread, onBell }: { unread: number; onBell: () => void }) {
   return (
     <View style={[styles.header, { paddingHorizontal: space.lg }]}>
-      <Image source={logoFull} style={{ width: 124, height: 30 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
+      <Image source={logoFull} style={{ width: 124, height: 32 }} resizeMode="contain" accessibilityLabel="Multi LAB" />
       <View style={{ flex: 1 }} />
       <View>
         <IconButton icon="notifications-outline" label="Notificaciones" onPress={onBell} />
