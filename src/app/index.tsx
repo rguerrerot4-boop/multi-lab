@@ -1,10 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, PanResponder, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LogoLayer, MARK_CENTER, PLAY_CENTER, VB } from '@/components/AnimatedLogo';
 import Login from '@/app/auth/login';
 import { colors, font } from '@/theme';
 
 // Splash animado (se dibuja ENCIMA del inicio de sesión, que ya está cargado debajo):
+// 0. Una burbuja de vidrio espera abajo; al deslizarla hacia arriba sube al centro y se contrae:
+//    ahí empieza la animación del logo (si no se toca, sube sola a los pocos segundos).
 // 1. Las cuatro cápsulas entran desde sus lados y forman la cruz.
 // 2. Aparece el botón de play.
 // 3. El símbolo se reduce y entra el nombre MULTI LAB.
@@ -28,6 +32,11 @@ export default function Splash() {
   const pcy = (PLAY_CENTER.y - VB.y) * s;
   const playSize = 40 * s; // diámetro aproximado del play en su tamaño final
   const [visible, setVisible] = useState(true);
+  const [phase, setPhase] = useState<'intro' | 'logo'>('intro');
+  const B = Math.min(width * 0.6, 250); // diámetro de la burbuja
+  const restY = height / 2 - B * 0.2; // distancia del centro de la pantalla a la burbuja en reposo
+  const intro = useRef({ lift: new Animated.Value(0), pop: new Animated.Value(0), idle: new Animated.Value(0) }).current;
+  const launched = useRef(false);
   const skipped = useRef(false);
   const running = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -56,24 +65,88 @@ export default function Splash() {
   };
 
   const skip = () => {
+    if (!launched.current) return launch();
     if (skipped.current) return;
     skipped.current = true;
     running.current?.stop();
     reveal(260);
   };
 
+  const cancelledRef = useRef(false);
   useEffect(() => {
-    let cancelled = false;
-    const t = (val: Animated.Value, duration: number, delay = 0, easing = ease) =>
-      Animated.timing(val, { toValue: 1, duration, delay, easing, useNativeDriver: true });
-
+    cancelledRef.current = false;
     AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-      if (cancelled) return;
+      if (cancelledRef.current) return;
       if (reduce) {
+        launched.current = true;
+        setPhase('logo');
         [v.left, v.right, v.top, v.bottom, v.play, v.shift, v.multi, v.lab, v.dot].forEach((a) => a.setValue(1));
-        setTimeout(() => !cancelled && skip(), 900);
+        setTimeout(() => !cancelledRef.current && skip(), 900);
         return;
       }
+      // la burbuja "respira" mientras espera
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(intro.idle, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(intro.idle, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ).start();
+    });
+    // si nadie desliza, sube sola
+    const auto = setTimeout(() => launch(), 6000);
+    return () => {
+      cancelledRef.current = true;
+      clearTimeout(auto);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // la burbuja termina de subir, se contrae y arranca el logo
+  const launch = (velocity = 0) => {
+    if (launched.current) return;
+    launched.current = true;
+    intro.idle.stopAnimation();
+    Animated.timing(intro.lift, {
+      toValue: 1,
+      duration: velocity > 1.2 ? 280 : 420,
+      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
+      useNativeDriver: true,
+    }).start(() => {
+      setPhase('logo');
+      Animated.timing(intro.pop, { toValue: 1, duration: 460, easing: Easing.in(Easing.back(1.4)), useNativeDriver: true }).start();
+      runLogo();
+    });
+  };
+
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !launched.current,
+      onMoveShouldSetPanResponder: (_, g) => !launched.current && Math.abs(g.dy) > 4,
+      onPanResponderGrant: () => intro.idle.stopAnimation(),
+      onPanResponderMove: (_, g) => {
+        if (launched.current) return;
+        // sube con el dedo; hacia abajo apenas cede (resistencia)
+        const p = g.dy < 0 ? Math.min(1, -g.dy / restY) : -Math.min(0.08, g.dy / restY / 4);
+        intro.lift.setValue(p);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (launched.current) return;
+        const p = -g.dy / restY;
+        if (p > 0.3 || g.vy < -0.6 || Math.abs(g.dy) < 6) launch(-g.vy);
+        else Animated.spring(intro.lift, { toValue: 0, stiffness: 260, damping: 18, useNativeDriver: true }).start();
+      },
+      onPanResponderTerminate: () => {
+        if (!launched.current) Animated.spring(intro.lift, { toValue: 0, stiffness: 260, damping: 18, useNativeDriver: true }).start();
+      },
+    }),
+  ).current;
+
+  const runLogo = () => {
+    const cancelled = cancelledRef.current;
+    if (cancelled) return;
+    const t = (val: Animated.Value, duration: number, delay = 0, easing = ease) =>
+      Animated.timing(val, { toValue: 1, duration, delay, easing, useNativeDriver: true });
+    {
       running.current = Animated.sequence([
         // 1 + 2. las cápsulas llegan casi juntas y, justo cuando encajan, el play aparece con efecto pop
         // en el centro: así los cruces entre cápsulas quedan cubiertos por el play casi de inmediato
@@ -112,17 +185,13 @@ export default function Splash() {
         ]),
       ]);
       running.current.start(({ finished }) => {
-        if (finished && !cancelled && !skipped.current) {
+        if (finished && !cancelledRef.current && !skipped.current) {
           skipped.current = true;
           reveal(380);
         }
       });
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    }
+  };
 
   // las cápsulas aparecen opacas casi de inmediato (sin fundidos a medias que ensucian los cruces)
   const enter = (val: Animated.Value, dx: number, dy: number) => ({
@@ -174,9 +243,9 @@ export default function Splash() {
           style={[StyleSheet.absoluteFill, { opacity: v.reveal.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}
         >
           <Pressable
-            onPress={skip}
+            onPress={phase === 'logo' ? skip : undefined}
             accessibilityRole="button"
-            accessibilityLabel="Multi LAB. Toca para continuar"
+            accessibilityLabel={phase === 'logo' ? 'Multi LAB. Toca para continuar' : 'Multi LAB. Desliza hacia arriba para entrar'}
             style={{ flex: 1, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
           >
             <Animated.View style={{ width: W, height: H, opacity: logoFade }}>
@@ -249,9 +318,122 @@ export default function Splash() {
             >
               Menos materiales. Más conexión.
             </Animated.Text>
+
+            {/* 0. burbuja de vidrio para deslizar */}
+            <IntroBubble B={B} restY={restY} lift={intro.lift} pop={intro.pop} idle={intro.idle} pan={pan.panHandlers} onTap={() => launch()} />
           </Pressable>
         </Animated.View>
       ) : null}
     </View>
+  );
+}
+
+type Handlers = ReturnType<typeof PanResponder.create>['panHandlers'];
+
+/** Burbuja de vidrio que se desliza hacia arriba y se contrae en el centro, donde nace el logo */
+function IntroBubble({
+  B,
+  restY,
+  lift,
+  pop,
+  idle,
+  pan,
+  onTap,
+}: {
+  B: number;
+  restY: number;
+  lift: Animated.Value;
+  pop: Animated.Value;
+  idle: Animated.Value;
+  pan: Handlers;
+  onTap: () => void;
+}) {
+  const hint = lift.interpolate({ inputRange: [-0.1, 0, 0.25], outputRange: [1, 1, 0], extrapolate: 'clamp' });
+  return (
+    <>
+      {/* frase superior: la burbuja la "atraviesa" al subir */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: '30%',
+          left: 32,
+          right: 32,
+          alignItems: 'center',
+          opacity: Animated.multiply(lift.interpolate({ inputRange: [0, 0.35, 0.6], outputRange: [1, 1, 0], extrapolate: 'clamp' }), pop.interpolate({ inputRange: [0, 0.01], outputRange: [1, 0], extrapolate: 'clamp' })),
+          transform: [{ scale: lift.interpolate({ inputRange: [0, 0.6], outputRange: [1, 1.08], extrapolate: 'clamp' }) }],
+        }}
+      >
+        <Text style={{ fontFamily: font.semibold, fontSize: 22, lineHeight: 30, color: colors.ink, textAlign: 'center' }}>
+          La visita médica,{'\n'}más cerca.
+        </Text>
+      </Animated.View>
+
+      <Animated.View
+        {...pan}
+        style={{
+          position: 'absolute',
+          width: B,
+          height: B,
+          borderRadius: B / 2,
+          // @ts-expect-error solo web: evita que el navegador use el gesto para desplazar
+          touchAction: 'none',
+          cursor: 'grab',
+          opacity: pop.interpolate({ inputRange: [0, 0.75, 1], outputRange: [1, 1, 0] }),
+          transform: [
+            { translateY: lift.interpolate({ inputRange: [-0.1, 1], outputRange: [restY + restY * 0.1, 0] }) },
+            {
+              scale: Animated.multiply(
+                Animated.multiply(
+                  lift.interpolate({ inputRange: [0, 1], outputRange: [1, 0.86], extrapolate: 'clamp' }),
+                  idle.interpolate({ inputRange: [0, 1], outputRange: [1, 1.035] }),
+                ),
+                pop.interpolate({ inputRange: [0, 1], outputRange: [1, 0.3] }),
+              ),
+            },
+          ],
+          shadowColor: colors.primary,
+          shadowOpacity: 0.18,
+          shadowRadius: 22,
+          shadowOffset: { width: 0, height: 10 },
+          elevation: 6,
+        }}
+      >
+        <View accessible accessibilityRole="button" accessibilityLabel="Entrar a Multi LAB" onAccessibilityTap={onTap} style={{ flex: 1 }}>
+          {/* aro de vidrio con los colores de marca */}
+          <LinearGradient
+            colors={[colors.surface, colors.turquesa, colors.primary]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={{ flex: 1, borderRadius: B / 2, padding: 2 }}
+          >
+            <View style={{ flex: 1, borderRadius: B / 2, backgroundColor: colors.glass, overflow: 'hidden' }}>
+              {/* brillo de la parte inferior: se enciende al empezar a deslizar y se apaga al subir */}
+              <Animated.View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { opacity: lift.interpolate({ inputRange: [0, 0.06, 0.5, 1], outputRange: [0.45, 1, 0.5, 0.15], extrapolate: 'clamp' }) },
+                ]}
+              >
+                <LinearGradient colors={[colors.clear, colors.clear, colors.accentSoft, colors.turquesa]} locations={[0, 0.55, 0.8, 1]} style={{ flex: 1 }} />
+              </Animated.View>
+              {/* reflejo superior */}
+              <View style={{ position: 'absolute', top: B * 0.1, left: B * 0.2, width: B * 0.32, height: B * 0.12, borderRadius: B, backgroundColor: colors.surface, opacity: 0.9, transform: [{ rotate: '-18deg' }] }} />
+            </View>
+          </LinearGradient>
+        </View>
+      </Animated.View>
+
+      {/* indicación inferior */}
+      <Animated.View
+        pointerEvents="none"
+        style={{ position: 'absolute', bottom: 36, alignItems: 'center', gap: 2, opacity: Animated.multiply(hint, pop.interpolate({ inputRange: [0, 0.01], outputRange: [1, 0], extrapolate: 'clamp' })) }}
+      >
+        <Animated.View style={{ transform: [{ translateY: idle.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }] }}>
+          <Ionicons name="chevron-up" size={20} color={colors.primary} />
+        </Animated.View>
+        <Text style={{ fontFamily: font.medium, fontSize: 13, color: colors.inkMuted }}>Desliza hacia arriba para entrar</Text>
+      </Animated.View>
+    </>
   );
 }

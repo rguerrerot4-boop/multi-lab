@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { playWelcome } from '@/components/WelcomeTransition';
 import { AppHeader, Button, Card, Field, Screen, Segmented, styles } from '@/components/ui';
 import { DEMO_USER, personById, type Role } from '@/data/mock';
 import { useApp } from '@/store/AppStore';
@@ -41,11 +42,20 @@ export default function Login() {
     setErrors(e);
     if (Object.keys(e).length) return;
     setLoading(true);
+    // el botón muestra su carga un momento y luego entra la animación de bienvenida
+    const me = personById(DEMO_USER[role]);
     setTimeout(() => {
-      setLoading(false);
-      login(role);
-      router.replace(role === 'medico' ? '/medico' : '/visitador');
-    }, 600);
+      playWelcome({
+        title: me.name,
+        subtitle: role === 'medico' ? me.title : me.org.replace(' (ficticio)', ''),
+        greeting: me.name.startsWith('Dra.') ? 'Bienvenida' : 'Bienvenido',
+        onCovered: () => {
+          setLoading(false);
+          login(role);
+          router.replace(role === 'medico' ? '/medico' : '/visitador');
+        },
+      });
+    }, 450);
   };
 
   return (
