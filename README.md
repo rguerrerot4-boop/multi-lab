@@ -18,6 +18,14 @@ npx expo start
 - **En el celular:** escanea el código QR con Expo Go (Android) o con la cámara (iPhone). El celular y la computadora deben estar en la misma red Wi‑Fi.
 - **En el navegador:** presiona `w` en la terminal.
 
+### En iPhone con Expo Go
+
+1. Instala **Expo Go** desde la App Store y ábrela una vez.
+2. En la computadora, dentro de la carpeta del proyecto, ejecuta `npx expo start`. Si el iPhone no está en la misma red Wi‑Fi que la computadora (por ejemplo, en la universidad), usa `npm run celular`, que abre un túnel por internet. La primera vez puede pedir instalar `@expo/ngrok`: responde que sí.
+3. Escanea el código QR con la **cámara** del iPhone y toca el aviso “Abrir en Expo Go”.
+
+La app solo funciona mientras la terminal sigue abierta. Expo Go tiene que ser compatible con el SDK del proyecto (Expo SDK 57); si dice que el proyecto es incompatible, actualiza Expo Go desde la App Store. En el iPhone, el mapa usa Apple Maps y el AR abre AR Quick Look.
+
 ### Cuentas de demostración
 
 En la pantalla de inicio de sesión, elige el perfil y pulsa **“Completar con cuenta demo”**:

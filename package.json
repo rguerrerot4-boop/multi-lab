@@ -33,6 +33,7 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "celular": "expo start --tunnel",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit"
   },
