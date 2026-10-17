@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
 import { productById, type IconName } from '@/data/mock';
-import { AR_SIZE_CM, openAR, type ArResult } from '@/lib/ar';
+import { AR_SIZE_CM, arDevice, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -37,7 +37,8 @@ export default function ArScreen() {
   if (!p) return null;
   const stageW = Math.min(width - space.lg * 2, 480);
   const stageH = 300;
-  const isWeb = Platform.OS === 'web';
+  // en la computadora no hay cámara para la AR: solo vista previa
+  const device = arDevice();
 
   const launch = async () => {
     setBusy(true);
@@ -163,19 +164,19 @@ export default function ArScreen() {
           <Notice
             icon="alert-circle-outline"
             text={
-              Platform.OS === 'android'
+              device === 'android'
                 ? 'No se pudo abrir la AR. Instala o actualiza “Servicios de Google Play para RA” (ARCore) y la app de Google desde Play Store.'
                 : 'No se pudo abrir la AR. Se necesita un iPhone o iPad con iOS 12 o superior y Safari.'
             }
           />
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
-        {isWeb ? (
-          <Notice icon="information-circle-outline" text="La realidad aumentada usa la cámara del celular: pruébala en la app instalada (Expo Go o APK). Aquí solo ves la vista previa." />
+        {!device ? (
+          <Notice icon="information-circle-outline" text="La realidad aumentada usa la cámara del celular: abre Multi LAB en tu teléfono. Aquí solo ves la vista previa." />
         ) : null}
 
         <View style={{ gap: space.sm }}>
-          <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={isWeb} onPress={launch} />
+          <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={!device} onPress={launch} />
           <Pressable
             onPress={() => router.replace(`/visor/${p.id}`)}
             accessibilityRole="button"

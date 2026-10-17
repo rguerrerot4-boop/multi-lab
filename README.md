@@ -18,6 +18,15 @@ npx expo start
 - **En el celular:** escanea el código QR con Expo Go (Android) o con la cámara (iPhone). El celular y la computadora deben estar en la misma red Wi‑Fi.
 - **En el navegador:** presiona `w` en la terminal.
 
+### Versión web (con ícono en el celular)
+
+La versión web se publica sola en GitHub Pages cada vez que cambia la rama `main` (flujo `.github/workflows/web.yml`). Hay que activarlo una vez en GitHub: **Settings → Pages → Source: GitHub Actions**. Queda en `https://rguerrerot4-boop.github.io/multi-lab/`.
+
+- **En iPhone:** ábrela en Safari → botón Compartir → **Agregar a inicio**. Queda con el ícono de Multi LAB y se abre a pantalla completa.
+- **En Android:** ábrela en Chrome → menú ⋮ → **Agregar a la pantalla principal** (o **Instalar app**).
+- Para probar la compilación en tu computadora: `npx expo export --platform web --output-dir dist-web` y `node scripts/web/pwa.mjs dist-web`.
+- Si el repositorio pasa a privado, GitHub Pages deja de ser gratis: se puede publicar la carpeta `dist-web` en Netlify o Cloudflare Pages.
+
 ### En iPhone con Expo Go
 
 1. Instala **Expo Go** desde la App Store y ábrela una vez.
@@ -68,8 +77,8 @@ Para ver ambos lados de una solicitud: créala como profesional, cierra sesión,
 
 - Funciona **sin servidor**: los datos están en `src/data/mock.ts` y los cambios se guardan solo durante la sesión.
 - **Requerirían integraciones adicionales:** mensajería en tiempo real, documentos autorizados y vista 3D con Vectary.
-- **AR:** funciona en el celular (Expo Go o APK) con internet. En Android necesita “Servicios de Google Play para RA”; en iPhone, iOS 12 o superior. En el navegador solo se ve la vista previa. Para regenerar los modelos: `node --experimental-strip-types scripts/ar/export-products.mts` y `python3 scripts/ar/build_models.py` (requiere `pip install usd-core pillow`).
-- **Mapa:** en Expo Go usa el mapa real del teléfono, pide permiso de ubicación y busca lugares de salud cercanos en OpenStreetMap (gratuito, sin clave). En la vista web el mapa es ilustrativo. Para generar el APK de Android hay que agregar una clave de Google Maps en `app.json` (plugin `react-native-maps`).
+- **AR:** funciona en el celular (Expo Go o APK) con internet. En Android necesita “Servicios de Google Play para RA”; en iPhone, iOS 12 o superior. En la versión web también se abre desde el navegador del celular (Safari en iPhone, Chrome en Android); en la computadora solo se ve la vista previa. Para regenerar los modelos: `node --experimental-strip-types scripts/ar/export-products.mts` y `python3 scripts/ar/build_models.py` (requiere `pip install usd-core pillow`).
+- **Mapa:** en Expo Go usa el mapa real del teléfono, pide permiso de ubicación y busca lugares de salud cercanos en OpenStreetMap (gratuito, sin clave). En la versión web el mapa es real (Leaflet con mapas de OpenStreetMap/CARTO, también sin clave). Para generar el APK de Android hay que agregar una clave de Google Maps en `app.json` (plugin `react-native-maps`).
 - El material entregado es de demostración y la firma es solo un acuse de recibo: la app no registra ventas, pedidos ni dispensación, y la firma no tiene validez legal.
 - La pantalla **Perfil → Métricas de la prueba** registra los eventos de interacción de la sesión, para pruebas de usabilidad controladas. No son métricas reales de uso.
 

@@ -1,6 +1,7 @@
 // Realidad aumentada sin Unity: la app abre el visor de AR del propio sistema operativo.
 // - Android: Scene Viewer de Google (usa ARCore) con el modelo .glb.
 // - iPhone/iPad: AR Quick Look de Apple (Safari) con el modelo .usdz.
+// En la versión web pasa lo mismo desde el navegador del celular; en la computadora solo hay vista previa.
 // Los modelos están en la carpeta /ar del repositorio y se sirven por jsDelivr (gratis, sin clave).
 import * as IntentLauncher from 'expo-intent-launcher';
 import { Linking, Platform } from 'react-native';
@@ -17,10 +18,50 @@ export const arModelUrls = (id: string) => ({ glb: `${BASE}/${id}.glb`, usdz: `$
 
 export type ArResult = 'abierto' | 'no-compatible' | 'solo-celular';
 
+/** Sistema del teléfono donde se abriría la AR (en web se deduce del navegador); null en computadora */
+export function arDevice(): 'android' | 'ios' | null {
+  if (Platform.OS === 'android' || Platform.OS === 'ios') return Platform.OS;
+  if (typeof navigator === 'undefined') return null;
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) return 'android';
+  // el iPad con iPadOS se presenta como Mac, pero tiene pantalla táctil
+  if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+  return null;
+}
+
 const sceneViewerUrl = (p: Product, mode: 'ar_preferred' | 'ar_only') =>
   `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(arModelUrls(p.id).glb)}&mode=${mode}&title=${encodeURIComponent(`${p.name} · producto ficticio`)}&resizable=true`;
 
+// Web en Android: el navegador abre Scene Viewer con un enlace "intent"; si no está, vuelve a esta página
+function openSceneViewerWeb(p: Product) {
+  const fallback = encodeURIComponent(window.location.href);
+  const target = sceneViewerUrl(p, 'ar_only').replace('https://', '');
+  window.location.href = `intent://${target}#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${fallback};end;`;
+}
+
+// Web en iPhone: Safari abre AR Quick Look con un enlace rel="ar" que contiene una imagen
+function openQuickLookWeb(p: Product) {
+  const a = document.createElement('a');
+  a.rel = 'ar';
+  a.href = arModelUrls(p.id).usdz;
+  a.appendChild(document.createElement('img'));
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 export async function openAR(p: Product): Promise<ArResult> {
+  if (Platform.OS === 'web') {
+    const device = arDevice();
+    if (!device) return 'solo-celular';
+    try {
+      if (device === 'android') openSceneViewerWeb(p);
+      else openQuickLookWeb(p);
+      return 'abierto';
+    } catch {
+      return 'no-compatible';
+    }
+  }
   if (Platform.OS === 'android') {
     // 1) Scene Viewer dentro de la app de Google (lo tienen casi todos los Android)
     try {

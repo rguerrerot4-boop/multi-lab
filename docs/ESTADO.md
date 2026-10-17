@@ -9,6 +9,7 @@ npm install
 npx tsc --noEmit            # obligatorio antes de terminar un cambio
 npx expo start              # celular con Expo Go, o "w" para el navegador
 npx expo export --platform web --output-dir dist-web   # build web de prueba
+node scripts/web/pwa.mjs dist-web                      # ícono y manifiesto para la pantalla de inicio
 ```
 
 Revisa las animaciones en el navegador y en el celular: lo que se ve fluido en la computadora puede cambiar en el teléfono.
@@ -33,6 +34,14 @@ Todas respetan "reducir movimiento" del sistema.
 - Se sirven por jsDelivr desde este repositorio público, fijados al commit `AR_COMMIT` de `src/lib/ar.ts`.
 - **Si el repositorio pasa a privado, el AR deja de funcionar.** Antes de hacerlo: crear un repositorio público aparte solo con los modelos (sin código) y cambiar `BASE` en `src/lib/ar.ts` para apuntar ahí.
 
+## Versión web
+
+- Se publica sola en GitHub Pages al cambiar `main` (`.github/workflows/web.yml`, base `/multi-lab` con `WEB_BASE_URL` en `app.config.js`). `scripts/web/pwa.mjs` agrega el manifiesto, los íconos de `public/` y el `404.html` para que abran todas las rutas.
+- Mapa real en web: `src/components/map/PlacesMap.web.tsx` (Leaflet + mapas de CARTO/OpenStreetMap, sin clave).
+- AR en web: `openAR` en `src/lib/ar.ts` detecta el celular por el navegador. iPhone: enlace `rel="ar"` (AR Quick Look de Safari). Android: enlace `intent://` a Scene Viewer. En la computadora solo hay vista previa.
+- La sesión vive en memoria: si se recarga la página, hay que volver a iniciar sesión.
+- Pendiente comprobar en un iPhone real que AR Quick Look abre desde la app agregada a la pantalla de inicio.
+
 ## Respaldo en Figma
 
 - Archivo nuevo "Multi LAB · Respaldo de la app (prototipo)" con 58 marcos conectados como prototipo (4 secciones, 4 flujos). No es el archivo de diseño original, que no se debe tocar.
@@ -40,7 +49,7 @@ Todas respetan "reducir movimiento" del sistema.
 
 ## Pendientes y decisiones abiertas
 
-- Pasar el repositorio a privado (ver Realidad aumentada).
+- Pasar el repositorio a privado (ver Realidad aumentada; además, GitHub Pages en privado es de pago: usar Netlify o Cloudflare Pages).
 - Rehacer las capturas del respaldo en Figma con el splash y la bienvenida nuevos.
 - La vista 3D con Vectary sigue pendiente de integración.
 - Al terminar el proyecto: publicar la app con EAS Update (`npx eas-cli@latest update:configure` y `update`) para abrirla en Expo Go sin la computadora, y crear en el iPhone un atajo con el logo que la abra. Revisar antes que el `runtimeVersion` de `app.json` sea compatible con Expo Go. Sin cuenta Apple Developer (de pago) no se puede instalar como app propia.
