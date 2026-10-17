@@ -111,7 +111,22 @@ export default function Splash() {
   }, []);
 
   // velocidad del gesto (px/ms) convertida a la escala del recorrido (unidades/s)
-  const toLift = (vy: number) => Math.max(-12, Math.min(12, (-vy * 1000) / restY));
+  const toLift = (vy: number) => Math.max(-14, Math.min(14, (-vy * 1000) / restY));
+
+  // muestras recientes del dedo: la velocidad se mide sobre los últimos ~80 ms
+  // (la que entrega el sistema en el navegador llega tarde y hace que la burbuja "frene" al soltarla)
+  const samples = useRef<{ t: number; y: number }[]>([]);
+  const dragBase = useRef(0);
+  const fingerVy = () => {
+    const pts = samples.current;
+    if (pts.length < 2) return 0;
+    const last = pts[pts.length - 1];
+    if (Date.now() - last.t > 120) return 0; // el dedo se quedó quieto antes de soltar
+    let first = pts[0];
+    for (const q of pts) if (last.t - q.t <= 80) { first = q; break; }
+    const dt = last.t - first.t;
+    return dt > 0 ? (last.y - first.y) / dt : 0;
+  };
 
   // la burbuja sigue con el impulso del dedo hasta el centro; un poco antes de detenerse
   // empieza a contraerse, y justo al terminar de contraerse nace el logo
@@ -123,11 +138,12 @@ export default function Splash() {
     const id = intro.lift.addListener(({ value }) => {
       if (value >= 0.88) arrive();
     });
+    // resorte casi crítico: arranca exactamente a la velocidad del dedo y frena suave en el centro
     Animated.spring(intro.lift, {
       toValue: 1,
       velocity: Math.max(velocity, 0),
-      stiffness: 190,
-      damping: 24,
+      stiffness: 170,
+      damping: 25,
       mass: 1,
       useNativeDriver: true,
     }).start(() => {
@@ -140,16 +156,30 @@ export default function Splash() {
     if (arrived.current || cancelledRef.current) return;
     arrived.current = true;
     setPhase('logo');
-    // 1. se contrae acelerando hacia el centro (hasta el tamaño del play)
-    Animated.timing(intro.pop, { toValue: 0.42, duration: 250, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
-      // 2. en ese mismo instante: revienta, nace el play y brotan las cápsulas
-      Animated.timing(intro.pop, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-      runLogo();
+    // 1. se contrae hacia el centro hasta el tamaño del play, con entrada y salida suaves
+    // 2. cuando va por el 70 % el logo ya empieza a brotar, así la burbuja se "transforma" en él sin corte
+    let started = false;
+    const id = intro.pop.addListener(({ value }) => {
+      if (!started && value >= 0.3) {
+        started = true;
+        intro.pop.removeListener(id);
+        runLogo();
+      }
+    });
+    Animated.sequence([
+      Animated.timing(intro.pop, { toValue: 0.42, duration: 300, easing: Easing.bezier(0.45, 0, 0.3, 1), useNativeDriver: true }),
+      Animated.timing(intro.pop, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start(() => {
+      if (!started) {
+        started = true;
+        intro.pop.removeListener(id);
+        runLogo();
+      }
     });
   };
 
   const springBack = (vy: number) =>
-    Animated.spring(intro.lift, { toValue: 0, velocity: toLift(vy), stiffness: 240, damping: 20, useNativeDriver: true }).start();
+    Animated.spring(intro.lift, { toValue: 0, velocity: toLift(vy), stiffness: 220, damping: 22, useNativeDriver: true }).start();
 
   const pan = useRef(
     PanResponder.create({
@@ -158,29 +188,36 @@ export default function Splash() {
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         intro.idle.stopAnimation();
-        intro.lift.stopAnimation();
+        // si se vuelve a tomar mientras regresa, continúa desde donde está (sin saltos)
+        intro.lift.stopAnimation((val) => (dragBase.current = Math.max(0, val)));
+        samples.current = [{ t: Date.now(), y: 0 }];
         // al tocarla se "infla" un poco: respuesta inmediata al dedo
         Animated.spring(intro.press, { toValue: 1, stiffness: 420, damping: 22, useNativeDriver: true }).start();
       },
       onPanResponderMove: (_, g) => {
         if (launched.current) return;
+        const now = Date.now();
+        samples.current.push({ t: now, y: g.dy });
+        if (samples.current.length > 12) samples.current.shift();
         // sigue al dedo 1:1; hacia abajo cede poco (resistencia elástica)
-        const p = g.dy < 0 ? -g.dy / restY : -(1 - 1 / (1 + g.dy / restY / 2)) * 0.25;
-        if (p >= 0.8) return launch(toLift(g.vy)); // cerca del centro: se lo "traga" y sigue sola
+        const raw = dragBase.current - g.dy / restY;
+        const p = raw >= 0 ? raw : -(1 - 1 / (1 - raw * 2)) * 0.12;
+        if (p >= 0.8) return launch(toLift(fingerVy())); // cerca del centro: se lo "traga" y sigue sola
         intro.lift.setValue(p);
       },
       onPanResponderRelease: (_, g) => {
         if (launched.current) return;
-        const p = -g.dy / restY;
-        if (p > 0.28 || g.vy < -0.35 || (Math.abs(g.dy) < 6 && Math.abs(g.dx) < 6)) launch(toLift(g.vy));
+        const p = dragBase.current - g.dy / restY;
+        const vy = fingerVy();
+        if (p > 0.28 || vy < -0.35 || (Math.abs(g.dy) < 6 && Math.abs(g.dx) < 6)) launch(toLift(vy));
         else {
-          springBack(g.vy);
+          springBack(vy);
           Animated.spring(intro.press, { toValue: 0, stiffness: 300, damping: 20, useNativeDriver: true }).start();
         }
       },
-      onPanResponderTerminate: (_, g) => {
+      onPanResponderTerminate: () => {
         if (launched.current) return;
-        springBack(g.vy);
+        springBack(fingerVy());
         Animated.spring(intro.press, { toValue: 0, stiffness: 300, damping: 20, useNativeDriver: true }).start();
       },
     }),
@@ -479,7 +516,7 @@ function IntroBubble({
           touchAction: 'none',
           cursor: 'grab',
           opacity: Animated.multiply(
-            pop.interpolate({ inputRange: [0, 0.42, 0.52], outputRange: [1, 1, 0], extrapolate: 'clamp' }),
+            pop.interpolate({ inputRange: [0, 0.26, 0.42], outputRange: [1, 1, 0], extrapolate: 'clamp' }),
             enter.interpolate({ inputRange: [0, 0.15], outputRange: [0, 1], extrapolate: 'clamp' }),
           ),
           transform: [
@@ -491,13 +528,13 @@ function IntroBubble({
             {
               scaleX: Animated.multiply(
                 enter.interpolate({ inputRange: [0, 0.8, 1, 1.12], outputRange: [0.9, 0.95, 1, 1.07] }),
-                lift.interpolate({ inputRange: [0, 0.4, 1], outputRange: [1, 0.94, 1], extrapolate: 'clamp' }),
+                lift.interpolate({ inputRange: [0, 0.45, 1], outputRange: [1, 0.965, 1], extrapolate: 'clamp' }),
               ),
             },
             {
               scaleY: Animated.multiply(
                 enter.interpolate({ inputRange: [0, 0.8, 1, 1.12], outputRange: [1.12, 1.05, 1, 0.93] }),
-                lift.interpolate({ inputRange: [0, 0.4, 1], outputRange: [1, 1.08, 1], extrapolate: 'clamp' }),
+                lift.interpolate({ inputRange: [0, 0.45, 1], outputRange: [1, 1.045, 1], extrapolate: 'clamp' }),
               ),
             },
             {
