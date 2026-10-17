@@ -1,184 +1,122 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
-import { colors, font } from '@/theme';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef } from 'react';
+import { View } from 'react-native';
+import { colors } from '@/theme';
 import { KIND_STYLE, type PlacesMapProps } from './types';
 
-// Versión web del mapa: ilustrativa (el navegador de la vista previa no permite cargar mapas externos).
-// Se puede arrastrar y acercar con la rueda del ratón o pellizcando; muestra los mismos lugares.
-export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey, route, routeApprox }: PlacesMapProps) {
-  const [box, setBox] = useState({ w: 360, h: 500 });
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const panRef = useRef(pan);
-  panRef.current = pan;
-  const zoomRef = useRef(zoom);
-  zoomRef.current = zoom;
-  const start = useRef({ x: 0, y: 0, d: 0, z: 1 });
-  const host = useRef<View>(null);
+// Versión web: mapa real con Leaflet y mapas base de OpenStreetMap (gratis, sin clave).
+// Hace lo mismo que el mapa del teléfono: radio de búsqueda, tu ubicación, lugares y ruta.
+const TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>';
 
-  const base = Math.min(box.w, box.h) / (radiusKm * 2.6); // píxeles por km
-  const k = base * zoom;
-  const cosLat = Math.cos((center.lat * Math.PI) / 180);
-  const toXY = (lat: number, lon: number) => ({
-    x: box.w / 2 + (lon - center.lon) * 111 * cosLat * k + pan.x,
-    y: box.h / 2 - (lat - center.lat) * 111 * k + pan.y,
+const glyph = (name: keyof typeof Ionicons.glyphMap) => String.fromCodePoint(Ionicons.glyphMap[name] as number);
+
+function placeIcon(kind: keyof typeof KIND_STYLE, on: boolean) {
+  const k = KIND_STYLE[kind];
+  const size = on ? 40 : 30;
+  return L.divIcon({
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;box-sizing:border-box;background:${k.color};border:3px solid ${on ? colors.turquesa : colors.white};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(32,52,58,.35);color:${colors.white};font-family:ionicons;font-size:${on ? 20 : 15}px;line-height:1">${glyph(k.icon)}</div>`,
   });
+}
 
-  const animatePan = (to: { x: number; y: number }) => {
-    const from = panRef.current;
-    const t0 = Date.now();
-    const step = () => {
-      const t = Math.min(1, (Date.now() - t0) / 420);
-      const e = 1 - Math.pow(1 - t, 3);
-      setPan({ x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e });
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  };
+const userIcon = L.divIcon({
+  className: '',
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  html: `<div style="width:22px;height:22px;border-radius:50%;background:rgba(30,127,140,.25);display:flex;align-items:center;justify-content:center"><div style="width:12px;height:12px;border-radius:50%;box-sizing:border-box;background:${colors.primary};border:2px solid ${colors.white}"></div></div>`,
+});
 
+export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm, recenterKey, route, routeApprox }: PlacesMapProps) {
+  const host = useRef<View>(null);
+  const map = useRef<L.Map | null>(null);
+  const layers = useRef<{ circle?: L.Circle; user?: L.Marker; route?: L.Polyline; places?: L.LayerGroup }>({});
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+
+  // crea el mapa una sola vez
   useEffect(() => {
-    setZoom(1);
-    animatePan({ x: 0, y: 0 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const el = host.current as unknown as HTMLElement | null;
+    if (!el) return;
+    // sin botones de zoom: en el celular se acerca pellizcando, como en la app
+    const m = L.map(el, { zoomControl: false, attributionControl: true });
+    m.attributionControl.setPrefix(false);
+    L.tileLayer(TILES, { attribution: ATTRIBUTION, subdomains: 'abcd', maxZoom: 19 }).addTo(m);
+    m.on('click', () => onSelectRef.current(null));
+    layers.current.places = L.layerGroup().addTo(m);
+    map.current = m;
+    // el contenedor cambia de tamaño al girar el teléfono o mostrar paneles
+    const ro = new ResizeObserver(() => m.invalidateSize());
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      m.remove();
+      map.current = null;
+      layers.current = {};
+    };
+  }, []);
+
+  // radio de búsqueda; al cambiar el centro o el radio (o al pulsar "mi ubicación") se vuelve a encuadrar
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    layers.current.circle?.remove();
+    const c = L.circle([center.lat, center.lon], { radius: radiusKm * 1000, color: 'rgba(30,127,140,0.5)', weight: 1.5, fillColor: 'rgba(99,201,214,0.10)', fillOpacity: 1, interactive: false }).addTo(m);
+    layers.current.circle = c;
+    const bounds = L.latLng(center.lat, center.lon).toBounds(radiusKm * 1000 * 2.6);
+    if (m.getZoom() === undefined) m.fitBounds(bounds);
+    else m.flyToBounds(bounds, { duration: 0.5 });
   }, [recenterKey, center.lat, center.lon, radiusKm]);
 
   useEffect(() => {
-    if (!route || route.length < 2) return;
-    const a = route[0];
-    const b = route[route.length - 1];
-    const mid = { lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2 };
-    animatePan({ x: -(mid.lon - center.lon) * 111 * cosLat * k, y: (mid.lat - center.lat) * 111 * k - box.h * 0.1 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route]);
+    const m = map.current;
+    if (!m) return;
+    layers.current.user?.remove();
+    layers.current.user = user ? L.marker([user.lat, user.lon], { icon: userIcon, interactive: false, keyboard: false }).addTo(m) : undefined;
+  }, [user?.lat, user?.lon]);
 
   useEffect(() => {
-    if (route) return;
+    const g = layers.current.places;
+    if (!g) return;
+    g.clearLayers();
+    for (const p of places) {
+      const on = p.id === selectedId;
+      L.marker([p.lat, p.lon], { icon: placeIcon(p.kind, on), title: p.name, alt: p.name, zIndexOffset: on ? 1000 : 0 })
+        .on('click', () => onSelectRef.current(p.id))
+        .addTo(g);
+    }
+  }, [places, selectedId]);
+
+  // al trazar una ruta, el mapa se ajusta para mostrarla completa
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    layers.current.route?.remove();
+    layers.current.route = undefined;
+    if (!route || route.length < 2) return;
+    const line = L.polyline(
+      route.map((c) => [c.lat, c.lon] as [number, number]),
+      { color: colors.primary, weight: 6, opacity: 0.9, dashArray: routeApprox ? '10 8' : undefined, interactive: false },
+    ).addTo(m);
+    layers.current.route = line;
+    m.flyToBounds(line.getBounds(), { paddingTopLeft: [60, 160], paddingBottomRight: [60, 300], duration: 0.6 });
+  }, [route, routeApprox]);
+
+  // al elegir un lugar se acerca y lo deja un poco arriba del centro (abajo va la tarjeta)
+  useEffect(() => {
+    const m = map.current;
+    if (!m || route) return;
     const p = places.find((x) => x.id === selectedId);
     if (!p) return;
-    const dx = (p.lon - center.lon) * 111 * cosLat * k;
-    const dy = -(p.lat - center.lat) * 111 * k;
-    animatePan({ x: -dx, y: -dy - box.h * 0.12 });
+    const z = Math.max(m.getZoom(), 15);
+    const pt = m.project([p.lat, p.lon], z).add([0, m.getSize().y * 0.12]);
+    m.flyTo(m.unproject(pt, z), z, { duration: 0.45 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  const responder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, g) => Math.hypot(g.dx, g.dy) > 3,
-        onPanResponderGrant: () => {
-          start.current = { x: panRef.current.x, y: panRef.current.y, d: 0, z: zoomRef.current };
-        },
-        onPanResponderMove: (e, g) => {
-          const t = e.nativeEvent.touches;
-          if (t && t.length >= 2) {
-            const d = Math.hypot(t[0].pageX - t[1].pageX, t[0].pageY - t[1].pageY);
-            if (!start.current.d) start.current.d = d;
-            else setZoom(Math.max(0.5, Math.min(4, (start.current.z * d) / start.current.d)));
-            return;
-          }
-          setPan({ x: start.current.x + g.dx, y: start.current.y + g.dy });
-        },
-      }),
-    [],
-  );
-  // rueda del ratón para acercar y alejar; el navegador no se lleva los gestos del mapa
-  useEffect(() => {
-    const el = host.current as unknown as HTMLElement | null;
-    if (!el?.addEventListener) return;
-    el.style.touchAction = 'none';
-    const onWheel = (ev: WheelEvent) => {
-      ev.preventDefault();
-      setZoom((z) => Math.max(0.5, Math.min(4, z * (ev.deltaY > 0 ? 0.9 : 1.1))));
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
-
-  // calles ilustrativas: una cuadrícula que se mueve y escala con el mapa
-  const grid = 0.3 * k; // cada 300 m
-  const lines: { x1: number; y1: number; x2: number; y2: number; w: number }[] = [];
-  if (grid > 8) {
-    const ox = ((box.w / 2 + pan.x) % grid) - grid;
-    const oy = ((box.h / 2 + pan.y) % grid) - grid;
-    for (let x = ox, i = 0; x < box.w + grid; x += grid, i++) lines.push({ x1: x, y1: 0, x2: x, y2: box.h, w: i % 4 === 0 ? 7 : 3 });
-    for (let y = oy, i = 0; y < box.h + grid; y += grid, i++) lines.push({ x1: 0, y1: y, x2: box.w, y2: y, w: i % 4 === 0 ? 7 : 3 });
-  }
-  const river = [
-    [-2.05, -79.879],
-    [-2.12, -79.874],
-    [-2.17, -79.879],
-    [-2.22, -79.871],
-    [-2.3, -79.875],
-  ]
-    .map(([la, lo]) => toXY(la, lo))
-    .map((p) => `${p.x},${p.y}`)
-    .join(' ');
-  const c = toXY(center.lat, center.lon);
-  const me = user ? toXY(user.lat, user.lon) : null;
-
-  return (
-    <View
-      ref={host}
-      style={{ flex: 1, overflow: 'hidden', backgroundColor: '#EAF1EE' }}
-      onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-      {...responder.panHandlers}
-    >
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => onSelect(null)} accessibilityLabel="Mapa">
-        <Svg width={box.w} height={box.h}>
-          <Rect x={0} y={0} width={box.w} height={box.h} fill="#EAF1EE" />
-          {lines.map((l, i) => (
-            <Line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#FFFFFF" strokeWidth={l.w} />
-          ))}
-          <Polyline points={river} fill="none" stroke="#BFE0E8" strokeWidth={Math.max(14, 0.35 * k)} strokeLinecap="round" strokeLinejoin="round" />
-          <Circle cx={c.x} cy={c.y} r={radiusKm * k} fill="rgba(99,201,214,0.12)" stroke="rgba(30,127,140,0.45)" strokeWidth={1.5} />
-          {route && route.length > 1 ? (
-            <Polyline
-              points={route.map((r) => toXY(r.lat, r.lon)).map((q) => `${q.x},${q.y}`).join(' ')}
-              fill="none"
-              stroke={colors.primary}
-              strokeWidth={6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={routeApprox ? '12 9' : undefined}
-            />
-          ) : null}
-        </Svg>
-      </Pressable>
-
-      {me ? (
-        <View pointerEvents="none" style={{ position: 'absolute', left: me.x - 11, top: me.y - 11, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(30,127,140,0.25)', alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.white }} />
-        </View>
-      ) : null}
-
-      {places.map((p) => {
-        const pt = toXY(p.lat, p.lon);
-        if (pt.x < -40 || pt.y < -40 || pt.x > box.w + 40 || pt.y > box.h + 40) return null;
-        const ks = KIND_STYLE[p.kind];
-        const on = p.id === selectedId;
-        const size = on ? 40 : 30;
-        return (
-          <Pressable
-            key={p.id}
-            onPress={() => onSelect(p.id)}
-            accessibilityRole="button"
-            accessibilityLabel={p.name}
-            hitSlop={6}
-            style={{ position: 'absolute', left: pt.x - size / 2, top: pt.y - size, alignItems: 'center', zIndex: on ? 10 : 1 }}
-          >
-            <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: ks.color, borderWidth: 3, borderColor: on ? colors.turquesa : colors.white, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={ks.icon} size={on ? 20 : 15} color={colors.white} />
-            </View>
-          </Pressable>
-        );
-      })}
-
-      <View pointerEvents="none" style={{ position: 'absolute', left: 10, bottom: 8, backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-        <Text style={{ fontFamily: font.medium, fontSize: 10, color: colors.inkMuted }}>Mapa ilustrativo (vista web) · en la app se usa el mapa real</Text>
-      </View>
-    </View>
-  );
+  return <View ref={host} style={{ flex: 1, backgroundColor: colors.bg }} />;
 }
