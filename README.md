@@ -33,7 +33,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 
 | Módulo | Pantallas |
 |---|---|
-| Acceso | Splash animado con el logotipo, inicio de sesión único, registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
+| Acceso | Splash con burbuja de vidrio para deslizar que se transforma en el logotipo animado, inicio de sesión único con bienvenida animada (nombre del perfil), registro por rol, recuperación de contraseña (correo → código → nueva clave → confirmación) |
 | Dashboards | Panel del profesional de salud y panel del visitador médico (acción rápida **Comenzar visita**, indicadores del día, meta semanal, ruta de hoy, accesos rápidos y aviso de kit) |
 | Estado y búsquedas del médico | El profesional marca su estado (**Libre**, **En consulta** con tiempo, **No disponible**), que el visitador ve en su ruta, al comenzar la visita y en el detalle. Con **Necesito un producto** publica una solicitud solo con palabras clave (estados: Publicada → Vista → Respondida; no ve productos ni a un visitador en particular); al visitador le llega la alerta y la app le indica cuál de sus productos coincide, para enviar la ficha y responder. El médico sigue el estado: Enviada → Vista → Atendida |
 | Devoluciones | El médico reporta muestras o material de apoyo recibido en mal estado (material, motivo, cantidad, fotos y si prefiere reposición o retiro). El visitador lo sigue: Reportada → Recibida → En revisión → Retiro agendado → Resuelta, con notas para el médico. No es una devolución de compra |

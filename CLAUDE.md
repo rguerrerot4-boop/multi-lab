@@ -1,6 +1,6 @@
 # Multi LAB — contexto para Claude Code
 
-Lee también `AGENTS.md` (reglas de Expo) y `README.md` (estructura y alcance).
+Lee también `AGENTS.md` (reglas de Expo), `README.md` (estructura y alcance) y `docs/ESTADO.md` (estado actual, animaciones y pendientes).
 
 ## Proyecto
 - App móvil de titulación (Multimedia y Producción Audiovisual) para la visita médica. Es una app integral, no solo un catálogo: el catálogo multimedia interactivo es su módulo diferenciador.
