@@ -17,3 +17,4 @@ Lee también `AGENTS.md` (reglas de Expo), `README.md` (estructura y alcance) y 
 - Realidad aumentada: solo con el visor AR del sistema (Scene Viewer en Android, AR Quick Look en iPhone) y los modelos de `ar/models` (generados con `scripts/ar/build_models.py`, servidos por jsDelivr; si cambian, actualiza `AR_COMMIT` en `src/lib/ar.ts`). No uses Unity. La vista 3D con Vectary está pendiente de integración.
 - Permite el desplazamiento vertical; no comprimas el contenido para que quepa en una sola pantalla.
 - Antes de terminar un cambio, ejecuta `npx tsc --noEmit`.
+- Publicación: los cambios se suben directo a `main` (autorizado por la persona dueña del proyecto), sin pull request. Cada push a `main` publica la versión web en GitHub Pages (`.github/workflows/web.yml`). Antes de subir, ejecuta `npx tsc --noEmit` y, si el cambio afecta a la web, compílala (`npx expo export --platform web --output-dir dist-web`) y pruébala.
