@@ -44,3 +44,4 @@ Todas respetan "reducir movimiento" del sistema.
 - Rehacer las capturas del respaldo en Figma con el splash y la bienvenida nuevos.
 - Decidir si se quita el confeti del botón de envío en las pantallas que ya muestran el check verde de confirmación.
 - La vista 3D con Vectary sigue pendiente de integración.
+- Al terminar el proyecto: publicar la app con EAS Update (`npx eas-cli@latest update:configure` y `update`) para abrirla en Expo Go sin la computadora, y crear en el iPhone un atajo con el logo que la abra. Revisar antes que el `runtimeVersion` de `app.json` sea compatible con Expo Go. Sin cuenta Apple Developer (de pago) no se puede instalar como app propia.
