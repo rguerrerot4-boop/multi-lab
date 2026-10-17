@@ -22,7 +22,7 @@ Revisa las animaciones en el navegador y en el celular: lo que se ve fluido en l
 | Bienvenida al iniciar sesión: play que cubre la pantalla → se abre en tres piezas → burbuja con el símbolo y "Bienvenido/a, nombre" → burbujas que se dispersan | `src/components/WelcomeTransition.tsx` (`playWelcome`, `WelcomeHost` en `_layout.tsx`) | `onCovered` navega al panel con la pantalla cubierta. Se salta tocando |
 | Selector segmentado con pastilla deslizante | `Segmented` en `src/components/ui.tsx` | Profesional / Visitador y demás pestañas |
 | Barra de pestañas con burbuja | `src/components/BubbleTabBar.tsx` | La burbuja no sale de la pantalla (clamp) y rebota en su lugar |
-| Botón de envío (puntos → confeti → ✓) | `src/components/SubmitButton.tsx` | |
+| Botón de envío (puntos → confeti → ✓) | `src/components/SubmitButton.tsx` | En nueva solicitud, devolución y respuesta a necesidades se combina a propósito con el check verde (decidido: se deja así) |
 | Check verde de confirmación | `src/components/SuccessCheck.tsx` (`SuccessCheck`, `SuccessOverlay`) | |
 
 Todas respetan "reducir movimiento" del sistema.
@@ -42,6 +42,5 @@ Todas respetan "reducir movimiento" del sistema.
 
 - Pasar el repositorio a privado (ver Realidad aumentada).
 - Rehacer las capturas del respaldo en Figma con el splash y la bienvenida nuevos.
-- Decidir si se quita el confeti del botón de envío en las pantallas que ya muestran el check verde de confirmación.
 - La vista 3D con Vectary sigue pendiente de integración.
 - Al terminar el proyecto: publicar la app con EAS Update (`npx eas-cli@latest update:configure` y `update`) para abrirla en Expo Go sin la computadora, y crear en el iPhone un atajo con el logo que la abra. Revisar antes que el `runtimeVersion` de `app.json` sea compatible con Expo Go. Sin cuenta Apple Developer (de pago) no se puede instalar como app propia.
