@@ -47,12 +47,11 @@ Todas respetan "reducir movimiento" del sistema.
 - Archivo actual: "Multi LAB · Prototipo de la app (capturas oct 2026)" — https://www.figma.com/design/CHdntcll7WDS1F5Xv78q7l
 - 58 pantallas capturadas de la versión web (390×844) en 3 secciones (Entrada y acceso, Profesional de salud, Visitador médico), con 107 zonas táctiles conectadas sobre los botones reales, "Volver" como regreso y 4 flujos: Entrada a la app, Recuperar contraseña, Profesional de salud y Visitador médico.
 - Inicios, perfiles, catálogo y ficha de producto se desplazan y mantienen fija la barra inferior.
-- En las pantallas del mapa (60–62) el fondo de calles es de relleno y Google Maps sale vacío: el entorno de captura no tenía acceso a esos servicios. Rehacer esas capturas cuando haya acceso.
+- Las pantallas del mapa (60–62) tienen el mapa real de OpenStreetMap y Google Maps; los consultorios que aparecen son los de ejemplo, porque el entorno de captura no tenía acceso a la búsqueda de OpenStreetMap (overpass-api.de).
 - El archivo anterior "Multi LAB · Respaldo de la app (prototipo)" quedó sin capturas; el archivo de diseño original no se toca.
 
 ## Pendientes y decisiones abiertas
 
 - Pasar el repositorio a privado (ver Realidad aumentada; además, GitHub Pages en privado es de pago: usar Netlify o Cloudflare Pages).
-- Rehacer en Figma las capturas del mapa (pantallas 60–62) con el mapa real.
 - La vista 3D con Vectary sigue pendiente de integración.
 - Al terminar el proyecto: publicar la app con EAS Update (`npx eas-cli@latest update:configure` y `update`) para abrirla en Expo Go sin la computadora, y crear en el iPhone un atajo con el logo que la abra. Revisar antes que el `runtimeVersion` de `app.json` sea compatible con Expo Go. Sin cuenta Apple Developer (de pago) no se puede instalar como app propia.
