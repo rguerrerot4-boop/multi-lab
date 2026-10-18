@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
 import { productById, type IconName } from '@/data/mock';
-import { AR_SIZE_CM, arDevice, openAR, type ArResult } from '@/lib/ar';
+import { AR_CARDS_PDF, AR_SIZE_CM, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -172,11 +172,22 @@ export default function ArScreen() {
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
         {!device ? (
-          <Notice icon="information-circle-outline" text="La realidad aumentada usa la cámara del celular: abre Multi LAB en tu teléfono. Aquí solo ves la vista previa." />
+          <Notice icon="information-circle-outline" text="El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono. Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora." />
         ) : null}
 
         <View style={{ gap: space.sm }}>
           <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={!device} onPress={launch} />
+          <Pressable
+            onPress={() => {
+              logEvent('ar_tarjeta', p.id);
+              Linking.openURL(arCardUrl(p.id)).catch(() => {});
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ minHeight: 48, borderRadius: radius.md, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.35)', flexDirection: 'row', gap: space.sm, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+          >
+            <Ionicons name="card-outline" size={18} color={colors.white} />
+            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.white }}>Usar tarjeta impresa</Text>
+          </Pressable>
           <Pressable
             onPress={() => router.replace(`/visor/${p.id}`)}
             accessibilityRole="button"
@@ -188,6 +199,9 @@ export default function ArScreen() {
           <Text style={{ fontFamily: font.medium, fontSize: 11, lineHeight: 16, color: '#8FA7AD', textAlign: 'center' }}>
             Modelo ilustrativo de un producto ficticio. Se descarga la primera vez (unos 150 KB) y necesita internet.
           </Text>
+          <Pressable onPress={() => Linking.openURL(AR_CARDS_PDF).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar tarjetas para imprimir (PDF)</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>

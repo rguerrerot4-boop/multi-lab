@@ -1,0 +1,44 @@
+[
+ {
+  "id": "p1",
+  "name": "DermaCleanse Gel",
+  "lab": "Celvia",
+  "category": "Limpieza"
+ },
+ {
+  "id": "p2",
+  "name": "BioBarrier Emulsión",
+  "lab": "Celvia",
+  "category": "Hidratación"
+ },
+ {
+  "id": "p3",
+  "name": "CeraRepair Bálsamo",
+  "lab": "Celvia",
+  "category": "Reparación"
+ },
+ {
+  "id": "p4",
+  "name": "PhotoBlock SPF 50+",
+  "lab": "Celvia",
+  "category": "Fotoprotección"
+ },
+ {
+  "id": "p5",
+  "name": "PediaCalm Crema",
+  "lab": "Andina Pharma",
+  "category": "Pediatría"
+ },
+ {
+  "id": "p6",
+  "name": "AloeFresh Gel",
+  "lab": "Bioandes",
+  "category": "Hidratación"
+ },
+ {
+  "id": "p7",
+  "name": "ManoProtect Crema",
+  "lab": "Bioandes",
+  "category": "Reparación"
+ }
+]

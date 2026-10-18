@@ -16,6 +16,13 @@ export const AR_SIZE_CM = { w: 7, h: 10.5, d: 3.2 };
 
 export const arModelUrls = (id: string) => ({ glb: `${BASE}/${id}.glb`, usdz: `${BASE}/${id}.usdz` });
 
+/** Versión web publicada: ahí vive la AR con tarjeta impresa (public/ar-tarjeta). */
+export const WEB_URL = 'https://rguerrerot4-boop.github.io/multi-lab';
+/** AR sobre la tarjeta impresa del producto: se abre en el navegador del teléfono y usa su cámara. */
+export const arCardUrl = (id: string) => `${WEB_URL}/ar-tarjeta/?p=${id}`;
+/** Hoja A4 con las tarjetas para imprimir y recortar. */
+export const AR_CARDS_PDF = `${WEB_URL}/ar-tarjeta/tarjetas-multilab.pdf`;
+
 export type ArResult = 'abierto' | 'no-compatible' | 'solo-celular';
 
 /** Sistema del teléfono donde se abriría la AR (en web se deduce del navegador); null en computadora */

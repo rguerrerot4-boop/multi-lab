@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Multi LAB · AR con tarjeta</title>
+    <meta name="description" content="Realidad aumentada de Multi LAB sobre tarjetas impresas (productos ficticios, prototipo académico)." />
+    <meta name="theme-color" content="#20343A" />
+    <link rel="icon" href="../favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      /* mismos valores que src/theme.ts */
+      :root {
+        --teal: #1e7f8c;
+        --petroleo: #20343a;
+        --turquesa: #63c9d6;
+        --white: #ffffff;
+        --muted-dark: #a9c2c8;
+        --body-dark: #c7d9dd;
+        --warning: #9a6200;
+        --warning-soft: #fcf1dc;
+        --glass: rgba(255, 255, 255, 0.08);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--petroleo); color: var(--white); font-family: Montserrat, system-ui, sans-serif; }
+      body { overflow: hidden; -webkit-tap-highlight-color: transparent; }
+      #ar { position: fixed; inset: 0; }
+      #ar video { object-fit: cover; }
+
+      /* pantalla de inicio */
+      .panel { position: fixed; inset: 0; overflow-y: auto; padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; z-index: 5; background: var(--petroleo); }
+      .panel > div { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
+      .logo { align-self: flex-start; background: var(--white); border-radius: 12px; padding: 10px 14px; }
+      .logo img { height: 32px; display: block; }
+      h1 { font-size: 24px; line-height: 30px; margin: 8px 0 0; }
+      .sub { margin: 0; color: var(--muted-dark); font-size: 14px; line-height: 20px; font-weight: 500; }
+      .chip { align-self: flex-start; background: var(--glass); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--body-dark); }
+      .steps { background: var(--glass); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+      .step { display: flex; gap: 12px; align-items: flex-start; }
+      .num { flex: none; width: 32px; height: 32px; border-radius: 16px; background: var(--teal); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+      .step b { display: block; font-size: 14px; }
+      .step span { font-size: 13px; line-height: 19px; color: var(--body-dark); }
+      .btn { appearance: none; border: 0; border-radius: 12px; min-height: 52px; font: 600 16px Montserrat, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; cursor: pointer; }
+      .btn.primary { background: var(--teal); color: var(--white); }
+      .btn.ghost { background: transparent; color: var(--white); border: 1.5px solid rgba(255, 255, 255, 0.35); }
+      .btn:active { opacity: 0.75; }
+      .btn[disabled] { opacity: 0.6; }
+      .notice { display: none; background: var(--warning-soft); color: var(--warning); border-radius: 12px; padding: 12px; font-size: 13px; line-height: 18px; font-weight: 500; }
+      .fine { text-align: center; font-size: 11px; line-height: 16px; color: #8fa7ad; margin: 0; }
+
+      /* vista de cámara */
+      .hud { position: fixed; inset: 0; z-index: 4; pointer-events: none; display: none; }
+      .hud.on { display: block; }
+      .top { position: absolute; left: 0; right: 0; top: 0; padding: max(12px, env(safe-area-inset-top)) 16px 12px; display: flex; align-items: center; gap: 12px; background: linear-gradient(rgba(32, 52, 58, 0.75), rgba(32, 52, 58, 0)); pointer-events: auto; }
+      .close { width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(32, 52, 58, 0.7); color: var(--white); font-size: 22px; cursor: pointer; }
+      .top p { margin: 0; font-weight: 700; font-size: 15px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); }
+      .frame { position: absolute; left: 50%; top: 50%; width: min(42vw, 200px); aspect-ratio: 600 / 945; transform: translate(-50%, -50%); }
+      .frame i { position: absolute; width: 28px; height: 28px; border-color: var(--turquesa); border-style: solid; border-width: 0; }
+      .frame i:nth-child(1) { left: 0; top: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
+      .frame i:nth-child(2) { right: 0; top: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 8px; }
+      .frame i:nth-child(3) { left: 0; bottom: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 8px; }
+      .frame i:nth-child(4) { right: 0; bottom: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
+      .frame { animation: pulse 1.8s ease-in-out infinite; }
+      @keyframes pulse { 50% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.7; } }
+      .bottom { position: absolute; left: 16px; right: 16px; bottom: max(20px, env(safe-area-inset-bottom)); display: flex; justify-content: center; }
+      .pill { background: rgba(32, 52, 58, 0.85); border-radius: 999px; padding: 10px 16px; font-size: 14px; font-weight: 600; text-align: center; }
+      .pill small { display: block; font-size: 11px; font-weight: 500; color: var(--muted-dark); }
+      .found .frame { display: none; }
+      @media (prefers-reduced-motion: reduce) { .frame { animation: none; } }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.min.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/",
+          "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ar"></div>
+
+    <section class="panel" id="panel">
+      <div>
+        <span class="logo"><img src="logo-full.png" alt="Multi LAB" /></span>
+        <h1>Realidad aumentada con tarjeta</h1>
+        <p class="sub" id="producto">Apunta la cámara a una tarjeta de Multi LAB y el producto aparece encima.</p>
+        <span class="chip">Producto ficticio · prototipo académico</span>
+        <div class="steps">
+          <div class="step"><span class="num">1</span><div><b>Abre la cámara</b><span>El navegador te pedirá permiso para usarla.</span></div></div>
+          <div class="step"><span class="num">2</span><div><b>Apunta al panel de cápsulas</b><span>Encuadra la parte con cápsulas de la tarjeta, con buena luz y sin reflejos.</span></div></div>
+          <div class="step"><span class="num">3</span><div><b>Mueve la tarjeta</b><span>El producto se queda sobre ella: gírala o acércala para verlo.</span></div></div>
+        </div>
+        <p class="notice" id="aviso"></p>
+        <button class="btn primary" id="abrir">Abrir cámara</button>
+        <a class="btn ghost" href="tarjetas-multilab.pdf" target="_blank" rel="noopener">Descargar tarjetas para imprimir</a>
+        <a class="btn ghost" href="../">Ir a Multi LAB</a>
+        <p class="fine">Modelos ilustrativos de productos ficticios. La primera vez descarga unos 3 MB y necesita internet.</p>
+      </div>
+    </section>
+
+    <div class="hud" id="hud">
+      <div class="top">
+        <button class="close" id="cerrar" aria-label="Cerrar cámara">✕</button>
+        <p>Realidad aumentada</p>
+      </div>
+      <div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="bottom"><div class="pill" id="estado">Apunta al panel de cápsulas de la tarjeta</div></div>
+    </div>
+
+    <script type="module">
+      // AR sobre tarjetas impresas con MindAR (seguimiento de imagen en el navegador).
+      // Cada tarjeta es un objetivo de tarjetas.mind, en el mismo orden que productos.json.
+      const $ = (id) => document.getElementById(id);
+      const params = new URLSearchParams(location.search);
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const PANEL_M = 0.0508; // ancho real del panel de cápsulas que reconoce la cámara: 50,8 mm (los modelos están en metros)
+      const ESCALA = 0.6 / PANEL_M; // producto al 60 % de su tamaño para que se vea completo sobre la tarjeta
+
+      const productos = await fetch('productos.json').then((r) => r.json());
+      const pedido = productos.find((p) => p.id === params.get('p'));
+      if (pedido) $('producto').textContent = `${pedido.name} · ${pedido.lab} (ficticio). Apunta la cámara a su tarjeta y el producto aparece encima.`;
+
+      const aviso = (texto) => { $('aviso').textContent = texto; $('aviso').style.display = 'block'; };
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) aviso('Este navegador no permite usar la cámara aquí. Abre la página en Safari (iPhone) o Chrome (Android).');
+
+      let mindar = null;
+      let THREE = null;
+      let loader = null;
+      const modelos = new Map();
+      const pops = [];
+
+      async function cargarModelo(i, anchor) {
+        if (modelos.has(i)) return modelos.get(i);
+        const p = productos[i];
+        const promesa = loader.loadAsync(`modelos/${p.id}.glb`).then((gltf) => {
+          // el panel mide 1 unidad de ancho; el producto queda de pie sobre él
+          const base = new THREE.Group();
+          base.rotation.x = Math.PI / 2;
+          base.scale.setScalar(ESCALA);
+          const sombra = new THREE.Mesh(new THREE.CircleGeometry(0.045, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
+          sombra.rotation.x = -Math.PI / 2;
+          sombra.position.y = 0.0005;
+          base.add(sombra, gltf.scene);
+          anchor.group.add(base);
+          return { base, modelo: gltf.scene };
+        });
+        modelos.set(i, promesa);
+        return promesa;
+      }
+
+      async function iniciar() {
+        $('abrir').disabled = true;
+        $('abrir').textContent = 'Abriendo cámara…';
+        try {
+          THREE = await import('three');
+          const { MindARThree } = await import('mindar-image-three');
+          const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+          loader = new GLTFLoader();
+          mindar = new MindARThree({ container: $('ar'), imageTargetSrc: 'tarjetas.mind', maxTrack: 1, uiLoading: 'no', uiScanning: 'no', uiError: 'no' });
+          const { renderer, scene, camera } = mindar;
+          renderer.outputColorSpace = THREE.SRGBColorSpace;
+          scene.add(new THREE.HemisphereLight(0xffffff, 0x445a60, 2.2));
+          const sol = new THREE.DirectionalLight(0xffffff, 1.6);
+          sol.position.set(0.5, 1, 2);
+          scene.add(sol);
+
+          productos.forEach((p, i) => {
+            const anchor = mindar.addAnchor(i);
+            anchor.onTargetFound = async () => {
+              $('hud').classList.add('found');
+              $('estado').innerHTML = `${p.name}<small>${p.lab} (ficticio) · producto ficticio</small>`;
+              const m = await cargarModelo(i, anchor);
+              m.base.scale.setScalar(reduce ? ESCALA : 0.001);
+              if (!reduce) pops.push({ base: m.base, t0: performance.now() });
+            };
+            anchor.onTargetLost = () => {
+              $('hud').classList.remove('found');
+              $('estado').textContent = 'Apunta al panel de cápsulas de la tarjeta';
+            };
+          });
+          // el producto pedido por el QR se descarga mientras se abre la cámara
+          if (pedido) cargarModelo(productos.indexOf(pedido), mindar.anchors[productos.indexOf(pedido)]);
+
+          await mindar.start();
+          $('panel').style.display = 'none';
+          $('hud').classList.add('on');
+          renderer.setAnimationLoop((t) => {
+            for (let k = pops.length - 1; k >= 0; k--) {
+              const { base, t0 } = pops[k];
+              const x = Math.min(1, (t - t0) / 420);
+              const s = 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2); // aparece con un pequeño rebote
+              base.scale.setScalar(Math.max(0.001, s) * ESCALA);
+              if (x >= 1) pops.splice(k, 1);
+            }
+            if (!reduce) modelos.forEach(async (pr) => { const m = await pr; m.modelo.rotation.y = t / 2600; });
+            renderer.render(scene, camera);
+          });
+        } catch (e) {
+          console.error(e);
+          await detener();
+          const permiso = e && (e.name === 'NotAllowedError' || /permission|denied/i.test(String(e.message)));
+          aviso(permiso ? 'No se pudo usar la cámara. Permite el acceso a la cámara para esta página en los ajustes del navegador y vuelve a intentarlo.' : 'No se pudo iniciar la realidad aumentada. Revisa tu conexión a internet y vuelve a intentarlo.');
+        } finally {
+          $('abrir').disabled = false;
+          $('abrir').textContent = 'Abrir cámara';
+        }
+      }
+
+      async function detener() {
+        if (mindar) {
+          mindar.renderer.setAnimationLoop(null);
+          try { await mindar.stop(); } catch {}
+          $('ar').innerHTML = '';
+          mindar = null;
+          modelos.clear();
+        }
+        $('hud').classList.remove('on', 'found');
+        $('panel').style.display = '';
+      }
+
+      $('abrir').addEventListener('click', iniciar);
+      $('cerrar').addEventListener('click', detener);
+    </script>
+  </body>
+</html>

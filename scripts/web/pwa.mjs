@@ -1,7 +1,7 @@
 // Completa la versión web exportada para que se pueda agregar a la pantalla de inicio del celular
 // (ícono, nombre y pantalla completa) y para que GitHub Pages abra cualquier ruta de la app.
 // Uso: node scripts/web/pwa.mjs <carpeta exportada>   (respeta WEB_BASE_URL, por ejemplo /multi-lab)
-import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const dir = process.argv[2] ?? 'dist-web';
@@ -43,4 +43,8 @@ html = html.replace('<html lang="en">', '<html lang="es">');
 writeFileSync(file, html);
 // GitHub Pages responde 404.html en las rutas que no existen como archivo: así abre la app igual
 copyFileSync(file, join(dir, '404.html'));
+// AR con tarjeta (public/ar-tarjeta): los modelos se sirven desde el mismo sitio
+const modelos = join(dir, 'ar-tarjeta', 'modelos');
+mkdirSync(modelos, { recursive: true });
+for (const f of readdirSync('ar/models').filter((f) => f.endsWith('.glb'))) copyFileSync(join('ar/models', f), join(modelos, f));
 console.log(`Versión web lista en ${dir} (base: ${base || '/'})`);

@@ -42,6 +42,14 @@ Todas respetan "reducir movimiento" del sistema.
 - La sesión vive en memoria: si se recarga la página, hay que volver a iniciar sesión.
 - Pendiente comprobar en un iPhone real que AR Quick Look abre desde la app agregada a la pantalla de inicio.
 
+## AR con tarjeta impresa
+
+- Página `public/ar-tarjeta/index.html` (MindAR 1.2.5 y three 0.160.1 desde jsDelivr; modelos copiados al sitio por `scripts/web/pwa.mjs`). Se abre con el QR de cada tarjeta o desde "Usar tarjeta impresa" en la pantalla de AR.
+- La cámara reconoce solo el panel de cápsulas (izquierda de la tarjeta, 50,8 mm de ancho), que es distinto en cada producto: con la tarjeta completa los 7 diseños se confundían. Probado con cámara simulada: reconoce las 7 tarjetas.
+- El producto aparece al 60 % de su tamaño real (`ESCALA` en la página) para que se vea completo.
+- Los QR apuntan a `https://rguerrerot4-boop.github.io/multi-lab/ar-tarjeta/?p=<id>`: si cambia la dirección de la web hay que regenerar e imprimir las tarjetas.
+- Pendiente: probarla con las tarjetas impresas en un iPhone y un Android reales.
+
 ## Respaldo en Figma
 
 - Archivo actual: "Multi LAB · Prototipo de la app (capturas oct 2026)" — https://www.figma.com/design/CHdntcll7WDS1F5Xv78q7l
