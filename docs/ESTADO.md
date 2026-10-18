@@ -37,7 +37,7 @@ Todas respetan "reducir movimiento" del sistema.
 ## Versión web
 
 - Se publica sola en GitHub Pages al cambiar `main` (`.github/workflows/web.yml`, base `/multi-lab` con `WEB_BASE_URL` en `app.config.js`). `scripts/web/pwa.mjs` agrega el manifiesto, los íconos de `public/` y el `404.html` para que abran todas las rutas.
-- Mapa real en web: `src/components/map/PlacesMap.web.tsx` (Leaflet + mapas de CARTO/OpenStreetMap, sin clave).
+- Mapa real en web: `src/components/map/PlacesMap.web.tsx` (Leaflet + mapas de OpenStreetMap, sin clave; CARTO dejó de servir sin clave).
 - AR en web: `openAR` en `src/lib/ar.ts` detecta el celular por el navegador. iPhone: enlace `rel="ar"` (AR Quick Look de Safari). Android: enlace `intent://` a Scene Viewer. En la computadora solo hay vista previa.
 - La sesión vive en memoria: si se recarga la página, hay que volver a iniciar sesión.
 - Pendiente comprobar en un iPhone real que AR Quick Look abre desde la app agregada a la pantalla de inicio.

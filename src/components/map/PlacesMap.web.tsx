@@ -6,10 +6,10 @@ import { View } from 'react-native';
 import { colors } from '@/theme';
 import { KIND_STYLE, type PlacesMapProps } from './types';
 
-// Versión web: mapa real con Leaflet y mapas base de OpenStreetMap (gratis, sin clave).
+// Versión web: mapa real con Leaflet y los mapas base de OpenStreetMap (gratis, sin clave; piden atribución).
 // Hace lo mismo que el mapa del teléfono: radio de búsqueda, tu ubicación, lugares y ruta.
-const TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>';
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 const glyph = (name: keyof typeof Ionicons.glyphMap) => String.fromCodePoint(Ionicons.glyphMap[name] as number);
 
@@ -45,7 +45,7 @@ export function PlacesMap({ center, user, places, selectedId, onSelect, radiusKm
     // sin botones de zoom: en el celular se acerca pellizcando, como en la app
     const m = L.map(el, { zoomControl: false, attributionControl: true });
     m.attributionControl.setPrefix(false);
-    L.tileLayer(TILES, { attribution: ATTRIBUTION, subdomains: 'abcd', maxZoom: 19 }).addTo(m);
+    L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(m);
     m.on('click', () => onSelectRef.current(null));
     layers.current.places = L.layerGroup().addTo(m);
     map.current = m;
