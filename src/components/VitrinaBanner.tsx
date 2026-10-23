@@ -8,14 +8,14 @@ import { colors, font, packColors, radius, space } from '@/theme';
 
 const C = packColors.coraessens;
 
-/** Acceso a la vitrina 3D de CORAESSENS, con los colores de su empaque */
+/** Acceso a la ficha 3D de CORAESSENS, con los colores de su empaque */
 export function VitrinaBanner() {
   return (
-    <PressableScale onPress={() => router.push('/vitrina/cor')} accessibilityLabel="Abrir la vitrina 3D de CORAESSENS">
+    <PressableScale onPress={() => router.push('/producto/cor')} accessibilityLabel="Abrir la ficha 3D de CORAESSENS">
       <View style={{ borderRadius: radius.xl, overflow: 'hidden', minHeight: 132 }}>
         <LinearGradient colors={[C.purple, C.purpleDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: space.lg, paddingRight: 120, gap: 4, minHeight: 132 }}>
           <View style={{ alignSelf: 'flex-start', backgroundColor: colors.white, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
-            <Text style={{ fontFamily: font.bold, fontSize: 11, color: C.red }}>NUEVO · VITRINA 3D</Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 11, color: C.red }}>NUEVO · FICHA 3D</Text>
           </View>
           <Text style={{ fontFamily: font.bold, fontSize: 22, color: colors.white, letterSpacing: -0.3 }}>CORAESSENS®</Text>
           <Text style={{ fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.white, opacity: 0.88 }}>

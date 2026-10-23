@@ -28,6 +28,7 @@ export const colors = {
   warningSoft: '#FCF1DC',
   danger: '#B3261E',
   dangerSoft: '#FBE9E7',
+  petroleoDeep: '#14242A', // fondo oscuro de la ficha (degradado con el petróleo)
   overlay: 'rgba(32, 52, 58, 0.55)',
   glass: 'rgba(255, 255, 255, 0.9)', // interior de la burbuja de vidrio
   clear: 'rgba(255, 255, 255, 0)',

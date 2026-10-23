@@ -8,6 +8,7 @@ import { Product3D } from '@/components/Product3D';
 import { ShareSheet } from '@/components/ShareSheet';
 import { Button, goBack } from '@/components/ui';
 import { labLabel, personById, productById, type IconName } from '@/data/mock';
+import Ficha from '@/screens/Ficha';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -68,7 +69,14 @@ function Parallax({ children, speed, at = 0, style }: { children: ReactNode; spe
 }
 
 export default function Presentacion() {
-  const { id, visita } = useLocalSearchParams<{ id: string; visita?: string }>();
+  const { id, visita, modo } = useLocalSearchParams<{ id: string; visita?: string; modo?: string }>();
+  const prod = productById(id);
+  // los productos fotografiados se presentan con su ficha 3D; ?modo=diapositivas abre la revista de siempre
+  if (prod?.photo && modo !== 'diapositivas') return <Ficha product={prod} presenting visita={visita} />;
+  return <Revista id={id} visita={visita} />;
+}
+
+function Revista({ id, visita }: { id: string; visita?: string }) {
   const { visits, logEvent, updateReport } = useMine();
   const visit = visits.find((v) => v.id === visita);
   const [productId, setProductId] = useState(id);

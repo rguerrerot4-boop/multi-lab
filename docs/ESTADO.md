@@ -50,16 +50,17 @@ Todas respetan "reducir movimiento" del sistema.
 - Los QR apuntan a `https://rguerrerot4-boop.github.io/multi-lab/ar-tarjeta/?p=<id>`: si cambia la dirección de la web hay que regenerar e imprimir las tarjetas.
 - Pendiente: probarla con las tarjetas impresas en un iPhone y un Android reales.
 
-## Ficha del producto (`src/app/producto/[id].tsx`)
+## Ficha del producto (`src/screens/Ficha.tsx`)
 
-- En capítulos, según la referencia de página de producto: el envase 3D queda fijo y se mueve, escala y gira hacia la cara de cada capítulo mientras la ficha se desplaza; detrás pasan títulos gigantes.
-- Capítulos: portada (3D, AR, vitrina), ficha técnica con cifras grandes en recuadro, descripción y datos, componentes/usos en manchas de tinta, modo de uso, avisos, presentación en fila y recursos con relacionados.
-- Cifras y notas: `specs` y `notes` del producto; si no tiene, se arman con presentación, componente, concentración y usos. Colores: los del empaque para productos con fotos y el tono del producto para los ficticios.
-- Las posiciones del envase por capítulo están en `chapters` (x, y, escala, cara).
+- Una sola pantalla para todos los productos (`/producto/[id]`), armada con las referencias: portada con el nombre gigante en movimiento detrás de la caja 3D flotando; ficha técnica con cifras grandes en recuadro; «Cara por cara»; componentes en manchas de tinta (se tocan para ver el texto completo); modo de uso y avisos; pedestal y presentación en fila; cierre con letras grandes y acciones. Barra flotante con las acciones del rol (Presentar/Compartir o Solicitar/Contactar).
+- «Cara por cara»: al deslizar (o con las flechas y los puntos) la caja de arriba gira a la cara de la tarjeta del centro; al tocar esa tarjeta se voltea y muestra su texto; «Ampliar foto» abre la foto de esa cara para leer el empaque (1×, 1,6×, 2,4×).
+- La vitrina 3D ya no es un botón aparte: es la ficha de CORAESSENS. `/vitrina/[id]` redirige a la ficha. Presentar CORAESSENS abre esta misma ficha en modo presentación (cronómetro, «Terminar presentación» y marca el producto en la visita en curso); `?modo=diapositivas` abre la revista de siempre. Los productos ficticios siguen presentándose con la revista.
+- Contenido: `src/data/ficha.ts` (`fichaContent`, `fichaPalette`, `specsOf`). Piezas visuales: `src/components/showcase.tsx`.
+- Web: react-native-web reemplaza `scrollTo` en el nodo del carrusel; `scrollToX` usa el del navegador. El carrusel no lleva `overflow: visible` en la web (si no, se desplaza la sección entera).
 
-## Vitrina 3D (CORAESSENS)
+## CORAESSENS (producto real con fotos)
 
-- Pantalla `src/app/vitrina/[id].tsx`, datos `src/data/vitrina.ts`, caja `src/components/PhotoBox3D.tsx`, acceso `src/components/VitrinaBanner.tsx`.
+- Datos `src/data/vitrina.ts`, caja `src/components/PhotoBox3D.tsx`, acceso `src/components/VitrinaBanner.tsx` (abre su ficha).
 - Texturas: `scripts/coraessens/texturas.py <carpeta de fotos>` endereza las caras (esquinas medidas a mano en IMG_2208, 2214, 2222, 2233, 2235 y 2238), iguala el blanco y crea la versión ficticia. Las fotos originales no están en el repositorio.
 - Modelos AR: `scripts/coraessens/modelo.py` → `ar/models/cor.*` (real) y `cor-f.*` (ficticio), con la geometría de `build_models.py`.
 - La caja 3D usa proyección ortográfica: cada cara es un paralelogramo y la foto se mapea exacta con una matriz afín de SVG (sin costuras). Las cajas fuera de pantalla se pausan.

@@ -64,9 +64,10 @@ export const Product3D = forwardRef<
     zoom?: number;
     active?: number | null; // punto seleccionado (controlado por la pantalla)
     onActiveChange?: (i: number | null) => void;
+    paused?: boolean; // fuera de pantalla: deja de animarse
   }
 >(function Product3D(
-  { product, size = 300, width, height, fullGestures = false, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange },
+  { product, size = 300, width, height, fullGestures = false, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange, paused = false },
   ref,
 ) {
   const W = width ?? size;
@@ -116,6 +117,7 @@ export const Product3D = forwardRef<
 
   // bucle de animación: transición hacia un punto, inercia y giro automático
   useEffect(() => {
+    if (paused) return;
     let raf = 0;
     let prev = Date.now();
     const loop = () => {
@@ -140,7 +142,7 @@ export const Product3D = forwardRef<
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [autoRotate, active, setQ, spin]);
+  }, [autoRotate, active, setQ, spin, paused]);
 
   const pan = useMemo(
     () =>
