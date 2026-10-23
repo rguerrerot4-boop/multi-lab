@@ -13,7 +13,6 @@ import {
   Marquee,
   ModeToggle,
   Pill,
-  Podium,
   PhotoZoom,
   RoundButton,
   ShowBox,
@@ -130,16 +129,22 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
   const related = products.filter((x) => x.id !== p.id && (x.category === p.category || x.lab === p.lab)).slice(0, 4);
   const mm = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
 
-  // imagen de cada tarjeta: la foto de esa cara, o el envase dibujado del producto ficticio
-  const imageFor = (card: VitrinaCard, i: number, w: number) => {
+  // imagen de cada tarjeta, dentro del área que le deja la tarjeta: la foto de esa cara enmarcada,
+  // o el envase dibujado del producto ficticio
+  const imageFor = (card: VitrinaCard, i: number, aw: number, ah: number) => {
     if (c.textures) {
-      const top = card.face === 'top' || card.face === 'bottom';
-      const iw = w * (top ? 0.62 : 0.56);
-      return <Image source={c.textures[card.face]} style={{ width: iw, height: top ? iw : iw * 1.447, borderRadius: 6 }} resizeMode="cover" />;
+      const ratio = card.face === 'top' || card.face === 'bottom' ? 1 : 1.447;
+      const ih = Math.min(ah, (aw * 0.78) * ratio);
+      const iw = ih / ratio;
+      return (
+        <View style={{ padding: 5, backgroundColor: colors.white, borderRadius: 8 }}>
+          <Image source={c.textures[card.face]} style={{ width: iw - 10, height: ih - 10, borderRadius: 4 }} resizeMode="cover" />
+        </View>
+      );
     }
     return (
-      <View style={{ width: w * 0.72, borderRadius: radius.lg, overflow: 'hidden' }}>
-        <ProductVisual product={p} height={w * 0.66} view={i % 3} />
+      <View style={{ width: Math.min(aw, ah * 1.1), borderRadius: radius.lg, overflow: 'hidden', borderWidth: 4, borderColor: colors.white }}>
+        <ProductVisual product={p} height={Math.min(ah, aw * 0.9) - 8} view={i % 3} />
       </View>
     );
   };
@@ -319,9 +324,9 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
             <Text style={[s.script, { color: pal.main }]}>Así se presenta</Text>
             <Text style={[s.giantTitle, { color: pal.ink, textAlign: 'center' }]}>PRESENTACIÓN</Text>
           </View>
-          <Podium width={W}>
-            <ShowBox key={`p-${mode}`} product={p} textures={c.textures} width={240} height={250} fill={0.8} float={false} paused={!on.pedestal} reduce={reduce} spin={0.00028} edge={pal.mainDeep} />
-          </Podium>
+          <View style={{ alignItems: 'center', marginVertical: space.md }}>
+            <ShowBox key={`p-${mode}`} product={p} textures={c.textures} width={Math.min(W, 360)} height={330} fill={0.62} float={false} interactive={false} turntable pedestal paused={!on.pedestal} reduce={reduce} spin={0.00028} edge={pal.mainDeep} />
+          </View>
           <Lineup p={p} c={c} pal={pal} w={W} />
           {p.sizeCm || p.photo ? (
             <Text style={[s.fine, { textAlign: 'center', marginTop: space.md }]}>
@@ -432,7 +437,7 @@ function Carousel({
   width: number;
   pal: FichaPal;
   reduce: boolean;
-  imageFor: (c: VitrinaCard, i: number, w: number) => ReactNode;
+  imageFor: (c: VitrinaCard, i: number, aw: number, ah: number) => ReactNode;
   canZoom: boolean;
   onZoom: (c: VitrinaCard) => void;
   onActive: (c: VitrinaCard) => void;
@@ -486,7 +491,7 @@ function Carousel({
         disableIntervalMomentum
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x } } }], { useNativeDriver: true })}
-        contentContainerStyle={{ paddingHorizontal: pad, gap: GAP, paddingTop: space.md, paddingBottom: 56 }}
+        contentContainerStyle={{ paddingHorizontal: pad, gap: GAP, paddingTop: space.md, paddingBottom: space.xl }}
         // en la web el carrusel debe conservar su propio desplazamiento (si no, se mueve la sección entera)
         style={Platform.OS === 'web' ? undefined : { overflow: 'visible' }}
       >
@@ -505,7 +510,8 @@ function Carousel({
               scale={x.interpolate({ inputRange: range, outputRange: [0.84, 1, 0.84], extrapolate: 'clamp' })}
               ty={x.interpolate({ inputRange: range, outputRange: [22, 0, 22], extrapolate: 'clamp' })}
               pop={x.interpolate({ inputRange: range, outputRange: [0, 1, 0], extrapolate: 'clamp' })}
-              image={imageFor(cd, i, cardW)}
+              image={imageFor(cd, i, cardW - space.lg * 2, cardH - CARD_TOP - space.lg)}
+              index={i}
               label={`${cd.title}, tarjeta ${i + 1} de ${cards.length}`}
               onPress={() => (i === active ? setFlipped((f) => (f === cd.id ? null : cd.id)) : go(i))}
             />
@@ -561,6 +567,7 @@ function FaceCard({
   ty,
   pop,
   image,
+  index,
   label,
   onPress,
 }: {
@@ -575,6 +582,7 @@ function FaceCard({
   ty: Animated.AnimatedInterpolation<number>;
   pop: Animated.AnimatedInterpolation<number>;
   image: ReactNode;
+  index: number;
   label: string;
   onPress: () => void;
 }) {
@@ -584,7 +592,10 @@ function FaceCard({
     else Animated.spring(f, { toValue: flipped ? 1 : 0, useNativeDriver: true, stiffness: 180, damping: 18 }).start();
   }, [flipped, f, reduce]);
   const bg = card.tone === 'red' ? pal.main : pal.bg;
-  const face = { position: 'absolute' as const, top: 0, left: 0, width: w, height: h, borderRadius: 26, backgroundColor: bg, backfaceVisibility: 'hidden' as const };
+  // el título cabe sin partir palabras (la palabra más larga define el tamaño)
+  const longest = Math.max(...card.title.split(' ').map((x) => x.length));
+  const titleSize = Math.min(card.title.length > 14 ? 21 : 26, (w - space.lg * 2 - 34) / (longest * 0.72));
+  const face = { position: 'absolute' as const, top: 0, left: 0, width: w, height: h, borderRadius: 26, backgroundColor: bg, overflow: 'hidden' as const, backfaceVisibility: 'hidden' as const };
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={center ? 'Toca para voltear la tarjeta' : 'Toca para centrarla'}>
       <Animated.View
@@ -606,30 +617,30 @@ function FaceCard({
           pointerEvents={flipped ? 'none' : 'auto'}
           style={[face, { padding: space.lg, opacity: f.interpolate({ inputRange: [0.49, 0.51], outputRange: [1, 0], extrapolate: 'clamp' }), transform: [{ perspective: 900 }, { rotateY: f.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }]}
         >
+          {/* número grande de fondo */}
+          <Text style={{ position: 'absolute', right: -6, bottom: -26, fontFamily: font.bold, fontSize: 150, lineHeight: 160, color: pal.veil, letterSpacing: -8 }}>{String(index + 1).padStart(2, '0')}</Text>
           <Text style={s.cardKicker}>{card.kicker}</Text>
-          <Text style={{ fontFamily: font.bold, fontSize: card.title.length > 14 ? 21 : 26, lineHeight: card.title.length > 14 ? 25 : 30, color: colors.white, marginTop: 4 }} numberOfLines={2}>
+          <Text style={{ fontFamily: font.bold, fontSize: titleSize, lineHeight: titleSize * 1.16, color: colors.white, marginTop: 4, marginRight: 34 }} numberOfLines={2}>
             {card.title}
           </Text>
-          <Animated.View
-            style={{
-              position: 'absolute',
-              bottom: -h * 0.1,
-              left: 0,
-              right: 0,
-              alignItems: 'center',
-              shadowColor: pal.ink,
-              shadowOpacity: 0.35,
-              shadowRadius: 14,
-              shadowOffset: { width: 0, height: 10 },
-              transform: [
-                { translateY: pop.interpolate({ inputRange: [0, 1], outputRange: [10, -6] }) },
-                { rotate: pop.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-6deg'] }) },
-                { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.04] }) },
-              ],
-            }}
-          >
-            {image}
-          </Animated.View>
+          {/* la foto queda dentro de la tarjeta, enmarcada; la del centro se endereza y crece un poco */}
+          <View style={{ position: 'absolute', left: space.lg, right: space.lg, top: CARD_TOP, bottom: space.lg, alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View
+              style={{
+                shadowColor: pal.ink,
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 6,
+                transform: [
+                  { rotate: pop.interpolate({ inputRange: [0, 1], outputRange: ['-5deg', '-2deg'] }) },
+                  { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+                ],
+              }}
+            >
+              {image}
+            </Animated.View>
+          </View>
           {center ? (
             <View style={{ position: 'absolute', top: space.lg, right: space.lg, width: 30, height: 30, borderRadius: 15, backgroundColor: pal.veil, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="sync-outline" size={16} color={colors.white} />
@@ -670,28 +681,56 @@ function FaceCard({
   );
 }
 
-/** Manchas de tinta alrededor del envase (componentes del producto real o usos de los ficticios) */
+/** Manchas de tinta alrededor del envase. Al tocar una, se abre grande al centro con su texto completo */
 function Notes({ p, c, pal, w, paused, reduce, open, onToggle, mode }: { p: Product; c: FichaContent; pal: FichaPal; w: number; paused: boolean; reduce: boolean; open: number | null; onToggle: (i: number) => void; mode: VitrinaMode }) {
-  const H = 640;
-  const spots = [
-    { x: 0.0, y: 0.02 },
-    { x: 0.55, y: 0.06 },
-    { x: -0.02, y: 0.5 },
-    { x: 0.56, y: 0.54 },
-    { x: 0.27, y: 0.78 },
+  const count = Math.min(c.notes.length, 5);
+  const H = count <= 2 ? 470 : count <= 4 ? 600 : 660; // menos manchas, sección más baja
+  const gap = space.md;
+  const size = Math.min((w - gap * 3) / 2, 190);
+  const L = gap;
+  const Rr = w - gap - size;
+  const spots = count <= 2 ? [
+    { x: L, y: 0 },
+    { x: Rr, y: H - size - 10 },
+  ] : [
+    { x: L, y: 0 },
+    { x: Rr, y: 40 },
+    { x: L, y: count <= 2 ? H * 0.52 : H * 0.47 },
+    { x: Rr, y: count <= 2 ? H * 0.12 : H * 0.5 },
+    { x: (w - size) / 2, y: H - size - 6 },
   ];
-  const size = Math.min(w * 0.46, 200);
+  const notes = c.notes.slice(0, spots.length);
+  const a = useRef(new Animated.Value(0)).current;
+  const [shown, setShown] = useState<number | null>(open);
+  useEffect(() => {
+    if (open !== null) {
+      setShown(open);
+      a.setValue(reduce ? 1 : 0);
+      if (!reduce) Animated.spring(a, { toValue: 1, useNativeDriver: true, stiffness: 240, damping: 18 }).start();
+    } else if (reduce) setShown(null);
+    else Animated.timing(a, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setShown(null));
+  }, [open, a, reduce]);
+  const big = Math.min(w - space.lg * 2, 320);
   return (
     <View style={{ alignSelf: 'center', width: w, height: H }}>
-      <View style={{ position: 'absolute', left: 0, right: 0, top: H * 0.22, alignItems: 'center' }} pointerEvents="none">
+      <View style={{ position: 'absolute', left: 0, right: 0, top: H * 0.2, alignItems: 'center' }} pointerEvents="none">
         <ShowBox key={`n-${mode}`} product={p} textures={c.textures} width={w * 0.6} height={H * 0.5} fill={0.85} interactive={false} paused={paused} reduce={reduce} edge={pal.mainDeep} spin={0.00035} />
       </View>
-      {c.notes.slice(0, spots.length).map((n, i) => (
-        <View key={n.title} style={{ position: 'absolute', left: spots[i].x * w, top: spots[i].y * H, zIndex: open === i ? 2 : 1 }}>
-          <InkNote title={n.title} text={n.text} color={i % 2 ? pal.bgDeep : pal.main} size={size} seed={31 + i * 17} open={open === i} onPress={() => onToggle(i)} />
+      {notes.map((n, i) => (
+        <View key={n.title} style={{ position: 'absolute', left: spots[i].x, top: spots[i].y }}>
+          <InkNote title={n.title} text={n.text} color={i % 2 ? pal.bgDeep : pal.main} size={size} seed={31 + i * 17} dim={open !== null && open !== i} onPress={() => onToggle(i)} />
         </View>
       ))}
-      {!p.real ? <Text style={[s.fine, { position: 'absolute', bottom: 0, left: space.lg, right: space.lg, textAlign: 'center' }]}>Texto de ejemplo: no corresponde a indicaciones aprobadas.</Text> : null}
+      {shown !== null && notes[shown] ? (
+        <Animated.View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', opacity: a }]}>
+          <Pressable onPress={() => onToggle(shown)} accessibilityRole="button" accessibilityLabel="Cerrar" style={[StyleSheet.absoluteFill, { backgroundColor: colors.glass }]} />
+          <Animated.View style={{ transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }, { rotate: a.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '0deg'] }) }] }}>
+            <InkNote title={notes[shown].title} text={notes[shown].text} color={shown % 2 ? pal.bgDeep : pal.main} size={big} seed={31 + shown * 17} full onPress={() => onToggle(shown)} />
+          </Animated.View>
+          <Text style={[s.fine, { marginTop: space.sm }]}>Toca para cerrar</Text>
+        </Animated.View>
+      ) : null}
+      {!p.real ? <Text style={[s.fine, { position: 'absolute', bottom: -space.lg, left: space.lg, right: space.lg, textAlign: 'center' }]}>Texto de ejemplo: no corresponde a indicaciones aprobadas.</Text> : null}
     </View>
   );
 }
@@ -785,6 +824,8 @@ function ActionBar({ show, pal, actions, bottom, reduce }: { show: boolean; pal:
     </Animated.View>
   );
 }
+
+const CARD_TOP = 104; // alto reservado arriba de la tarjeta para el título
 
 const s = StyleSheet.create({
   overline: { fontFamily: font.bold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.white, opacity: 0.9 },

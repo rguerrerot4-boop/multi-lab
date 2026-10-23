@@ -4,6 +4,7 @@ import { Animated, Easing, PanResponder, Platform, Pressable, Text, View } from 
 import Svg, { G, Image as SvgImage, Polygon, Rect, Text as SvgText } from 'react-native-svg';
 import type { Hotspot, Product } from '@/data/mock';
 import { type Q, type V3, qAxis, qMul, qNorm, qRot, qSlerp } from '@/lib/quat';
+import { PedestalShape } from '@/components/Pedestal';
 import { colors, font, radius, space, type } from '@/theme';
 
 // Visor 3D simulado: una caja de producto dibujada con proyección en perspectiva.
@@ -65,9 +66,11 @@ export const Product3D = forwardRef<
     active?: number | null; // punto seleccionado (controlado por la pantalla)
     onActiveChange?: (i: number | null) => void;
     paused?: boolean; // fuera de pantalla: deja de animarse
+    turntable?: boolean; // gira solo sobre su eje vertical (tocadiscos)
+    pedestal?: boolean; // dibuja un pedestal bajo la caja
   }
 >(function Product3D(
-  { product, size = 300, width, height, fullGestures = false, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange, paused = false },
+  { product, size = 300, width, height, fullGestures = false, autoRotate = true, interactive = true, zoom = 1, active = null, onActiveChange, paused = false, turntable = false, pedestal = false },
   ref,
 ) {
   const W = width ?? size;
@@ -93,7 +96,8 @@ export const Product3D = forwardRef<
   // escala de unidades a píxeles (en pantalla completa el modelo ocupa buena parte de la pantalla)
   const S = (fullGestures ? Math.min(W * 0.52, H * 0.3) : Math.min(W, H) * 0.33) * zoom * pinch;
   const cx = W / 2;
-  const cy = H / 2;
+  const cy = pedestal ? H * 0.4 : H / 2;
+  const turn = useRef(-0.45);
   const clampZoom = (z: number) => Math.max(0.6, Math.min(2.2, z));
 
   const setQ = useCallback((nq: Q) => {
@@ -134,6 +138,9 @@ export const Product3D = forwardRef<
           spin(vel.current.x * dt, vel.current.y * dt);
           const decay = Math.pow(0.94, dt / 16);
           vel.current = { x: vel.current.x * decay, y: vel.current.y * decay };
+        } else if (turntable) {
+          turn.current += 0.00028 * dt;
+          setQ(qMul(qAxis([1, 0, 0], 0.3), qAxis([0, 1, 0], turn.current)));
         } else if (autoRotate && active === null && now - idleSince.current > 2000) {
           spin(0.00045 * dt, 0);
         }
@@ -142,7 +149,7 @@ export const Product3D = forwardRef<
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [autoRotate, active, setQ, spin, paused]);
+  }, [autoRotate, active, setQ, spin, paused, turntable]);
 
   const pan = useMemo(
     () =>
@@ -285,6 +292,16 @@ export const Product3D = forwardRef<
   return (
     <View ref={host} style={{ width: W, height: H, alignSelf: 'center' }} {...pan.panHandlers}>
       <Svg width={W} height={H}>
+        {pedestal
+          ? (() => {
+              const bottom = FACES.bottom;
+              const c0 = project(bottom.corner(0.5, 0.5));
+              const k0 = bottom.corner(0, 0);
+              const rx = Math.hypot(k0[0], k0[2]) * S * 1.22; // radio fijo: no cambia al girar
+              const ry = rx * Math.sin(0.3);
+              return <PedestalShape id="p3-ped" cx={c0.x} top={c0.y} rx={rx} ry={ry} height={Math.max(20, Math.min(H - c0.y - ry - 6, rx * 0.85))} />;
+            })()
+          : null}
         {photo
           ? visibleFaces.map((face) => (
               <Polygon key={`e-${face}`} points={poly(face)} fill={shade(base, -0.35)} stroke={shade(base, -0.35)} strokeWidth={1.2} strokeLinejoin="round" />

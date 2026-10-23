@@ -55,8 +55,10 @@ export const ShowBox = forwardRef<
     spin?: number;
     edge?: string;
     onInteract?: () => void;
+    turntable?: boolean;
+    pedestal?: boolean;
   }
->(function ShowBox({ product, textures, width, height, fill = 0.6, float = true, interactive = true, fullGestures, autoRotate = true, paused, reduce, spin, edge, onInteract }, ref) {
+>(function ShowBox({ product, textures, width, height, fill = 0.6, float = true, interactive = true, fullGestures, autoRotate = true, paused, reduce, spin, edge, onInteract, turntable, pedestal }, ref) {
   const photo = useRef<PhotoBox3DHandle>(null);
   const [active, setActive] = useState<number | null>(null);
   const hold = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,6 +91,8 @@ export const ShowBox = forwardRef<
         spinSpeed={spin}
         edge={edge}
         onInteract={onInteract}
+        turntable={turntable}
+        pedestal={pedestal}
       />
     );
   }
@@ -106,6 +110,8 @@ export const ShowBox = forwardRef<
         active={active}
         onActiveChange={setActive}
         paused={paused}
+        turntable={turntable}
+        pedestal={pedestal}
       />
     </View>
   );
@@ -351,26 +357,26 @@ export function blob(seed: number, r: number) {
   return d;
 }
 
-/** Mancha de tinta con texto; al tocarla se agranda y muestra el texto completo */
-export function InkNote({ title, text, color, size, seed, open, onPress }: { title: string; text: string; color: string; size: number; seed: number; open: boolean; onPress: () => void }) {
-  const a = useRef(new Animated.Value(open ? 1 : 0)).current;
-  useEffect(() => {
-    Animated.spring(a, { toValue: open ? 1 : 0, useNativeDriver: true, stiffness: 220, damping: 16 }).start();
-  }, [open, a]);
-  const R = size / 2.4;
+/** Mancha de tinta con texto. `full`: versión grande con el texto completo (se abre al centro) */
+export function InkNote({ title, text, color, size, seed, full, dim, onPress }: { title: string; text: string; color: string; size: number; seed: number; full?: boolean; dim?: boolean; onPress: () => void }) {
+  // la mancha (con picos y gotas) llega hasta ~1,45 R del centro: así nunca se corta dentro de su lienzo
+  const R = size / 2.95;
+  const off = size / 2 - R;
+  const pad = size * (full ? 0.2 : 0.22);
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${title}. ${text}`}>
-      <Animated.View style={{ width: size, height: size, transform: [{ scale: a.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }, { rotate: a.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-4deg'] }) }] }}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ expanded: !!full }} accessibilityLabel={`${title}. ${text}`} style={{ opacity: dim ? 0.35 : 1 }}>
+      <View style={{ width: size, height: size }}>
         <Svg width={size} height={size} style={{ position: 'absolute' }}>
-          <Path d={blob(seed, R)} fill={color} transform={`translate(${R * 0.2},${R * 0.2})`} />
+          <Path d={blob(seed, R)} fill={color} transform={`translate(${off},${off})`} />
         </Svg>
-        <View style={{ position: 'absolute', left: size * 0.2, right: size * 0.2, top: size * 0.22, bottom: size * 0.2, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-          <Text style={{ fontFamily: font.bold, fontSize: 12, letterSpacing: 0.6, color: colors.white, textTransform: 'uppercase', textAlign: 'center' }}>{title}</Text>
-          <Text style={{ fontFamily: font.medium, fontSize: 10.5, lineHeight: 14, color: colors.white, textAlign: 'center' }} numberOfLines={open ? 7 : 3}>
+        <View style={{ position: 'absolute', left: pad, right: pad, top: pad, bottom: pad, alignItems: 'center', justifyContent: 'center', gap: full ? 6 : 2 }}>
+          <Text style={{ fontFamily: font.bold, fontSize: full ? 17 : 11.5, letterSpacing: 0.6, color: colors.white, textTransform: 'uppercase', textAlign: 'center' }}>{title}</Text>
+          <Text style={{ fontFamily: font.medium, fontSize: full ? 14 : 10, lineHeight: full ? 20 : 13, color: colors.white, textAlign: 'center' }} numberOfLines={full ? 8 : 3}>
             {text}
           </Text>
+          {full ? null : <Ionicons name="add-circle" size={16} color={colors.white} style={{ opacity: 0.85, marginTop: 2 }} />}
         </View>
-      </Animated.View>
+      </View>
     </Pressable>
   );
 }

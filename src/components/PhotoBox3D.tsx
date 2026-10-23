@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { PanResponder, Platform, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Defs, Ellipse, G, Image as SvgImage, LinearGradient, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { type Q, type V3, qAxis, qMul, qNorm, qRot, qSlerp } from '@/lib/quat';
+import { PedestalShape } from '@/components/Pedestal';
 import { colors } from '@/theme';
 
 // Caja 3D con las fotos reales del empaque como textura.
@@ -19,6 +20,7 @@ export interface PhotoBox3DHandle {
 
 // vista de reposo: un poco desde arriba y girada, para que se vean frente, lateral y tapa
 export const BOX_VIEW: Q = qMul(qAxis([1, 0, 0], 0.36), qAxis([0, 1, 0], -0.62));
+const TURN_TILT = 0.34; // inclinación de la cámara sobre el pedestal
 const faceQ = (face: BoxFace): Q => {
   const tilt = qAxis([1, 0, 0], 0.22);
   const side = qAxis([0, 1, 0], -0.32);
@@ -71,6 +73,10 @@ export const PhotoBox3D = forwardRef<
     initial?: Q;
     spinSpeed?: number;
     onInteract?: () => void;
+    /** gira como en un tocadiscos (solo sobre su eje vertical, con la inclinación fija) */
+    turntable?: boolean;
+    /** dibuja un pedestal con la tapa en el plano de la base de la caja */
+    pedestal?: boolean;
   }
 >(function PhotoBox3D(
   {
@@ -89,6 +95,8 @@ export const PhotoBox3D = forwardRef<
     initial = BOX_VIEW,
     spinSpeed = 0.00042,
     onInteract,
+    turntable = false,
+    pedestal = false,
   },
   ref,
 ) {
@@ -104,6 +112,7 @@ export const PhotoBox3D = forwardRef<
   const zoom = useRef(1);
   const pinch = useRef({ start: 0, base: 1 });
   const lastTap = useRef(0);
+  const angle = useRef(-0.62); // giro del tocadiscos
   const onInteractRef = useRef(onInteract);
   onInteractRef.current = onInteract;
 
@@ -151,6 +160,10 @@ export const PhotoBox3D = forwardRef<
           const decay = Math.pow(0.93, dt / 16);
           vel.current = { x: vel.current.x * decay, y: vel.current.y * decay };
           changed = true;
+        } else if (turntable) {
+          if (!reduceMotion) angle.current += spinSpeed * dt;
+          qRef.current = qMul(qAxis([1, 0, 0], TURN_TILT), qAxis([0, 1, 0], angle.current));
+          changed = true;
         } else if (autoRotate && !reduceMotion && now - idleSince.current > 2200) {
           spin(spinSpeed * dt, 0);
           changed = true;
@@ -165,7 +178,7 @@ export const PhotoBox3D = forwardRef<
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [paused, autoRotate, reduceMotion, float, spinSpeed, spin, redraw]);
+  }, [paused, autoRotate, reduceMotion, float, spinSpeed, spin, redraw, turntable]);
 
   const pan = useMemo(
     () =>
@@ -258,7 +271,8 @@ export const PhotoBox3D = forwardRef<
   const S = ((Math.min(W, H) * fill) / diag) * zoom.current;
   const bob = float && !reduceMotion ? Math.sin(t.current / 900) * 0.045 : 0; // en unidades de la caja
   const cx = W / 2;
-  const cy = H / 2 - (float ? h * 0.06 * S : 0);
+  // sobre el pedestal la caja queda más arriba para dejar sitio al cilindro
+  const cy = pedestal ? H * 0.4 : H / 2 - (float ? h * 0.06 * S : 0);
   const q = qRef.current;
   const P = (p: V3) => {
     const [x, y] = qRot(q, p);
@@ -315,7 +329,14 @@ export const PhotoBox3D = forwardRef<
             <Stop offset="1" stopColor={colors.white} stopOpacity={0} />
           </LinearGradient>
         </Defs>
-        <Ellipse cx={(minX + maxX) / 2} cy={floorY} rx={Math.max(10, shW)} ry={Math.max(4, shW * 0.16)} fill="url(#pb-shadow)" />
+        {pedestal
+          ? (() => {
+              const base = P([0, -h / 2, 0]);
+              const rx = (Math.hypot(w, d) / 2) * 1.22 * S;
+              const ry = rx * Math.sin(TURN_TILT);
+              return <PedestalShape id="pb-ped" cx={base.x} top={base.y} rx={rx} ry={ry} height={Math.max(20, Math.min(H - base.y - ry - 6, rx * 0.85))} />;
+            })()
+          : <Ellipse cx={(minX + maxX) / 2} cy={floorY} rx={Math.max(10, shW)} ry={Math.max(4, shW * 0.16)} fill="url(#pb-shadow)" />}
         {/* canto: rellena las juntas entre caras */}
         {faces.map(({ face }) => (
           <Polygon
