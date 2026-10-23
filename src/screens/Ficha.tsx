@@ -327,12 +327,6 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
           <View style={{ alignItems: 'center', marginVertical: space.md }}>
             <ShowBox key={`p-${mode}`} product={p} textures={c.textures} width={Math.min(W, 360)} height={330} fill={0.62} float={false} interactive={false} turntable pedestal paused={!on.pedestal} reduce={reduce} spin={0.00028} edge={pal.mainDeep} />
           </View>
-          <Lineup p={p} c={c} pal={pal} w={W} />
-          {p.sizeCm || p.photo ? (
-            <Text style={[s.fine, { textAlign: 'center', marginTop: space.md }]}>
-              Medidas aproximadas: {`${(p.sizeCm ?? { w: 7, h: 10.5, d: 3.2 }).w} × ${(p.sizeCm ?? { w: 7, h: 10.5, d: 3.2 }).d} × ${(p.sizeCm ?? { w: 7, h: 10.5, d: 3.2 }).h}`.replace(/\./g, ',')} cm
-            </Text>
-          ) : null}
         </View>
 
         {/* ---------- 7 · CIERRE ---------- */}
@@ -732,47 +726,6 @@ function Notes({ p, c, pal, w, paused, reduce, open, onToggle, mode }: { p: Prod
       ) : null}
       {!p.real ? <Text style={[s.fine, { position: 'absolute', bottom: -space.lg, left: space.lg, right: space.lg, textAlign: 'center' }]}>Texto de ejemplo: no corresponde a indicaciones aprobadas.</Text> : null}
     </View>
-  );
-}
-
-function Lineup({ p, c, pal, w }: { p: Product; c: FichaContent; pal: FichaPal; w: number }) {
-  const items = c.textures
-    ? [
-        { key: 'front' as const, label: 'Frente', sub: '9 cápsulas' },
-        { key: 'left' as const, label: 'Composición', sub: 'Modo de empleo' },
-        { key: 'right' as const, label: 'Nutricional', sub: 'Porción diaria' },
-        { key: 'back' as const, label: 'Reverso', sub: 'Advertencias y lote' },
-        { key: 'top' as const, label: 'Tapa', sub: 'Extremos' },
-      ]
-    : [
-        { key: 'front' as const, label: 'Envase', sub: p.form.split('·')[1]?.trim() ?? p.form },
-        { key: 'right' as const, label: 'Detalle', sub: p.component },
-        { key: 'back' as const, label: 'Formato', sub: p.form.split('·')[0].trim() },
-      ];
-  const cw = Math.min(130, w * 0.34);
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.lg, paddingHorizontal: space.xl, alignItems: 'flex-end', flexGrow: 1, justifyContent: 'center' }}>
-      {items.map((it, i) => (
-        <View key={it.key} style={{ width: cw, alignItems: 'center', gap: 6 }}>
-          {c.textures ? (
-            <Image
-              source={c.textures[it.key]}
-              style={{ width: cw * 0.8, height: it.key === 'top' ? cw * 0.8 : cw * 0.8 * 1.447, borderRadius: 4, transform: [{ rotate: i % 2 ? '3deg' : '-3deg' }] }}
-              accessibilityLabel={`${it.label} del empaque`}
-            />
-          ) : (
-            <View style={{ width: cw }}>
-              <ProductVisual product={p} height={cw * 1.1} view={i} />
-            </View>
-          )}
-          <View style={{ width: 26, height: 3, borderRadius: 2, backgroundColor: pal.main, marginTop: 4 }} />
-          <Text style={{ fontFamily: font.bold, fontSize: 13, color: pal.ink, textAlign: 'center' }}>{it.label}</Text>
-          <Text style={[s.fine, { textAlign: 'center' }]} numberOfLines={2}>
-            {it.sub}
-          </Text>
-        </View>
-      ))}
-    </ScrollView>
   );
 }
 

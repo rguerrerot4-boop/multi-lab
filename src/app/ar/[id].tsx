@@ -7,7 +7,7 @@ import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } f
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
 import { productById, productNote, type IconName } from '@/data/mock';
-import { AR_CARDS_PDF, AR_SIZE_CM, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
+import { AR_SIZE_CM, arCardPdf, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -201,8 +201,8 @@ export default function ArScreen() {
               ? 'Modelo hecho con las fotos del empaque (tamaño aproximado). Se descarga la primera vez (unos 450 KB) y necesita internet.'
               : 'Modelo ilustrativo de un producto ficticio. Se descarga la primera vez (unos 150 KB) y necesita internet.'}
           </Text>
-          <Pressable onPress={() => Linking.openURL(AR_CARDS_PDF).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
-            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar tarjetas para imprimir (PDF)</Text>
+          <Pressable onPress={() => Linking.openURL(arCardPdf(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar la tarjeta para imprimir (PDF)</Text>
           </Pressable>
         </View>
       </ScrollView>

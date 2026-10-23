@@ -189,14 +189,14 @@ def card_coraessens():
     return im, panel
 
 
-def sheet(cards):
+def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (prototipo académico)"):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
     pages = []
     for i in range(0, len(cards), 3):
         page = Image.new("RGB", (W, H), WHITE)
         d = ImageDraw.Draw(page)
-        d.text((150, 120), "Multi LAB · Tarjetas de realidad aumentada (prototipo académico)", font=font("semibold", 36), fill=INK_MUTED)
+        d.text((150, 120), title, font=font("semibold", 36), fill=INK_MUTED)
         d.text((150, 175), "Imprime al 100 % (sin ajustar a la página) y recorta por la línea punteada.", font=font("regular", 32), fill=INK_MUTED)
         for k, c in enumerate(cards[i:i + 3]):
             x, y = (W - CW) // 2, 300 + k * (CH + 130)
@@ -208,7 +208,7 @@ def sheet(cards):
                 d.line((x - 20, dy, x - 20, dy + 12), fill="#8A9A9F", width=3)
                 d.line((x + CW + 20, dy, x + CW + 20, dy + 12), fill="#8A9A9F", width=3)
         pages.append(page)
-    pages[0].save(os.path.join(OUT, "tarjetas-multilab.pdf"), save_all=True, append_images=pages[1:], resolution=DPI)
+    pages[0].save(path, save_all=True, append_images=pages[1:], resolution=DPI)
 
 
 def main():
@@ -227,7 +227,10 @@ def main():
     c.save(os.path.join(OUT, "tarjetas", "cor.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "cor.png"), optimize=True)
     cards.append(c)
-    sheet(cards)
+    sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
+    # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
+    for p, c in zip(products + [COR], cards):
+        sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
     data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)

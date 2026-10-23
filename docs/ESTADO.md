@@ -44,6 +44,8 @@ Todas respetan "reducir movimiento" del sistema.
 
 ## AR con tarjeta impresa
 
+- Cada producto tiene su propia hoja para imprimir: `public/ar-tarjeta/tarjetas/<id>.pdf` (la genera `build_cards.py`). La app y la página de AR con `?p=<id>` descargan solo esa; sin producto, la hoja con todas (`tarjetas-multilab.pdf`).
+
 - Página `public/ar-tarjeta/index.html` (MindAR 1.2.5 y three 0.160.1 desde jsDelivr; modelos copiados al sitio por `scripts/web/pwa.mjs`). Se abre con el QR de cada tarjeta o desde "Usar tarjeta impresa" en la pantalla de AR.
 - La cámara reconoce solo el panel de cápsulas (izquierda de la tarjeta, 50,8 mm de ancho), que es distinto en cada producto: con la tarjeta completa los 7 diseños se confundían. Probado con cámara simulada: reconoce las 7 tarjetas.
 - El producto aparece al 60 % de su tamaño real (`ESCALA` en la página) para que se vea completo.
@@ -52,7 +54,7 @@ Todas respetan "reducir movimiento" del sistema.
 
 ## Ficha del producto (`src/screens/Ficha.tsx`)
 
-- Una sola pantalla para todos los productos (`/producto/[id]`), armada con las referencias: portada con el nombre gigante en movimiento detrás de la caja 3D flotando; ficha técnica con cifras grandes en recuadro; «Cara por cara»; componentes en manchas de tinta (al tocar una se abre grande al centro con su texto completo; las manchas caben enteras en su lienzo y nunca se cortan a los lados); modo de uso y avisos; pedestal y presentación en fila (la caja gira como en un tocadiscos con la base en el mismo plano que la tapa del pedestal: `turntable` y `pedestal` en PhotoBox3D y Product3D, dibujo en `src/components/Pedestal.tsx`); cierre con letras grandes y acciones. Barra flotante con las acciones del rol (Presentar/Compartir o Solicitar/Contactar).
+- Una sola pantalla para todos los productos (`/producto/[id]`), armada con las referencias: portada con el nombre gigante en movimiento detrás de la caja 3D flotando; ficha técnica con cifras grandes en recuadro; «Cara por cara»; componentes en manchas de tinta (al tocar una se abre grande al centro con su texto completo; las manchas caben enteras en su lienzo y nunca se cortan a los lados); modo de uso y avisos; pedestal solo con el modelo 3D (la caja gira como en un tocadiscos con la base en el mismo plano que la tapa del pedestal: `turntable` y `pedestal` en PhotoBox3D y Product3D, dibujo en `src/components/Pedestal.tsx`); cierre con letras grandes y acciones. Barra flotante con las acciones del rol (Presentar/Compartir o Solicitar/Contactar).
 - «Cara por cara»: la foto de cada cara va enmarcada dentro de la tarjeta (no se sale), con el número de la tarjeta de fondo. Al deslizar (o con las flechas y los puntos) la caja de arriba gira a la cara de la tarjeta del centro; al tocar esa tarjeta se voltea y muestra su texto; «Ampliar foto» abre la foto de esa cara para leer el empaque (1×, 1,6×, 2,4×).
 - La vitrina 3D ya no es un botón aparte: es la ficha de CORAESSENS. `/vitrina/[id]` redirige a la ficha. Presentar CORAESSENS abre esta misma ficha en modo presentación (cronómetro, «Terminar presentación» y marca el producto en la visita en curso); `?modo=diapositivas` abre la revista de siempre. Los productos ficticios siguen presentándose con la revista.
 - Contenido: `src/data/ficha.ts` (`fichaContent`, `fichaPalette`, `specsOf`). Piezas visuales: `src/components/showcase.tsx`.
