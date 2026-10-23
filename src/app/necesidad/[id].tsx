@@ -7,7 +7,8 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ago, DoctorStatusPill, needLabel } from '@/components/doctor';
 import { ProductVisual } from '@/components/ProductVisual';
 import { AppHeader, Avatar, Button, Card, Chip, EmptyState, Field, Screen, styles } from '@/components/ui';
-import { labOfRep, matchProducts, NEED_RESPONSES, personById, type NeedStatus } from '@/data/mock';
+import { labOfRep,
+  repLabNames, matchProducts, NEED_RESPONSES, personById, type NeedStatus } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
 
@@ -37,7 +38,7 @@ export default function Necesidad() {
   }
   const doc = personById(need.doctorId);
   const rep = personById('v1');
-  const matches = matchProducts(need.keywords, labOfRep(rep.id)?.name);
+  const matches = matchProducts(need.keywords, repLabNames(rep.id));
   const step = STEPS.indexOf(need.status);
   const chatId = () => chatWith(isRep ? doc.id : rep.id);
 

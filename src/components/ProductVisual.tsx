@@ -1,13 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Product } from '@/data/mock';
-import { colors, font, radius, space, type } from '@/theme';
+import { labLabel, type Product } from '@/data/mock';
+import { colors, font, packColors, radius, space, type } from '@/theme';
 import { PressableScale, Tag, logoMark } from './ui';
 
 // Composición visual del producto (sustituye fotografías reales en el prototipo).
 // Usa las cápsulas del logotipo como recurso gráfico, sin alterar el logo.
 export function ProductVisual({ product, height = 150, view = 0 }: { product: Product; height?: number; view?: number }) {
+  // producto fotografiado: la foto real de la caja sobre los colores de su empaque
+  if (product.photo) {
+    const C = packColors.coraessens;
+    const face = view === 1 ? 'right' : view === 2 ? 'left' : 'front';
+    const ph = height * 0.8;
+    return (
+      <LinearGradient colors={[C.purple, C.purpleDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.wrap, { height }]}>
+        <View style={[s.capsH, { top: height * 0.12, left: -height * 0.2, width: height * 0.9, height: height * 0.28 }]} />
+        <Image
+          source={product.photo.textures[face]}
+          style={{ width: ph / 1.447, height: ph, borderRadius: Math.max(2, height * 0.02), transform: [{ rotate: '-6deg' }] }}
+          resizeMode="cover"
+          accessibilityLabel={`Foto del empaque de ${product.name}`}
+        />
+      </LinearGradient>
+    );
+  }
   const dark = product.hue === colors.petroleo;
   const start = product.hue;
   const end = dark ? '#2F4E56' : colors.primary;
@@ -67,7 +84,7 @@ export function ProductCard({
         <Text style={type.bodyMuted} numberOfLines={2}>
           {product.tagline}
         </Text>
-        <Text style={type.caption}>{product.lab} (ficticio)</Text>
+        <Text style={type.caption}>{labLabel(product)}</Text>
         {onAction ? (
           <Pressable onPress={onAction} style={s.cardAction} accessibilityRole="button" hitSlop={6}>
             <Ionicons name="add-circle-outline" size={16} color={colors.primary} />

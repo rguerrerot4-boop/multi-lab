@@ -139,7 +139,7 @@ export default function NuevaSolicitud() {
               </Pressable>
             );
           })}
-          <Text style={[type.caption, { textAlign: 'center' }]}>Laboratorios y productos ficticios de demostración.</Text>
+          <Text style={[type.caption, { textAlign: 'center' }]}>Laboratorios y productos ficticios de demostración, salvo Nutrabiotics (producto real con permiso).</Text>
         </View>
       ) : null}
 
@@ -237,7 +237,7 @@ export default function NuevaSolicitud() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={type.h3}>{p.name}</Text>
-                <Text style={type.caption}>{lab.full} (ficticio)</Text>
+                <Text style={type.caption}>{lab.real ? lab.full : `${lab.full} (ficticio)`}</Text>
               </View>
             </View>
             <Row label="Tipo" value={kind ?? ''} />

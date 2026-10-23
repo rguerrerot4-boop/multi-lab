@@ -6,11 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
 import { VitrinaBanner } from '@/components/VitrinaBanner';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
-import { categories, labOfRep, products } from '@/data/mock';
+import { categories, products, repLabNames } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
 
-const labs = ['Todos', ...Array.from(new Set(products.map((p) => p.lab)))];
+const MINE = 'Mis laboratorios';
+const allLabs = ['Todos', ...Array.from(new Set(products.map((p) => p.lab)))];
 
 // Catálogo multimedia interactivo (compartido por ambos roles)
 export default function Catalogo() {
@@ -18,7 +19,9 @@ export default function Catalogo() {
   const { width } = useWindowDimensions();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('Todos');
-  const [lab, setLab] = useState(role === 'visitador' ? labOfRep(userId ?? 'v1')?.name ?? 'Todos' : 'Todos');
+  const mine = repLabNames(userId ?? 'v1');
+  const labs = role === 'visitador' ? [MINE, ...allLabs] : allLabs;
+  const [lab, setLab] = useState(role === 'visitador' ? MINE : 'Todos');
   const [grid, setGrid] = useState(true);
   const cols = grid ? (width >= 700 ? 3 : 2) : 1;
 
@@ -27,9 +30,10 @@ export default function Catalogo() {
     return products.filter(
       (p) =>
         (cat === 'Todos' || p.category === cat) &&
-        (lab === 'Todos' || p.lab === lab) &&
+        (lab === 'Todos' || (lab === MINE ? mine.includes(p.lab) : p.lab === lab)) &&
         (!term || `${p.name} ${p.tagline} ${p.category} ${p.lab}`.toLowerCase().includes(term)),
-    );
+    ).sort((a, b) => Number(!!b.photo) - Number(!!a.photo)); // los productos con fotos 3D van primero
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, cat, lab]);
 
   const open = (id: string) => {
@@ -111,7 +115,7 @@ export default function Catalogo() {
               </Pressable>
             </View>
             <Text style={type.caption}>
-              {list.length} {list.length === 1 ? 'producto' : 'productos'} · todos ficticios para el prototipo
+              {list.length} {list.length === 1 ? 'producto' : 'productos'} · ficticios, salvo CORAESSENS (real, con permiso)
             </Text>
           </View>
         }

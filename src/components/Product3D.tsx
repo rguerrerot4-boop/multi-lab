@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, PanResponder, Platform, Pressable, Text, View } from 'react-native';
-import Svg, { G, Polygon, Text as SvgText } from 'react-native-svg';
+import Svg, { G, Image as SvgImage, Polygon, Rect, Text as SvgText } from 'react-native-svg';
 import type { Hotspot, Product } from '@/data/mock';
 import { type Q, type V3, qAxis, qMul, qNorm, qRot, qSlerp } from '@/lib/quat';
 import { colors, font, radius, space, type } from '@/theme';
@@ -18,14 +18,16 @@ const B = 0.46; // profundidad
 const HH = 1.5; // alto
 const DIST = 4.4; // distancia de cámara (perspectiva)
 
-const FACES: Record<FaceName, { n: V3; corner: (u: number, v: number) => V3 }> = {
+type Faces = Record<FaceName, { n: V3; corner: (u: number, v: number) => V3 }>;
+const makeFaces = (A: number, B: number, HH: number): Faces => ({
   front: { n: [0, 0, 1], corner: (u, v) => [-A / 2 + u * A, HH / 2 - v * HH, B / 2] },
   right: { n: [1, 0, 0], corner: (u, v) => [A / 2, HH / 2 - v * HH, B / 2 - u * B] },
   back: { n: [0, 0, -1], corner: (u, v) => [A / 2 - u * A, HH / 2 - v * HH, -B / 2] },
   left: { n: [-1, 0, 0], corner: (u, v) => [-A / 2, HH / 2 - v * HH, -B / 2 + u * B] },
   top: { n: [0, 1, 0], corner: (u, v) => [-A / 2 + u * A, HH / 2, -B / 2 + v * B] },
   bottom: { n: [0, -1, 0], corner: (u, v) => [-A / 2 + u * A, -HH / 2, B / 2 - v * B] },
-};
+});
+const DEMO_FACES = makeFaces(A, B, HH);
 
 // vista de reposo: un poco desde arriba y de lado, para que se perciba el volumen
 const VIEW: Q = qMul(qAxis([1, 0, 0], 0.32), qAxis([0, 1, 0], -0.45));
@@ -247,9 +249,12 @@ export const Product3D = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, product.id]);
 
+  // producto con fotos del empaque: caja con sus medidas y proyección ortográfica (la foto calza exacta)
+  const photo = product.photo;
+  const FACES = useMemo(() => (photo ? makeFaces(photo.dims.w * 0.78, photo.dims.d * 0.78, photo.dims.h * 0.78) : DEMO_FACES), [photo]);
   const project = (p: V3) => {
     const [x, y, z] = qRot(q, p);
-    const f = DIST / (DIST - z);
+    const f = photo ? 1 : DIST / (DIST - z);
     return { x: cx + x * f * S, y: cy - y * f * S };
   };
   const facing = (face: FaceName) => qRot(q, FACES[face].n)[2];
@@ -278,7 +283,22 @@ export const Product3D = forwardRef<
   return (
     <View ref={host} style={{ width: W, height: H, alignSelf: 'center' }} {...pan.panHandlers}>
       <Svg width={W} height={H}>
-        {visibleFaces.map((face) => (
+        {photo
+          ? visibleFaces.map((face) => (
+              <Polygon key={`e-${face}`} points={poly(face)} fill={shade(base, -0.35)} stroke={shade(base, -0.35)} strokeWidth={1.2} strokeLinejoin="round" />
+            ))
+          : null}
+        {photo
+          ? visibleFaces.map((face) => {
+              const dark = Math.max(0, 0.18 - light(face)) * 0.9;
+              return (
+                <G key={face} transform={textMatrix(face, 0, 0, 1, 1)}>
+                  <SvgImage href={photo.textures[face]} x={0} y={0} width={100} height={100} preserveAspectRatio="none" />
+                  {dark > 0.01 ? <Rect x={0} y={0} width={100} height={100} fill={colors.petroleo} fillOpacity={dark} /> : null}
+                </G>
+              );
+            })
+          : visibleFaces.map((face) => (
           <G key={face}>
             <Polygon points={poly(face)} fill={fill(face)} stroke={shade(base, -0.3)} strokeWidth={0.6} strokeOpacity={0.35} />
             {face === 'front' && facing('front') > 0.2 ? (

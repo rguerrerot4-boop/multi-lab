@@ -10,6 +10,7 @@ import { Button, Chip, Field, PressableScale, styles } from '@/components/ui';
 import {
   DOCTOR_STATES,
   labOfRep,
+  repLabNames,
   matchProducts,
   NEED_SUGGESTIONS,
   normalize,
@@ -270,7 +271,7 @@ const NEED_STYLE: Record<ProductNeed['status'], { bg: string; fg: string }> = {
 /** Tarjeta de una búsqueda de producto (para ambos roles) */
 export function NeedCard({ need, forRep }: { need: ProductNeed; forRep?: boolean }) {
   const { userId } = useMine();
-  const matches = forRep ? matchProducts(need.keywords, labOfRep(userId ?? 'v1')?.name) : [];
+  const matches = forRep ? matchProducts(need.keywords, repLabNames(userId ?? 'v1')) : [];
   const doc = personById(need.doctorId);
   const st = NEED_STYLE[need.status];
   return (

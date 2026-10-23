@@ -4,6 +4,9 @@
 
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
+import type { BoxTextures } from '@/components/PhotoBox3D';
+import { packColors } from '@/theme';
+import { CORAESSENS } from './vitrina';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export type Role = 'medico' | 'visitador';
@@ -53,7 +56,7 @@ export interface Slide {
 }
 
 export interface Hotspot {
-  face: 'front' | 'right' | 'back' | 'left' | 'top';
+  face: 'front' | 'right' | 'back' | 'left' | 'top' | 'bottom';
   u: number; // posición horizontal en la cara (0-1)
   v: number; // posición vertical en la cara (0-1)
   title: string;
@@ -81,7 +84,18 @@ export interface Product {
   hotspots?: Hotspot[];
   keywords?: string[]; // palabras con las que el médico puede encontrarlo (descriptivas, no indicaciones)
   areas: Area[]; // especialidades a las que se dirige la información (ficticio)
+  /** producto real mostrado con permiso del laboratorio (texto tomado del empaque) */
+  real?: { note: string };
+  /** caja 3D con las fotos del empaque (vitrina 3D) */
+  photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string };
+  arTitle?: string; // título en el visor AR del teléfono
+  sizeCm?: { w: number; h: number; d: number }; // tamaño del modelo AR
 }
+
+/** "Laboratorio (ficticio)" o el nombre real si el producto es real */
+export const labLabel = (p: Pick<Product, 'lab' | 'real'>) => (p.real ? p.lab : `${p.lab} (ficticio)`);
+/** Aviso corto para el producto */
+export const productNote = (p: Pick<Product, 'real'>) => (p.real ? 'Producto real · con permiso del laboratorio' : 'Producto ficticio');
 
 export type Area = 'Dermatología' | 'Pediatría' | 'Medicina general';
 
@@ -90,6 +104,7 @@ export interface Lab {
   id: string;
   name: string; // nombre corto, igual a Product.lab
   full: string;
+  real?: boolean; // laboratorio real (con permiso), no ficticio
   repId: string; // visitador asignado en la demo
   tagline: string;
   hue: string;
@@ -98,11 +113,15 @@ export const labs: Lab[] = [
   { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
   { id: 'andina', name: 'Andina Pharma', full: 'Laboratorio Andina Pharma', repId: 'v2', tagline: 'Línea pediátrica', hue: '#63C9D6' },
   { id: 'bioandes', name: 'Bioandes', full: 'Bioandes Salud', repId: 'v3', tagline: 'Cuidado de uso diario', hue: '#20343A' },
+  // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
+  { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: packColors.coraessens.red, real: true },
 ];
 export const labByName = (name: string) => labs.find((l) => l.name === name);
 export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
-/** Productos del laboratorio de un visitador */
-export const repProducts = (repId: string) => products.filter((p) => p.lab === labOfRep(repId)?.name);
+/** Laboratorios que atiende un visitador */
+export const repLabNames = (repId: string) => labs.filter((l) => l.repId === repId).map((l) => l.name);
+/** Productos de los laboratorios que atiende un visitador */
+export const repProducts = (repId: string) => products.filter((p) => labs.some((l) => l.repId === repId && l.name === p.lab));
 
 /** Área del médico según su especialidad */
 export const areaOf = (title: string): Area =>
@@ -115,6 +134,17 @@ const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
   { face: 'right', u: 0.5, v: 0.55, title: 'Usos descritos', text: `${p.uses.join(' · ')}. Texto de ejemplo, no son indicaciones aprobadas.` },
   { face: 'back', u: 0.3, v: 0.3, title: 'Modo de uso', text: p.howTo.map((h, i) => `${i + 1}. ${h}`).join('  ') },
   { face: 'left', u: 0.5, v: 0.7, title: 'Precauciones', text: p.precautions.join(' · ') },
+];
+
+// Puntos del visor 3D de CORAESSENS, con el texto impreso en cada cara
+const realSpots: Hotspot[] = [
+  { face: 'front', u: 0.42, v: 0.12, title: 'CORAESSENS®', text: 'Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF. 9 cápsulas.' },
+  { face: 'front', u: 0.5, v: 0.93, title: 'Muestra médica', text: 'Muestra · prohibida su venta.' },
+  { face: 'left', u: 0.5, v: 0.1, title: 'Modo de empleo', text: 'Vía oral: adultos mayores a 18 años tomar 1 cápsula 3 veces al día, con cada comida.' },
+  { face: 'left', u: 0.5, v: 0.45, title: 'Composición por cápsula', text: 'Corazón bovino liofilizado 275 mg · óxido de magnesio 145 mg · piridoxal-5-fosfato 25 mg · palmitato de ascorbilo 10 mg · metilcobalamina 650 mcg · L-5 metiltetrahidrofolato-calcio 326 mcg.' },
+  { face: 'right', u: 0.5, v: 0.4, title: 'Información nutricional', text: 'Porción diaria: 3 cápsulas. Folacina 900 mcg · vitamina B6 75 mg · vitamina B12 1950 mcg · vitamina C 12,75 mg · magnesio 332,55 mg.' },
+  { face: 'back', u: 0.5, v: 0.25, title: 'Advertencias', text: 'Manténgase fuera del alcance de los niños. No superar la dosis recomendada. No use el producto si el sello de seguridad está roto o despegado.' },
+  { face: 'back', u: 0.4, v: 0.82, title: 'Lote de la muestra', text: 'LOT 25-211 · FAB oct-2025 · EXP oct-2027.' },
 ];
 
 export interface Visit {
@@ -197,6 +227,7 @@ export const INITIAL_KIT: Record<string, Record<DeliveryKind, number>> = {
   p2: { muestra: 12, impreso: 25, digital: 99 },
   p3: { muestra: 5, impreso: 20, digital: 99 },
   p4: { muestra: 20, impreso: 40, digital: 99 },
+  cor: { muestra: 10, impreso: 15, digital: 99 },
 };
 
 export interface RequestItem {
@@ -323,7 +354,7 @@ export const people: Person[] = [
 export const DEMO_USER: Record<Role, string> = { medico: 'm1', visitador: 'v1' };
 
 // ---------- Productos (ficticios) ----------
-export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría'];
+export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos'];
 
 export const products: Product[] = [
   {
@@ -496,11 +527,47 @@ export const products: Product[] = [
     keywords: ['manos', 'crema de manos', 'resequedad', 'lavado frecuente', 'piel seca'],
     areas: ['Medicina general'],
   },
-
+  {
+    // PRODUCTO REAL (con permiso de Nutrabiotics). Todo el texto está tomado del empaque de la muestra.
+    id: 'cor',
+    name: 'CORAESSENS',
+    lab: 'Nutrabiotics',
+    category: 'Suplementos',
+    form: 'Cápsulas · caja de 9 (muestra)',
+    component: 'Polvo liofilizado de corazón bovino',
+    concentration: '275 mg por cápsula',
+    tagline: 'Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF',
+    description:
+      'Suplemento alimenticio en cápsulas a base de polvo liofilizado de corazón bovino, magnesio, piridoxal-5-fosfato, metilcobalamina y metiltetrahidrofolato. El magnesio promueve la absorción y retención de calcio, la vitamina B12/cobalamina es necesaria para la producción de glóbulos rojos. El folato es esencial para el crecimiento y división de las células.',
+    uses: ['Suplemento dietario', 'Vía oral · adultos mayores a 18 años'],
+    howTo: ['Vía oral', 'Adultos mayores a 18 años: 1 cápsula 3 veces al día', 'Tomar con cada comida'],
+    precautions: [
+      'Manténgase fuera del alcance de los niños',
+      'No es adecuado para ser consumido como única fuente de alimento',
+      'No superar la dosis recomendada',
+      'Almacénese en un lugar fresco y seco en su envase y empaque original',
+      'No use el producto si el sello de seguridad está roto o despegado',
+    ],
+    docs: ['Fotos del empaque (6 caras).png'],
+    slides: [
+      { title: 'Fórmula', body: 'Corazón bovino liofilizado 275 mg, óxido de magnesio 145 mg, piridoxal-5-fosfato 25 mg, palmitato de ascorbilo 10 mg, metilcobalamina 650 mcg y L-5 metiltetrahidrofolato-calcio 326 mcg por cápsula.', icon: 'flask-outline' },
+      { title: 'Modo de empleo', body: 'Vía oral: adultos mayores a 18 años tomar 1 cápsula 3 veces al día, con cada comida.', icon: 'time-outline' },
+      { title: 'Presentación', body: 'Caja de 9 cápsulas de 580,48 mg. Contenido neto 5,22 g. Muestra · prohibida su venta.', icon: 'cube-outline' },
+    ],
+    icon: 'nutrition-outline',
+    hue: packColors.coraessens.red,
+    isNew: true,
+    keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'magnesio', 'vitamina b12', 'metilcobalamina', 'vitamina b6', 'folato', 'corazón bovino', 'oral'],
+    areas: ['Medicina general', 'Dermatología'],
+    real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra.' },
+    photo: { textures: CORAESSENS.textures.real, dims: CORAESSENS.dims, vitrina: '/vitrina/cor' },
+    arTitle: 'CORAESSENS · muestra médica',
+    sizeCm: CORAESSENS.sizeCm,
+  },
 ];
 
 products.forEach((p) => {
-  p.hotspots = spots(p);
+  p.hotspots = p.real ? realSpots : spots(p);
 });
 
 // ---------- Visitas ----------
@@ -827,11 +894,11 @@ export interface ProductMatch {
 }
 
 /** Productos que coinciden con las palabras clave, del más al menos relevante (opcional: solo de un laboratorio) */
-export function matchProducts(keywords: string[], lab?: string): ProductMatch[] {
+export function matchProducts(keywords: string[], lab?: string | string[]): ProductMatch[] {
   const keys = keywords.map(normalize).filter(Boolean);
   if (!keys.length) return [];
   return products
-    .filter((p) => !lab || p.lab === lab)
+    .filter((p) => !lab || (Array.isArray(lab) ? lab.includes(p.lab) : p.lab === lab))
     .map((p) => {
       const tags = (p.keywords ?? []).map(normalize);
       const text = normalize([p.name, p.category, p.tagline, p.description, p.form, p.component, ...p.uses].join(' '));

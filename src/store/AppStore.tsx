@@ -11,6 +11,7 @@ import {
   RETURN_FLOW,
   type ReturnItem,
   labOfRep,
+  repLabNames,
   matchProducts,
   type DoctorStatus,
   type NeedUrgency,
@@ -344,7 +345,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const doctorId = userId ?? 'm1';
       const id = `nd${Date.now()}`;
       setNeeds((list) => [{ id, doctorId, keywords, note, urgency, status: 'Enviada', createdAt: Date.now() }, ...list]);
-      const matches = matchProducts(keywords, labOfRep('v1')?.name);
+      const matches = matchProducts(keywords, repLabNames('v1'));
       pushNotice({
         forRole: 'visitador',
         kind: 'producto',

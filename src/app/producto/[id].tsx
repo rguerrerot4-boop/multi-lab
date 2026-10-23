@@ -19,7 +19,7 @@ import {
   Tag,
   styles,
 } from '@/components/ui';
-import { products, productById, labByName } from '@/data/mock';
+import { labLabel, products, productById, labByName } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
 
@@ -118,7 +118,10 @@ export default function Producto() {
         </View>
         <Text style={type.h1}>{p.name}</Text>
         <Text style={type.bodyMuted}>{p.tagline}</Text>
-        <DemoNotice />
+        {p.real ? <DemoNotice text={p.real.note} /> : <DemoNotice />}
+        {p.photo ? (
+          <Button label="Abrir vitrina 3D del producto" icon="sparkles-outline" variant="secondary" onPress={() => router.push(p.photo!.vitrina as never)} />
+        ) : null}
       </View>
 
       <Segmented
@@ -140,7 +143,7 @@ export default function Producto() {
           <>
             <Text style={type.body}>{p.description}</Text>
             <Accordion title="Datos del producto" icon="information-circle-outline" open={open === 'datos'} onToggle={() => toggle('datos')}>
-              <Info label="Laboratorio" value={`${p.lab} (ficticio)`} />
+              <Info label="Laboratorio" value={labLabel(p)} />
               <Info label="Presentación" value={p.form} />
               <Info label="Componente principal" value={p.component} />
               <Info label="Concentración" value={p.concentration} />

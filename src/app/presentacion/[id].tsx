@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Product3D } from '@/components/Product3D';
 import { ShareSheet } from '@/components/ShareSheet';
 import { Button, goBack } from '@/components/ui';
-import { personById, productById, type IconName } from '@/data/mock';
+import { labLabel, personById, productById, type IconName } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -275,7 +275,7 @@ export default function Presentacion() {
                 { k: 'Presentación', v: p.form, icon: 'cube-outline' as IconName },
                 { k: 'Componente principal', v: p.component, icon: 'flask-outline' as IconName },
                 { k: 'Categoría', v: p.category, icon: 'pricetag-outline' as IconName },
-                { k: 'Laboratorio', v: `${p.lab} (ficticio)`, icon: 'business-outline' as IconName },
+                { k: 'Laboratorio', v: labLabel(p), icon: 'business-outline' as IconName },
               ].map((d, i) => (
                 <Reveal key={d.k} at={40 + i * 60} from={i % 2 ? 'right' : 'left'}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, backgroundColor: colors.white, borderRadius: radius.lg, padding: space.lg }}>
@@ -370,7 +370,7 @@ export default function Presentacion() {
               ) : null}
             </Reveal>
             <Text style={{ fontFamily: font.medium, fontSize: 12, color: '#8FA7AD', marginTop: space.xl }}>
-              Contenido de demostración. No corresponde a material promocional real.
+              {p.real ? p.real.note : 'Contenido de demostración. No corresponde a material promocional real.'}
             </Text>
           </Section>
         </Animated.ScrollView>

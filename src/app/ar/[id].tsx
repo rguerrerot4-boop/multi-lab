@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
-import { productById, type IconName } from '@/data/mock';
+import { productById, productNote, type IconName } from '@/data/mock';
 import { AR_CARDS_PDF, AR_SIZE_CM, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
@@ -65,7 +65,7 @@ export default function ArScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: font.bold, fontSize: 17, color: colors.white }}>Realidad aumentada</Text>
             <Text style={{ fontFamily: font.medium, fontSize: 12, color: '#A9C2C8' }} numberOfLines={1}>
-              {p.name} · producto ficticio
+              {p.name} · {productNote(p).toLowerCase()}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.turquesa, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
@@ -138,7 +138,7 @@ export default function ArScreen() {
 
         {/* medidas */}
         <View style={{ flexDirection: 'row', gap: space.sm }}>
-          <Measure icon="resize-outline" label="Tamaño real" value={`${AR_SIZE_CM.w} × ${AR_SIZE_CM.h} × ${AR_SIZE_CM.d} cm`.replace(/\./g, ',')} />
+          <Measure icon="resize-outline" label="Tamaño real" value={`${(p.sizeCm ?? AR_SIZE_CM).w} × ${(p.sizeCm ?? AR_SIZE_CM).h} × ${(p.sizeCm ?? AR_SIZE_CM).d} cm`.replace(/\./g, ',')} />
           <Measure icon="phone-portrait-outline" label="Funciona en" value="Android y iPhone" />
         </View>
 
@@ -172,11 +172,12 @@ export default function ArScreen() {
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
         {!device ? (
-          <Notice icon="information-circle-outline" text="El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono. Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora." />
+          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono.${p.real ? '' : ' Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.'}`} />
         ) : null}
 
         <View style={{ gap: space.sm }}>
           <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={!device} onPress={launch} />
+          {p.real ? null : (
           <Pressable
             onPress={() => {
               logEvent('ar_tarjeta', p.id);
@@ -188,6 +189,7 @@ export default function ArScreen() {
             <Ionicons name="card-outline" size={18} color={colors.white} />
             <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.white }}>Usar tarjeta impresa</Text>
           </Pressable>
+          )}
           <Pressable
             onPress={() => router.replace(`/visor/${p.id}`)}
             accessibilityRole="button"
@@ -197,7 +199,9 @@ export default function ArScreen() {
             <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.white }}>Ver en 3D · 360°</Text>
           </Pressable>
           <Text style={{ fontFamily: font.medium, fontSize: 11, lineHeight: 16, color: '#8FA7AD', textAlign: 'center' }}>
-            Modelo ilustrativo de un producto ficticio. Se descarga la primera vez (unos 150 KB) y necesita internet.
+            {p.real
+              ? 'Modelo hecho con las fotos del empaque (tamaño aproximado). Se descarga la primera vez (unos 450 KB) y necesita internet.'
+              : 'Modelo ilustrativo de un producto ficticio. Se descarga la primera vez (unos 150 KB) y necesita internet.'}
           </Text>
           <Pressable onPress={() => Linking.openURL(AR_CARDS_PDF).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
             <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar tarjetas para imprimir (PDF)</Text>
