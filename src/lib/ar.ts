@@ -36,18 +36,21 @@ export function arDevice(): 'android' | 'ios' | null {
   return null;
 }
 
-const sceneViewerUrl = (p: Product, mode: 'ar_preferred' | 'ar_only') =>
-  `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(arModelUrls(p.id).glb)}&mode=${mode}&title=${encodeURIComponent(`${p.name} · producto ficticio`)}&resizable=true`;
+/** Lo mínimo para abrir un modelo en AR: su id en ar/models y el título que muestra el visor. */
+export type ArItem = Pick<Product, 'id' | 'name'> & { arTitle?: string };
+
+const sceneViewerUrl = (p: ArItem, mode: 'ar_preferred' | 'ar_only') =>
+  `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(arModelUrls(p.id).glb)}&mode=${mode}&title=${encodeURIComponent(p.arTitle ?? `${p.name} · producto ficticio`)}&resizable=true`;
 
 // Web en Android: el navegador abre Scene Viewer con un enlace "intent"; si no está, vuelve a esta página
-function openSceneViewerWeb(p: Product) {
+function openSceneViewerWeb(p: ArItem) {
   const fallback = encodeURIComponent(window.location.href);
   const target = sceneViewerUrl(p, 'ar_only').replace('https://', '');
   window.location.href = `intent://${target}#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${fallback};end;`;
 }
 
 // Web en iPhone: Safari abre AR Quick Look con un enlace rel="ar" que contiene una imagen
-function openQuickLookWeb(p: Product) {
+function openQuickLookWeb(p: ArItem) {
   const a = document.createElement('a');
   a.rel = 'ar';
   a.href = arModelUrls(p.id).usdz;
@@ -57,7 +60,7 @@ function openQuickLookWeb(p: Product) {
   a.remove();
 }
 
-export async function openAR(p: Product): Promise<ArResult> {
+export async function openAR(p: ArItem): Promise<ArResult> {
   if (Platform.OS === 'web') {
     const device = arDevice();
     if (!device) return 'solo-celular';

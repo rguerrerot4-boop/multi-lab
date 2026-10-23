@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
+import { VitrinaBanner } from '@/components/VitrinaBanner';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
 import { categories, labOfRep, products } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -55,6 +56,7 @@ export default function Catalogo() {
                 {role === 'visitador' ? 'Elige un producto para abrir su ficha o presentarlo.' : 'Explora productos y su información multimedia.'}
               </Text>
             </View>
+            <VitrinaBanner />
             <View style={[styles.input, { borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.inkMuted} />
               <TextInput

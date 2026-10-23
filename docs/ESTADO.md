@@ -50,6 +50,16 @@ Todas respetan "reducir movimiento" del sistema.
 - Los QR apuntan a `https://rguerrerot4-boop.github.io/multi-lab/ar-tarjeta/?p=<id>`: si cambia la dirección de la web hay que regenerar e imprimir las tarjetas.
 - Pendiente: probarla con las tarjetas impresas en un iPhone y un Android reales.
 
+## Vitrina 3D (CORAESSENS)
+
+- Pantalla `src/app/vitrina/[id].tsx`, datos `src/data/vitrina.ts`, caja `src/components/PhotoBox3D.tsx`, acceso `src/components/VitrinaBanner.tsx`.
+- Texturas: `scripts/coraessens/texturas.py <carpeta de fotos>` endereza las caras (esquinas medidas a mano en IMG_2208, 2214, 2222, 2233, 2235 y 2238), iguala el blanco y crea la versión ficticia. Las fotos originales no están en el repositorio.
+- Modelos AR: `scripts/coraessens/modelo.py` → `ar/models/cor.*` (real) y `cor-f.*` (ficticio), con la geometría de `build_models.py`.
+- La caja 3D usa proyección ortográfica: cada cara es un paralelogramo y la foto se mapea exacta con una matriz afín de SVG (sin costuras). Las cajas fuera de pantalla se pausan.
+- Medidas de la caja estimadas en 3,6 × 3,6 × 5,2 cm (proporción medida en las fotos). **Pendiente:** medir la caja real y actualizar `bm.W/H/D` en `modelo.py` y `sizeCm` en `vitrina.ts`.
+- Animaciones: texto gigante en bucle, trazos flotando, caja flotando y girando, tarjetas que escalan al centrarse con la foto saliendo de la tarjeta, cierre que entra por los lados. Con "reducir movimiento" todo queda quieto.
+- Pendiente: agregarla a la AR con tarjeta impresa (MindAR).
+
 ## Respaldo en Figma
 
 - Archivo actual: "Multi LAB · Prototipo de la app (capturas oct 2026)" — https://www.figma.com/design/CHdntcll7WDS1F5Xv78q7l

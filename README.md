@@ -2,7 +2,7 @@
 
 Prototipo funcional de la aplicación móvil **Multi LAB**: una experiencia multimedia interactiva para la presentación digital de productos farmacéuticos, dirigida a visitadores médicos y profesionales de la salud.
 
-Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. **Todas las personas, laboratorios, productos y ubicaciones son ficticios.**
+Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. **Todas las personas, laboratorios, productos y ubicaciones son ficticios**, salvo el producto de la vitrina 3D (CORAESSENS® de Nutrabiotics), que se muestra con permiso del laboratorio y también tiene una versión con nombre ficticio.
 
 ## Cómo ejecutarla
 
@@ -57,6 +57,7 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Visita en curso | Cronómetro, datos del profesional (horario, preferencias, última visita, solicitudes abiertas), productos presentados, **contador de material entregado** (muestras, impresos, ficha digital) con el kit disponible, resultado de la visita, **firma con el dedo** como acuse de recibo y resumen final |
 | Registro de visitas | Cada visita finalizada se guarda automáticamente: totales del periodo, buscador, filtros por fecha y por profesional, y detalle con material entregado, resultado y firma |
 | Catálogo multimedia | Buscador, filtros por categoría y laboratorio, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
+| Vitrina 3D | Catálogo nuevo de **CORAESSENS®** hecho con la sesión de fotos: caja 3D con las 6 caras fotografiadas y enderezadas (gira con el dedo, inercia, flota con sombra, pantalla completa con zoom), texto gigante animado detrás, carrusel de tarjetas por cara con su texto impreso, pedestal con los datos de la caja, cierre con letras grandes y AR con el modelo real. Cambia entre **nombre real** y **ficticio** (KARDENSA · Bioandes). Colores del empaque. Se abre desde el catálogo del visitador y el inicio del médico (`/vitrina/cor`) |
 | Realidad aumentada | Botón **Ver en AR** en la ficha, el visor 3D y la presentación: explica el uso y abre el visor AR del teléfono para colocar el envase en una superficie plana a tamaño real (Scene Viewer en Android con ARCore, AR Quick Look en iPhone). Modelos en `ar/models` |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
 | Solicitudes | Flujo de 4 pasos: el médico elige el **laboratorio** (Celvia, Andina Pharma o Bioandes, cada uno con su visitador), luego un **producto de su área** (Dermatología, Pediatría o Medicina general; las otras áreas quedan ocultas), el tipo (información técnica, material de apoyo, **muestra original** o agendar visita), el **nivel de necesidad** (Urgente, Esta semana, Sin prisa) y confirma. Al visitador le aparecen primero las urgentes. Seguimiento y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |

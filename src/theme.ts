@@ -70,3 +70,19 @@ export const shadow = {
     elevation: 2,
   },
 };
+
+// Colores del empaque de cada producto de la vitrina 3D (tomados de las fotos del producto).
+// Solo se usan dentro de su vitrina; el resto de la app sigue con los colores de marca.
+export const packColors = {
+  coraessens: {
+    red: '#C9262F',
+    redDeep: '#99161F',
+    purple: '#5C2C78',
+    purpleDeep: '#341447',
+    blush: '#FBEDEE', // fondo claro de las secciones
+    line: '#E9C9CD', // líneas topográficas del fondo
+    ink: '#2B1236', // texto sobre fondo claro
+    veil: 'rgba(255, 255, 255, 0.16)', // velo blanco sobre el morado (chips, botones)
+    veilLine: 'rgba(255, 255, 255, 0.4)',
+  },
+};

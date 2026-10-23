@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { MyStatusCard, NeedCard, NeedSheet } from '@/components/doctor';
+import { VitrinaBanner } from '@/components/VitrinaBanner';
 import { Avatar, BrandHeader, Button, Card, ListItem, PressableScale, Screen, SectionHeader, StatusPill, styles } from '@/components/ui';
 import { dayLabel, personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -92,6 +93,8 @@ export default function MedicoInicio() {
           </View>
         </View>
       ) : null}
+
+      <VitrinaBanner />
 
       <SectionHeader title="Accesos rápidos" />
       <View style={{ gap: space.sm }}>
