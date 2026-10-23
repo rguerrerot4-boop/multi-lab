@@ -5,8 +5,6 @@
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import type { BoxTextures } from '@/components/PhotoBox3D';
-import { packColors } from '@/theme';
-import { CORAESSENS } from './vitrina';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export type Role = 'medico' | 'visitador';
@@ -114,7 +112,7 @@ export const labs: Lab[] = [
   { id: 'andina', name: 'Andina Pharma', full: 'Laboratorio Andina Pharma', repId: 'v2', tagline: 'Línea pediátrica', hue: '#63C9D6' },
   { id: 'bioandes', name: 'Bioandes', full: 'Bioandes Salud', repId: 'v3', tagline: 'Cuidado de uso diario', hue: '#20343A' },
   // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
-  { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: packColors.coraessens.red, real: true },
+  { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
 ];
 export const labByName = (name: string) => labs.find((l) => l.name === name);
 export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
@@ -555,14 +553,14 @@ export const products: Product[] = [
       { title: 'Presentación', body: 'Caja de 9 cápsulas de 580,48 mg. Contenido neto 5,22 g. Muestra · prohibida su venta.', icon: 'cube-outline' },
     ],
     icon: 'nutrition-outline',
-    hue: packColors.coraessens.red,
+    hue: '#C9262F', // rojo del empaque (packColors.coraessens.red)
     isNew: true,
     keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'magnesio', 'vitamina b12', 'metilcobalamina', 'vitamina b6', 'folato', 'corazón bovino', 'oral'],
     areas: ['Medicina general', 'Dermatología'],
     real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra.' },
-    photo: { textures: CORAESSENS.textures.real, dims: CORAESSENS.dims, vitrina: '/vitrina/cor' },
+    // las fotos del empaque (photo) se agregan en src/data/vitrina.ts, que se carga en src/app/_layout.tsx
     arTitle: 'CORAESSENS · muestra médica',
-    sizeCm: CORAESSENS.sizeCm,
+    sizeCm: { w: 3.6, h: 5.2, d: 3.6 },
   },
 ];
 

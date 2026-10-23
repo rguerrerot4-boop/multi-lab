@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Multi LAB · AR con tarjeta</title>
-    <meta name="description" content="Realidad aumentada de Multi LAB sobre tarjetas impresas (productos ficticios, prototipo académico)." />
+    <meta name="description" content="Realidad aumentada de Multi LAB sobre tarjetas impresas (prototipo académico)." />
     <meta name="theme-color" content="#20343A" />
     <link rel="icon" href="../favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -88,17 +88,17 @@
         <span class="logo"><img src="logo-full.png" alt="Multi LAB" /></span>
         <h1>Realidad aumentada con tarjeta</h1>
         <p class="sub" id="producto">Apunta la cámara a una tarjeta de Multi LAB y el producto aparece encima.</p>
-        <span class="chip">Producto ficticio · prototipo académico</span>
+        <span class="chip" id="chip">Producto ficticio · prototipo académico</span>
         <div class="steps">
           <div class="step"><span class="num">1</span><div><b>Abre la cámara</b><span>El navegador te pedirá permiso para usarla.</span></div></div>
-          <div class="step"><span class="num">2</span><div><b>Apunta al panel de cápsulas</b><span>Encuadra la parte con cápsulas de la tarjeta, con buena luz y sin reflejos.</span></div></div>
+          <div class="step"><span class="num">2</span><div><b>Apunta al panel de la izquierda</b><span>Encuadra el panel de color de la tarjeta, con buena luz y sin reflejos.</span></div></div>
           <div class="step"><span class="num">3</span><div><b>Mueve la tarjeta</b><span>El producto se queda sobre ella: gírala o acércala para verlo.</span></div></div>
         </div>
         <p class="notice" id="aviso"></p>
         <button class="btn primary" id="abrir">Abrir cámara</button>
         <a class="btn ghost" href="tarjetas-multilab.pdf" target="_blank" rel="noopener">Descargar tarjetas para imprimir</a>
         <a class="btn ghost" href="../">Ir a Multi LAB</a>
-        <p class="fine">Modelos ilustrativos de productos ficticios. La primera vez descarga unos 3 MB y necesita internet.</p>
+        <p class="fine" id="fino">Modelos ilustrativos de productos ficticios, salvo CORAESSENS (real, hecho con las fotos de su empaque y mostrado con permiso de Nutrabiotics). La primera vez descarga unos 3 MB y necesita internet.</p>
       </div>
     </section>
 
@@ -108,7 +108,7 @@
         <p>Realidad aumentada</p>
       </div>
       <div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <div class="bottom"><div class="pill" id="estado">Apunta al panel de cápsulas de la tarjeta</div></div>
+      <div class="bottom"><div class="pill" id="estado">Apunta al panel de la izquierda de la tarjeta</div></div>
     </div>
 
     <script type="module">
@@ -118,11 +118,14 @@
       const params = new URLSearchParams(location.search);
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const PANEL_M = 0.0508; // ancho real del panel de cápsulas que reconoce la cámara: 50,8 mm (los modelos están en metros)
-      const ESCALA = 0.6 / PANEL_M; // producto al 60 % de su tamaño para que se vea completo sobre la tarjeta
+      // producto al 60 % de su tamaño para que se vea completo sobre la tarjeta (cada producto puede traer su propia escala)
+      const escala = (p) => (p.escala ?? 0.6) / PANEL_M;
+      const labDe = (p) => (p.real ? `${p.lab} · producto real con permiso` : `${p.lab} (ficticio) · producto ficticio`);
 
       const productos = await fetch('productos.json').then((r) => r.json());
       const pedido = productos.find((p) => p.id === params.get('p'));
-      if (pedido) $('producto').textContent = `${pedido.name} · ${pedido.lab} (ficticio). Apunta la cámara a su tarjeta y el producto aparece encima.`;
+      if (pedido) $('producto').textContent = `${pedido.name} · ${pedido.real ? pedido.lab : `${pedido.lab} (ficticio)`}. Apunta la cámara a su tarjeta y el producto aparece encima.`;
+      if (pedido?.real) $('chip').textContent = 'Producto real · con permiso del laboratorio';
 
       const aviso = (texto) => { $('aviso').textContent = texto; $('aviso').style.display = 'block'; };
       if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) aviso('Este navegador no permite usar la cámara aquí. Abre la página en Safari (iPhone) o Chrome (Android).');
@@ -140,13 +143,15 @@
           // el panel mide 1 unidad de ancho; el producto queda de pie sobre él
           const base = new THREE.Group();
           base.rotation.x = Math.PI / 2;
-          base.scale.setScalar(ESCALA);
-          const sombra = new THREE.Mesh(new THREE.CircleGeometry(0.045, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
+          base.scale.setScalar(escala(p));
+          // la sombra se ajusta al tamaño de cada caja
+          const tam = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
+          const sombra = new THREE.Mesh(new THREE.CircleGeometry(Math.max(tam.x, tam.z) * 0.75, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
           sombra.rotation.x = -Math.PI / 2;
           sombra.position.y = 0.0005;
           base.add(sombra, gltf.scene);
           anchor.group.add(base);
-          return { base, modelo: gltf.scene };
+          return { base, modelo: gltf.scene, escala: escala(p) };
         });
         modelos.set(i, promesa);
         return promesa;
@@ -172,14 +177,14 @@
             const anchor = mindar.addAnchor(i);
             anchor.onTargetFound = async () => {
               $('hud').classList.add('found');
-              $('estado').innerHTML = `${p.name}<small>${p.lab} (ficticio) · producto ficticio</small>`;
+              $('estado').innerHTML = `${p.name}<small>${labDe(p)}</small>`;
               const m = await cargarModelo(i, anchor);
-              m.base.scale.setScalar(reduce ? ESCALA : 0.001);
-              if (!reduce) pops.push({ base: m.base, t0: performance.now() });
+              m.base.scale.setScalar(reduce ? m.escala : 0.001);
+              if (!reduce) pops.push({ base: m.base, escala: m.escala, t0: performance.now() });
             };
             anchor.onTargetLost = () => {
               $('hud').classList.remove('found');
-              $('estado').textContent = 'Apunta al panel de cápsulas de la tarjeta';
+              $('estado').textContent = 'Apunta al panel de la izquierda de la tarjeta';
             };
           });
           // el producto pedido por el QR se descarga mientras se abre la cámara
@@ -190,10 +195,10 @@
           $('hud').classList.add('on');
           renderer.setAnimationLoop((t) => {
             for (let k = pops.length - 1; k >= 0; k--) {
-              const { base, t0 } = pops[k];
+              const { base, escala: e, t0 } = pops[k];
               const x = Math.min(1, (t - t0) / 420);
               const s = 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2); // aparece con un pequeño rebote
-              base.scale.setScalar(Math.max(0.001, s) * ESCALA);
+              base.scale.setScalar(Math.max(0.001, s) * e);
               if (x >= 1) pops.splice(k, 1);
             }
             if (!reduce) modelos.forEach(async (pr) => { const m = await pr; m.modelo.rotation.y = t / 2600; });

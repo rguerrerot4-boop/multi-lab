@@ -7,6 +7,7 @@ import {
   Animated,
   Easing,
   Image,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -22,7 +23,7 @@ import Svg, { Defs, Ellipse, LinearGradient as SvgGradient, Path, Rect, Stop } f
 import { PhotoBox3D, type BoxFace, type PhotoBox3DHandle } from '@/components/PhotoBox3D';
 import { goBack } from '@/components/ui';
 import { CORAESSENS, vitrinaCards, type VitrinaCard, type VitrinaMode } from '@/data/vitrina';
-import { openAR, type ArResult } from '@/lib/ar';
+import { arCardUrl, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, packColors, radius, space } from '@/theme';
 
@@ -230,6 +231,18 @@ export default function Vitrina() {
           <View style={{ alignSelf: 'center', width: W, paddingHorizontal: space.xl, gap: space.md, marginTop: space.xl }}>
             <Pill icon="expand-outline" label="Abrir la caja en pantalla completa" onPress={() => setFull(true)} wide />
             <Pill icon="scan-outline" label="Ver en realidad aumentada" onPress={launchAR} outline wide />
+            {mode === 'real' ? (
+              <Pill
+                icon="card-outline"
+                label="Usar tarjeta impresa"
+                outline
+                wide
+                onPress={() => {
+                  logEvent('ar_tarjeta', CORAESSENS.id);
+                  Linking.openURL(arCardUrl(CORAESSENS.id)).catch(() => {});
+                }}
+              />
+            ) : null}
             <Pill icon="grid-outline" label="Volver al catálogo" onPress={() => goBack(role === 'visitador' ? '/visitador/catalogo' : '/medico')} outline wide />
             <Text style={{ fontFamily: font.regular, fontSize: 12, lineHeight: 18, color: colors.white, opacity: 0.8, textAlign: 'center', marginTop: space.md }}>
               {names.disclaimer} La app no vende ni entrega medicamentos.

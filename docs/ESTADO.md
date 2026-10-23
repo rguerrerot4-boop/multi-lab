@@ -57,9 +57,9 @@ Todas respetan "reducir movimiento" del sistema.
 - Modelos AR: `scripts/coraessens/modelo.py` → `ar/models/cor.*` (real) y `cor-f.*` (ficticio), con la geometría de `build_models.py`.
 - La caja 3D usa proyección ortográfica: cada cara es un paralelogramo y la foto se mapea exacta con una matriz afín de SVG (sin costuras). Las cajas fuera de pantalla se pausan.
 - Medidas de la caja aproximadas: 3,6 × 3,6 × 5,2 cm (proporción medida en las fotos; la persona dueña del proyecto aceptó que no sean exactas).
-- Integrado en toda la app como producto `cor` de `src/data/mock.ts` (laboratorio real Nutrabiotics, atendido en la demo por el visitador v1): catálogo (filtro "Mis laboratorios"), ficha, visor 3D y presentación con las fotos (`Product3D` usa `product.photo`), AR con su modelo y tamaño, solicitudes del médico, visita en curso, kit y búsquedas por palabras clave. Sin tarjeta impresa de MindAR.
+- Integrado en toda la app como producto `cor` de `src/data/mock.ts` (laboratorio real Nutrabiotics, atendido en la demo por el visitador v1): catálogo (filtro "Mis laboratorios"), ficha, visor 3D y presentación con las fotos (`Product3D` usa `product.photo`), AR con su modelo y tamaño, solicitudes del médico, visita en curso, kit y búsquedas por palabras clave. Tiene su propia tarjeta impresa (ver abajo).
 - Animaciones: texto gigante en bucle, trazos flotando, caja flotando y girando, tarjetas que escalan al centrarse con la foto saliendo de la tarjeta, cierre que entra por los lados. Con "reducir movimiento" todo queda quieto.
-- Pendiente: agregarla a la AR con tarjeta impresa (MindAR).
+- Tarjeta impresa propia: `card_coraessens()` en `scripts/ar/build_cards.py` (colores del empaque y la foto del frente en el panel que reconoce la cámara). Es el último objetivo de `tarjetas.mind` (índice 7) y aparece al 80 % de su tamaño (`escala` en `productos.json`). Probado con cámara simulada: reconoce CORAESSENS y las tarjetas anteriores siguen funcionando.
 
 ## Respaldo en Figma
 

@@ -1,4 +1,7 @@
-"""Genera las tarjetas impresas de realidad aumentada (una por producto ficticio).
+"""Genera las tarjetas impresas de realidad aumentada (una por producto).
+
+Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS (producto real,
+con permiso) tiene su propia tarjeta con los colores de su empaque y la foto de la caja en el panel.
 
 Cada tarjeta lleva un panel con un patrón de cápsulas distinto por producto y un código QR que abre
 la AR con tarjeta (public/ar-tarjeta). La cámara reconoce solo ese panel (la parte que no se repite
@@ -113,6 +116,79 @@ def card(p):
     return im, panel
 
 
+# ---------- tarjeta propia de CORAESSENS (colores del empaque: rojo, morado y blanco) ----------
+COR = {"id": "cor", "name": "CORAESSENS", "lab": "Nutrabiotics", "category": "Suplemento dietario", "real": True, "escala": 0.8}  # la caja es más pequeña que las ficticias
+RED, RED_DEEP, PURPLE, PURPLE_DEEP, BLUSH = "#C9262F", "#99161F", "#5C2C78", "#341447", "#FBEDEE"
+
+
+def card_coraessens():
+    im = Image.new("RGB", (CW, CH), WHITE)
+    d = ImageDraw.Draw(im)
+
+    # panel que reconoce la cámara: fondo morado, cápsulas rojas y blancas y la foto del frente de la caja
+    panel = Image.new("RGB", (PANEL, CH), PURPLE_DEEP)
+    pd = ImageDraw.Draw(panel)
+    for k in range(0, PANEL + CH, 46):  # líneas diagonales finas (más detalle para el seguimiento)
+        pd.line((k, 0, k - CH, CH), fill=PURPLE, width=10)
+    rnd = random.Random("multilab-cor")
+    for _ in range(46):
+        w = rnd.randint(46, 170)
+        h = rnd.randint(30, 64)
+        pill = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        ImageDraw.Draw(pill).rounded_rectangle((0, 0, w - 1, h - 1), h // 2, fill=rnd.choice([RED, WHITE, "#E46A72", RED_DEEP]))
+        pill = pill.rotate(rnd.choice([0, 30, 45, 60, 90, 120, 135, 150]), expand=True)
+        panel.paste(pill, (rnd.randint(-40, PANEL - 20), rnd.randint(-40, CH - 20)), pill)
+    box = Image.open(os.path.join(ROOT, "assets", "coraessens", "front.jpg")).convert("RGB")
+    bw = 330
+    box = box.resize((bw, round(box.height * bw / box.width)), Image.LANCZOS)
+    framed = Image.new("RGBA", (box.width + 24, box.height + 24), WHITE)
+    framed.paste(box, (12, 12))
+    framed = framed.rotate(-7, expand=True, resample=Image.BICUBIC)
+    shadow = Image.new("RGBA", framed.size, (0, 0, 0, 0))
+    shadow.paste((20, 6, 30, 120), (0, 0), framed.split()[3])
+    from PIL import ImageFilter
+    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
+    cx, cy = (PANEL - framed.width) // 2, (CH - framed.height) // 2
+    panel.paste(shadow, (cx + 10, cy + 18), shadow)
+    panel.paste(framed, (cx, cy), framed)
+    im.paste(panel, (0, 0))
+
+    logo = Image.open(os.path.join(ROOT, "assets", "logo-full.png")).convert("RGBA")
+    lh = 84
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    x0 = PANEL + 60
+    im.paste(logo, (x0, 60), logo)
+
+    y = 200
+    d.text((x0, y), "SUPLEMENTO DIETARIO", font=font("bold", 30), fill=RED)
+    y += 52
+    d.text((x0, y), "CORAESSENS®", font=font("bold", 72), fill=PURPLE_DEEP)
+    y += 96
+    d.text((x0, y), "Nutrabiotics · 9 cápsulas", font=font("medium", 30), fill=INK_MUTED)
+    y += 60
+    badge = "Muestra · prohibida su venta"
+    bwid = d.textlength(badge, font=font("semibold", 26)) + 44
+    d.rounded_rectangle((x0, y, x0 + bwid, y + 52), 26, fill=RED)
+    d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
+
+    qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(f"{SITE}/ar-tarjeta/?p=cor")
+    qr.make(fit=True)
+    qimg = qr.make_image(fill_color=PURPLE_DEEP, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
+    qx, qy = CW - 60 - 270, CH - 60 - 270
+    im.paste(qimg, (qx, qy))
+    ty = qy + 6
+    d.text((x0, ty), "Realidad aumentada", font=font("bold", 34), fill=PURPLE_DEEP)
+    for line in ["1. Escanea el código con", "    la cámara del teléfono.", "2. Apunta la cámara", "    a la foto de la caja."]:
+        ty += 50
+        d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
+    d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)
+
+    d.rectangle((0, CH - 14, CW, CH), fill=RED)
+    d.rectangle((0, 0, CW - 1, CH - 1), outline="#DCE5E7", width=3)
+    return im, panel
+
+
 def sheet(cards):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
@@ -120,7 +196,7 @@ def sheet(cards):
     for i in range(0, len(cards), 3):
         page = Image.new("RGB", (W, H), WHITE)
         d = ImageDraw.Draw(page)
-        d.text((150, 120), "Multi LAB · Tarjetas de realidad aumentada (productos ficticios, prototipo académico)", font=font("semibold", 36), fill=INK_MUTED)
+        d.text((150, 120), "Multi LAB · Tarjetas de realidad aumentada (prototipo académico)", font=font("semibold", 36), fill=INK_MUTED)
         d.text((150, 175), "Imprime al 100 % (sin ajustar a la página) y recorta por la línea punteada.", font=font("regular", 32), fill=INK_MUTED)
         for k, c in enumerate(cards[i:i + 3]):
             x, y = (W - CW) // 2, 300 + k * (CH + 130)
@@ -146,9 +222,15 @@ def main():
         c.save(os.path.join(OUT, "tarjetas", f"{p['id']}.png"), optimize=True)
         panel.save(os.path.join(OUT, "objetivos", f"{p['id']}.png"), optimize=True)
         cards.append(c)
+    # la de CORAESSENS va al final: su objetivo es el último de tarjetas.mind
+    c, panel = card_coraessens()
+    c.save(os.path.join(OUT, "tarjetas", "cor.png"), optimize=True)
+    panel.save(os.path.join(OUT, "objetivos", "cor.png"), optimize=True)
+    cards.append(c)
     sheet(cards)
+    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
-        json.dump([{k: p[k] for k in ("id", "name", "lab", "category")} for p in products], f, ensure_ascii=False, indent=1)
+        json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))
     print(f"{len(cards)} tarjetas en {OUT}")
 

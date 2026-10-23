@@ -40,5 +40,13 @@
   "name": "ManoProtect Crema",
   "lab": "Bioandes",
   "category": "Reparación"
+ },
+ {
+  "id": "cor",
+  "name": "CORAESSENS",
+  "lab": "Nutrabiotics",
+  "category": "Suplemento dietario",
+  "real": true,
+  "escala": 0.8
  }
 ]

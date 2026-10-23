@@ -172,12 +172,11 @@ export default function ArScreen() {
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
         {!device ? (
-          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono.${p.real ? '' : ' Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.'}`} />
+          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono.$' Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.'`} />
         ) : null}
 
         <View style={{ gap: space.sm }}>
           <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={!device} onPress={launch} />
-          {p.real ? null : (
           <Pressable
             onPress={() => {
               logEvent('ar_tarjeta', p.id);
@@ -189,7 +188,6 @@ export default function ArScreen() {
             <Ionicons name="card-outline" size={18} color={colors.white} />
             <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.white }}>Usar tarjeta impresa</Text>
           </Pressable>
-          )}
           <Pressable
             onPress={() => router.replace(`/visor/${p.id}`)}
             accessibilityRole="button"

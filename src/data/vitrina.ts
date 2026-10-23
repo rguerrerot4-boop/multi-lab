@@ -6,6 +6,7 @@
 // El modo "ficticio" usa el mismo empaque con el nombre y el laboratorio alterados (KARDENSA · Bioandes).
 import type { ImageSourcePropType } from 'react-native';
 import type { BoxFace, BoxTextures } from '@/components/PhotoBox3D';
+import { productById } from './mock';
 
 export type VitrinaMode = 'real' | 'ficticio';
 
@@ -205,3 +206,7 @@ export const vitrinaCards = (m: VitrinaMode): VitrinaCard[] => {
     },
   ];
 };
+
+// El producto del catálogo usa las mismas fotos (ficha, visor 3D, presentación, tarjetas)
+const cor = productById(CORAESSENS.id);
+if (cor) cor.photo = { textures: CORAESSENS.textures.real, dims: CORAESSENS.dims, vitrina: '/vitrina/cor' };

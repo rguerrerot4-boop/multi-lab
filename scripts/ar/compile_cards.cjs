@@ -14,7 +14,7 @@ const CARDS = path.join(ROOT, 'public', 'ar-tarjeta', 'objetivos');
 const OUT = path.join(ROOT, 'public', 'ar-tarjeta', 'tarjetas.mind');
 const DIST = path.resolve(process.argv[2] || 'package/dist');
 // mismo orden que los productos: el índice del objetivo es la posición en esta lista
-const IDS = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'ar', 'products.json'), 'utf8')).map((p) => p.id);
+const IDS = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'ar-tarjeta', 'productos.json'), 'utf8')).map((p) => p.id);
 
 const types = { '.js': 'text/javascript', '.png': 'image/png', '.html': 'text/html' };
 const server = http.createServer((req, res) => {
@@ -30,7 +30,8 @@ const server = http.createServer((req, res) => {
 
 (async () => {
   await new Promise((r) => server.listen(8123, r));
-  const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] });
+  // CHROMIUM_PATH permite usar un Chromium ya instalado en lugar del que descarga Playwright
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] });
   const page = await browser.newPage();
   page.on('crash', () => console.log('  la pestaña se cerró (memoria)'));
   page.on('console', (m) => { if (m.type() === 'error') console.log('  consola:', m.text().slice(0, 120)); });

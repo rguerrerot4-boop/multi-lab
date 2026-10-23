@@ -3,6 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import { products } from '../../src/data/mock.ts';
 
-const data = products.map(({ id, name, lab, category, form, howTo, precautions, hue }) => ({ id, name, lab, category, form, howTo, precautions, hue }));
+// los productos reales (con fotos) tienen su propio modelo: scripts/coraessens/modelo.py
+const data = products.filter((p) => !p.real).map(({ id, name, lab, category, form, howTo, precautions, hue }) => ({ id, name, lab, category, form, howTo, precautions, hue }));
 writeFileSync(new URL('./products.json', import.meta.url), JSON.stringify(data, null, 2));
 console.log(`${data.length} productos exportados`);
