@@ -50,6 +50,13 @@ Todas respetan "reducir movimiento" del sistema.
 - Los QR apuntan a `https://rguerrerot4-boop.github.io/multi-lab/ar-tarjeta/?p=<id>`: si cambia la dirección de la web hay que regenerar e imprimir las tarjetas.
 - Pendiente: probarla con las tarjetas impresas en un iPhone y un Android reales.
 
+## Ficha del producto (`src/app/producto/[id].tsx`)
+
+- En capítulos, según la referencia de página de producto: el envase 3D queda fijo y se mueve, escala y gira hacia la cara de cada capítulo mientras la ficha se desplaza; detrás pasan títulos gigantes.
+- Capítulos: portada (3D, AR, vitrina), ficha técnica con cifras grandes en recuadro, descripción y datos, componentes/usos en manchas de tinta, modo de uso, avisos, presentación en fila y recursos con relacionados.
+- Cifras y notas: `specs` y `notes` del producto; si no tiene, se arman con presentación, componente, concentración y usos. Colores: los del empaque para productos con fotos y el tono del producto para los ficticios.
+- Las posiciones del envase por capítulo están en `chapters` (x, y, escala, cara).
+
 ## Vitrina 3D (CORAESSENS)
 
 - Pantalla `src/app/vitrina/[id].tsx`, datos `src/data/vitrina.ts`, caja `src/components/PhotoBox3D.tsx`, acceso `src/components/VitrinaBanner.tsx`.

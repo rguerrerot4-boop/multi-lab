@@ -87,6 +87,10 @@ export interface Product {
   /** caja 3D con las fotos del empaque (vitrina 3D) */
   photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string };
   arTitle?: string; // título en el visor AR del teléfono
+  /** cifras destacadas de la ficha (si no hay, se arman con la presentación, el componente y la concentración) */
+  specs?: { value: string; label: string; note: string }[];
+  /** notas de la sección de componentes (manchas de tinta en la ficha) */
+  notes?: { title: string; text: string }[];
   sizeCm?: { w: number; h: number; d: number }; // tamaño del modelo AR
 }
 
@@ -558,6 +562,18 @@ export const products: Product[] = [
     keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'magnesio', 'vitamina b12', 'metilcobalamina', 'vitamina b6', 'folato', 'corazón bovino', 'oral'],
     areas: ['Medicina general', 'Dermatología'],
     real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra.' },
+    specs: [
+      { value: '9', label: 'Cápsulas por caja', note: 'Muestra · prohibida su venta' },
+      { value: '3', label: 'Cápsulas al día', note: '1 cápsula con cada comida' },
+      { value: '275 mg', label: 'Corazón bovino liofilizado', note: 'Por cápsula de 580,48 mg' },
+    ],
+    notes: [
+      { title: 'Corazón bovino', text: 'Polvo liofilizado, 275 mg por cápsula.' },
+      { title: 'Magnesio', text: 'Óxido de magnesio 145 mg. Promueve la absorción y retención de calcio.' },
+      { title: 'Vitamina B12', text: 'Metilcobalamina 650 mcg. Necesaria para la producción de glóbulos rojos.' },
+      { title: 'Folato', text: 'L-5 MTHF 326 mcg. Esencial para el crecimiento y división de las células.' },
+      { title: 'Vitamina B6', text: 'Piridoxal-5-fosfato 25 mg.' },
+    ],
     // las fotos del empaque (photo) se agregan en src/data/vitrina.ts, que se carga en src/app/_layout.tsx
     arTitle: 'CORAESSENS · muestra médica',
     sizeCm: { w: 3.6, h: 5.2, d: 3.6 },
