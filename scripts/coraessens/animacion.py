@@ -80,8 +80,14 @@ class _Flatten(BasePen):
     _endPath = _closePath
 
 
-NAME_WIDTH = 0.064  # ancho del nombre en 3D (m): casi el doble del ancho de la caja
+NAME_WIDTH = 0.07  # ancho de las letras (m): casi el doble del ancho de la caja
 NAME_DEPTH = 0.003
+# Letras al estilo de los títulos 3D de las referencias: cara roja con brillo, borde blanco alrededor
+# (se lee sobre cualquier fondo) y un bloque profundo morado detrás, con degradado de luz a sombra.
+OUTLINE = 0.0013  # grosor del borde blanco
+FRONT_Z = 0.0025  # cara frontal de las letras
+STEP = 0.0009  # las letras sobresalen del borde blanco
+BLOCK_BACK = -0.0055  # fondo del bloque morado
 
 
 def name_geometry(text):
@@ -173,6 +179,108 @@ def extrude(geom, depth):
                 else:
                     sides[2].extend([a, c, b, a, d, c])
     return faces, sides
+
+
+def _rings(geom):
+    polys = list(geom.geoms) if hasattr(geom, "geoms") else [geom]
+    for poly in polys:
+        if poly.is_empty:
+            continue
+        yield poly, [np.array(poly.exterior.coords)[:-1]] + [np.array(r.coords)[:-1] for r in poly.interiors]
+
+
+def cap(geom, z, up, uv_box=None):
+    """Cara plana (con huecos) en z; up=True mira hacia +z. uv_box=(minx, miny, maxx, maxy) para la textura."""
+    pos, nor, uv, idx = [], [], [], []
+    n = (0, 0, 1) if up else (0, 0, -1)
+    for _, rings in _rings(geom):
+        verts = np.concatenate(rings)
+        ends = np.cumsum([len(r_) for r_ in rings]).astype(np.uint32)
+        tris = earcut.triangulate_float64(verts, ends).reshape(-1, 3)
+        base = len(pos)
+        for vx, vy in verts:
+            pos.append((vx, vy, z))
+            nor.append(n)
+            if uv_box:
+                x0, y0, x1, y1 = uv_box
+                uv.append(((vx - x0) / (x1 - x0), (y1 - vy) / (y1 - y0)))
+            else:
+                uv.append((0.5, 0.5))
+        for a, b, c in tris:
+            pa, pb, pc = verts[a], verts[b], verts[c]
+            cz = (pb[0] - pa[0]) * (pc[1] - pa[1]) - (pb[1] - pa[1]) * (pc[0] - pa[0])
+            idx.extend(base + i for i in ((a, b, c) if (cz > 0) == up else (a, c, b)))
+    return pos, nor, uv, idx
+
+
+def walls(geom, z_front, z_back):
+    """Paredes laterales entre z_front y z_back; v de la textura va de 0 (adelante) a 1 (atrás)."""
+    pos, nor, uv, idx = [], [], [], []
+    for _, rings in _rings(geom):
+        for ring in rings:
+            ccw = Polygon(ring).exterior.is_ccw
+            m = len(ring)
+            for i in range(m):
+                p, q = ring[i], ring[(i + 1) % m]
+                dx, dy = q[0] - p[0], q[1] - p[1]
+                ln = math.hypot(dx, dy) or 1
+                n = (dy / ln, -dx / ln, 0) if ccw else (-dy / ln, dx / ln, 0)
+                base = len(pos)
+                for (vx, vy), z, v in ((p, z_back, 1), (q, z_back, 1), (q, z_front, 0), (p, z_front, 0)):
+                    pos.append((vx, vy, z))
+                    nor.append(n)
+                    uv.append((0.5, v))
+                a, b, c, d = base, base + 1, base + 2, base + 3
+                e1, e2 = np.subtract(pos[b], pos[a]), np.subtract(pos[c], pos[a])
+                idx.extend([a, b, c, a, c, d] if np.dot(np.cross(e1, e2), n) > 0 else [a, c, b, a, d, c])
+    return pos, nor, uv, idx
+
+
+def name_layers(text):
+    """Capas del nombre: (frente rojo, canto rojo corto, borde blanco y su canto, bloque morado y su fondo)."""
+    letters, width = name_geometry(text)
+    outline = letters.buffer(OUTLINE, join_style=1, quad_segs=4)
+    x0, y0, x1, y1 = letters.bounds
+    z_ring = FRONT_Z - STEP
+    return {
+        "frente": cap(letters, FRONT_Z, True, (x0, y0, x1, y1)),
+        "cantoLetras": walls(letters, FRONT_Z, z_ring),
+        "borde": cap(outline.difference(letters), z_ring, True),
+        "cantoBorde": walls(outline, z_ring, z_ring - 0.0006),
+        "bloque": walls(outline, z_ring - 0.0006, BLOCK_BACK),
+        "fondo": cap(outline, BLOCK_BACK, False),
+    }, width
+
+
+def gradient_textures():
+    """Texturas del nombre: rojo con brillo (frente) y morado de claro a oscuro (profundidad)."""
+    import io
+
+    from PIL import Image, ImageDraw, ImageFilter
+
+    w, h = 256, 128
+    front = Image.new("RGB", (w, h))
+    d = ImageDraw.Draw(front)
+    top, bottom = (236, 74, 82), (166, 18, 30)
+    for y in range(h):
+        k = y / (h - 1)
+        d.line([(0, y), (w, y)], fill=tuple(round(top[i] + (bottom[i] - top[i]) * k) for i in range(3)))
+    gloss = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(gloss).polygon([(w * 0.05, 0), (w * 0.3, 0), (w * 0.12, h), (-w * 0.13, h)], fill=70)
+    ImageDraw.Draw(gloss).polygon([(w * 0.55, 0), (w * 0.66, 0), (w * 0.48, h), (w * 0.37, h)], fill=40)
+    front.paste((255, 255, 255), (0, 0), gloss.filter(ImageFilter.GaussianBlur(6)))
+    depth = Image.new("RGB", (16, 128))
+    d = ImageDraw.Draw(depth)
+    near, far = (124, 62, 158), (38, 14, 54)
+    for y in range(128):
+        k = (y / 127) ** 0.8
+        d.line([(0, y), (16, y)], fill=tuple(round(near[i] + (far[i] - near[i]) * k) for i in range(3)))
+    out = {}
+    for name, im in (("letras_frente", front), ("letras_profundidad", depth)):
+        b = io.BytesIO()
+        im.save(b, "PNG")
+        out[name] = b.getvalue()
+    return out
 
 
 def ring_mesh(r_in, r_out, seg=64):
@@ -452,8 +560,7 @@ def samples():
 def scene(bm, text):
     """Descripción de la escena: materiales, mallas y nodos (con su animación)."""
     body, inner, lid_out, lid_in = box_parts(bm)
-    geom, width = name_geometry(text)
-    faces, sides = extrude(geom, NAME_DEPTH)
+    layers, width = name_layers(text)
     rpos, rnor, ridx = ring_mesh(0.028, 0.031)
     cap_top, cap_bottom = capsule_halves()
     H, D = bm.H, bm.D
@@ -463,7 +570,14 @@ def scene(bm, text):
         "Cuerpo": [(body[0], body[1], body[3], "caja", body[2])],
         "Interior": [(inner[0], inner[1], inner[3], "carton", None)],
         "Tapa": [(lid_out[0], lid_out[1], lid_out[3], "caja", lid_out[2]), (lid_in[0], lid_in[1], lid_in[3], "carton", None)],
-        "Nombre": [(faces[0], faces[1], faces[2], "rojo", None), (sides[0], sides[1], sides[2], "morado", None)],
+        "Nombre": [
+            (layers["frente"][0], layers["frente"][1], layers["frente"][3], "letrasFrente", layers["frente"][2]),
+            (layers["cantoLetras"][0], layers["cantoLetras"][1], layers["cantoLetras"][3], "letrasCanto", None),
+            (layers["borde"][0], layers["borde"][1], layers["borde"][3], "letrasBorde", None),
+            (layers["cantoBorde"][0], layers["cantoBorde"][1], layers["cantoBorde"][3], "letrasBorde", None),
+            (layers["bloque"][0], layers["bloque"][1], layers["bloque"][3], "letrasBloque", layers["bloque"][2]),
+            (layers["fondo"][0], layers["fondo"][1], layers["fondo"][3], "letrasFondo", None),
+        ],
         "Aro": [(rpos, rnor, ridx, "aro", None)],
         "Capsula": [(cap_top[0], cap_top[1], cap_top[2], "rojo", None), (cap_bottom[0], cap_bottom[1], cap_bottom[2], "capsulaBlanca", None)],
     }
@@ -478,10 +592,14 @@ def scene(bm, text):
     for i in range(N_CAPS):
         nodes.append({"name": f"Capsula{i + 1}", "parent": None, "mesh": "Capsula", "anim": (lambda k: lambda t: caps.at(k, t))(i)})
     materials = {
-        "caja": {"texture": True, "rough": 0.55},
+        "caja": {"texture": "caja", "rough": 0.55},
         "carton": {"color": CARDBOARD, "rough": 0.9, "double": True},
         "rojo": {"color": RED, "rough": 0.35},
-        "morado": {"color": PURPLE, "rough": 0.5},
+        "letrasFrente": {"texture": "letras_frente", "rough": 0.22},
+        "letrasCanto": {"color": (0.66, 0.08, 0.13), "rough": 0.35},
+        "letrasBorde": {"color": (0.99, 0.98, 0.97), "rough": 0.3},
+        "letrasBloque": {"texture": "letras_profundidad", "rough": 0.45},
+        "letrasFondo": {"color": (0.15, 0.05, 0.21), "rough": 0.6},
         "capsulaBlanca": {"color": CAPSULE_WHITE, "rough": 0.3},
         "aro": {"color": WHITE, "rough": 0.8, "opacity": 0.55, "double": True},
     }
@@ -528,13 +646,15 @@ class _Bin:
 def write_glb(path, title, bm, jpg_bytes, text):
     meshes, nodes, materials, width = scene(bm, text)
     b = _Bin()
+    images = {"caja": (jpg_bytes, "image/jpeg"), **{k: (v, "image/png") for k, v in gradient_textures().items()}}
+    tex_keys = list(images)
     mat_keys = list(materials)
     gl_mats = []
     for k in mat_keys:
         m = materials[k]
         pbr = {"metallicFactor": 0.0, "roughnessFactor": m["rough"]}
         if m.get("texture"):
-            pbr["baseColorTexture"] = {"index": 0}
+            pbr["baseColorTexture"] = {"index": tex_keys.index(m["texture"])}
         else:
             pbr["baseColorFactor"] = [*srgb_to_linear(m["color"]), m.get("opacity", 1.0)]
         g = {"name": k, "pbrMetallicRoughness": pbr}
@@ -557,7 +677,7 @@ def write_glb(path, title, bm, jpg_bytes, text):
             ind = b.add(np.array(idx, np.uint16 if max(idx) < 65535 else np.uint32), 5123 if max(idx) < 65535 else 5125, "SCALAR", 34963)
             prims.append({"attributes": attrs, "indices": ind, "material": mat_keys.index(mat)})
         gl_meshes.append({"name": k, "primitives": prims})
-    img_view = b.image(jpg_bytes)
+    img_views = [b.image(images[k][0]) for k in tex_keys]
 
     names = [n["name"] for n in nodes]
     gl_nodes = [{"name": title, "children": []}]
@@ -599,9 +719,9 @@ def write_glb(path, title, bm, jpg_bytes, text):
         "nodes": gl_nodes,
         "meshes": gl_meshes,
         "materials": gl_mats,
-        "textures": [{"source": 0, "sampler": 0}],
+        "textures": [{"source": i, "sampler": 0} for i in range(len(tex_keys))],
         "samplers": [{"magFilter": 9729, "minFilter": 9987, "wrapS": 33071, "wrapT": 33071}],
-        "images": [{"bufferView": img_view, "mimeType": "image/jpeg"}],
+        "images": [{"bufferView": img_views[i], "mimeType": images[k][1]} for i, k in enumerate(tex_keys)],
         "animations": [{"name": "Presentacion", "samplers": samplers, "channels": channels}],
         "extras": {"cicloSegundos": T, "reposo": list(SHOW)},
         "buffers": [{"byteLength": len(b.data)}],
@@ -624,8 +744,13 @@ def write_usdz(path, title, bm, jpg_path, text):
     meshes, nodes, materials, _ = scene(bm, text)
     with tempfile.TemporaryDirectory() as tmp:
         usdc = os.path.join(tmp, "modelo.usdc")
+        files = {"caja": "textura.jpg"}
         with open(jpg_path, "rb") as a, open(os.path.join(tmp, "textura.jpg"), "wb") as b_:
             b_.write(a.read())
+        for k, data in gradient_textures().items():
+            files[k] = f"{k}.png"
+            with open(os.path.join(tmp, files[k]), "wb") as f_:
+                f_.write(data)
         stage = Usd.Stage.CreateNew(usdc)
         UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
         UsdGeom.SetStageMetersPerUnit(stage, 1.0)
@@ -652,7 +777,7 @@ def write_usdz(path, title, bm, jpg_path, text):
                 reader.CreateInput("varname", Sdf.ValueTypeNames.Token).Set("st")
                 tx = UsdShade.Shader.Define(stage, f"/Producto/Materiales/{k}/Textura")
                 tx.CreateIdAttr("UsdUVTexture")
-                tx.CreateInput("file", Sdf.ValueTypeNames.Asset).Set("textura.jpg")
+                tx.CreateInput("file", Sdf.ValueTypeNames.Asset).Set(files[m["texture"]])
                 tx.CreateInput("st", Sdf.ValueTypeNames.Float2).ConnectToSource(reader.ConnectableAPI(), "result")
                 tx.CreateInput("wrapS", Sdf.ValueTypeNames.Token).Set("clamp")
                 tx.CreateInput("wrapT", Sdf.ValueTypeNames.Token).Set("clamp")
