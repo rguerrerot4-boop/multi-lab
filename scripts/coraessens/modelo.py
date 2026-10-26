@@ -45,13 +45,12 @@ def atlas(prefix):
 
 def main():
     os.makedirs(bm.OUT, exist_ok=True)
-    box = bm.mesh()  # caja con el origen en el centro de su base
     for pid, name, prefix, text in (('cor', 'CORAESSENS', '', 'CORAESSENS'), ('cor-f', 'KARDENSA (ficticio)', 'ficticio-', 'KARDENSA')):
         jpg = os.path.join(bm.OUT, f'{pid}.jpg')
         atlas(prefix).save(jpg, 'JPEG', quality=88, optimize=True)
         data = open(jpg, 'rb').read()
-        w = animacion.write_glb(os.path.join(bm.OUT, f'{pid}.glb'), name, box, data, text, bm.H)
-        animacion.write_usdz(os.path.join(bm.OUT, f'{pid}.usdz'), name, box, jpg, text, bm.H)
+        w = animacion.write_glb(os.path.join(bm.OUT, f'{pid}.glb'), name, bm, data, text)
+        animacion.write_usdz(os.path.join(bm.OUT, f'{pid}.usdz'), name, bm, jpg, text)
         print(pid, name, f'listo · nombre 3D de {w * 100:.1f} cm')
 
 

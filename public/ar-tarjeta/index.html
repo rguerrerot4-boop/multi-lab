@@ -160,12 +160,17 @@
           const animado = gltf.animations.length > 0;
           const caja = gltf.scene.getObjectByName('Caja');
           // la sombra se ajusta al tamaño de la caja (sin el nombre en 3D)
+          const cuerpo = gltf.scene.getObjectByName('Cuerpo') ?? caja;
           let tam;
-          if (caja?.isMesh) {
-            caja.geometry.computeBoundingBox();
-            tam = caja.geometry.boundingBox.getSize(new THREE.Vector3());
+          if (cuerpo?.isMesh) {
+            cuerpo.geometry.computeBoundingBox();
+            tam = cuerpo.geometry.boundingBox.getSize(new THREE.Vector3());
           } else tam = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
-          const sombra = new THREE.Mesh(new THREE.CircleGeometry(Math.max(tam.x, tam.z) * 0.75, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
+          // polygonOffset: la sombra queda siempre detrás del piso interior de la caja (se ve al abrir la tapa)
+          const sombra = new THREE.Mesh(
+            new THREE.CircleGeometry(Math.max(tam.x, tam.z) * 0.75, 48),
+            new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 6, polygonOffsetUnits: 6 }),
+          );
           sombra.rotation.x = -Math.PI / 2;
           sombra.position.y = 0.0005;
           base.add(sombra, gltf.scene);
