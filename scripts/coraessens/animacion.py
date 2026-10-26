@@ -21,7 +21,6 @@ import os
 import random
 import struct
 import tempfile
-from functools import reduce
 
 import mapbox_earcut as earcut
 import numpy as np
@@ -88,6 +87,7 @@ NAME_DEPTH = 0.003
 # Letras al estilo de los títulos 3D de las referencias: cara roja con brillo, borde blanco alrededor
 # (se lee sobre cualquier fondo) y un bloque profundo morado detrás, con degradado de luz a sombra.
 OUTLINE = 0.0013  # grosor del borde blanco
+INNER_OUTLINE = 0.00035  # filete blanco dentro de los huecos de las letras
 FRONT_Z = 0.0025  # cara frontal de las letras
 STEP = 0.0009  # las letras sobresalen del borde blanco
 BLOCK_BACK = -0.0055  # fondo del bloque morado
@@ -114,17 +114,32 @@ def text_polygons(text, cap_height, per_letter=False):
         gname = cmap[ord(ch)]
         pen = _Flatten(gs)
         gs[gname].draw(pen)
-        polys = [Polygon(r).buffer(0) for r in pen.rings if len(r) >= 3]
-        if polys:
-            # xor de los contornos: los huecos (como en la "O" o la "A") quedan vacíos
-            glyph = reduce(lambda a, b: a.symmetric_difference(b), polys)
-            shapes.append(_translate(glyph, x))
+        rings = [r for r in pen.rings if len(r) >= 3]
+        if rings:
+            shapes.append(_translate(_fill_nonzero(rings), x))
         x += gs[gname].width
     total = unary_union(shapes)
     width = x * k
     if per_letter:
         return _scale(total, k, -width / 2), width, [_scale(g, k, -width / 2) for g in shapes]
     return _scale(total, k, -width / 2), width
+
+
+def _signed_area(ring):
+    return 0.5 * sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1]))
+
+
+def _fill_nonzero(rings):
+    """Relleno de la letra según el sentido de cada contorno (regla de la fuente): los contornos que
+    giran como el exterior suman y los que giran al revés son huecos. Así las piezas que se superponen
+    (el travesaño de la "A", por ejemplo) quedan llenas en vez de abrir un hueco donde se cruzan."""
+    outer_sign = 1 if _signed_area(max(rings, key=lambda r: abs(_signed_area(r)))) > 0 else -1
+    solid = [Polygon(r).buffer(0) for r in rings if _signed_area(r) * outer_sign > 0]
+    holes = [Polygon(r).buffer(0) for r in rings if _signed_area(r) * outer_sign < 0]
+    glyph = unary_union(solid)
+    if holes:
+        glyph = glyph.difference(unary_union(holes))
+    return glyph
 
 
 def _translate(geom, dx):
@@ -242,6 +257,19 @@ def walls(geom, z_front, z_back):
     return pos, nor, uv, idx
 
 
+def _outline(g):
+    """Borde blanco alrededor de la letra. Por fuera es grueso; dentro de los huecos (la "A", la "O",
+    la "R") es un filete fino, para que el hueco siga abierto y la letra se lea."""
+    outline = g.buffer(OUTLINE, join_style=1, quad_segs=4)
+    polys = list(g.geoms) if hasattr(g, "geoms") else [g]
+    for poly in polys:
+        for ring in poly.interiors:
+            hole = Polygon(ring).buffer(-INNER_OUTLINE, join_style=1, quad_segs=4)
+            if not hole.is_empty:
+                outline = outline.difference(hole)
+    return outline
+
+
 def letter_layers(text):
     """Cada letra por separado (para animarlas una a una), centrada en su propio eje.
     Devuelve [(capas, (cx, cy))] y el ancho; la textura del frente sigue el ancho de toda la palabra."""
@@ -257,7 +285,7 @@ def letter_layers(text):
         gx0, _, gx1, _ = g.bounds
         cx = (gx0 + gx1) / 2
         g = affinity.translate(g, -cx, -cy)
-        outline = g.buffer(OUTLINE, join_style=1, quad_segs=4)
+        outline = _outline(g)
         dz = 0.00025 * (i % 2)  # los bordes blancos de letras vecinas no quedan en el mismo plano
         box = (x0 - cx, y0 - cy, x1 - cx, y1 - cy)
         out.append(({
