@@ -3,13 +3,16 @@ se abre y deja salir su contenido, que vuela alrededor, y título en 3D).
 
 Ciclo de 12 s (Scene Viewer y AR Quick Look repiten la primera animación sin fin):
   0,0–1,2 s   la caja sube desde el piso girando, con un pequeño rebote, y un aro se abre en el piso
-  0,9–1,6 s   el nombre en 3D aparece flotando sobre la caja
+  0,75–1,6 s  las letras del nombre en 3D aparecen una tras otra, girando desde atrás y con rebote
   1,6–10,8 s  función (tramo que se repite sin cortes; la AR con tarjeta repite solo este tramo):
               la tapa se abre (2,0 s), salen 9 cápsulas una tras otra (2,45 s), giran alrededor de la
               caja dando vueltas sobre sí mismas, vuelven a entrar (8,0 s) y la tapa se cierra (9,6 s);
-              mientras tanto la caja da una vuelta completa flotando y el nombre se balancea
-  10,8–11,6 s el nombre y la caja bajan; 11,6–12 s pausa
-El nombre en 3D sale de los contornos de Montserrat ExtraBold (frente rojo, canto morado). Las cápsulas
+              mientras tanto la caja da una vuelta completa flotando. El nombre se balancea, una ola
+              recorre sus letras todo el tiempo, saltan en cascada al abrirse la tapa (2,25 s) y antes de
+              que vuelvan las cápsulas (8,55 s), y a los 5,3 s cada letra da una vuelta completa
+  10,8–11,6 s las letras suben y se encogen en cascada y la caja baja; 11,6–12 s pausa
+Cada letra del nombre es una pieza (contornos de Montserrat ExtraBold): frente rojo con brillo, borde
+blanco y bloque morado con degradado. Las cápsulas
 son ilustrativas (rojo y blanco, los colores del empaque; no representan el color real de la cápsula); la caja usa las fotos del empaque.
 """
 import json
@@ -96,8 +99,9 @@ def name_geometry(text):
     return text_polygons(text, 0.01 * NAME_WIDTH / w)
 
 
-def text_polygons(text, cap_height):
-    """Polígonos (con huecos) del texto, centrado en x, con la base en y = 0, en metros."""
+def text_polygons(text, cap_height, per_letter=False):
+    """Polígonos (con huecos) del texto, centrado en x, con la base en y = 0, en metros.
+    Con per_letter=True devuelve también la lista de letras (cada una ya escalada y en su sitio)."""
     font = TTFont(FONT)
     gs = font.getGlyphSet()
     cmap = font.getBestCmap()
@@ -118,6 +122,8 @@ def text_polygons(text, cap_height):
         x += gs[gname].width
     total = unary_union(shapes)
     width = x * k
+    if per_letter:
+        return _scale(total, k, -width / 2), width, [_scale(g, k, -width / 2) for g in shapes]
     return _scale(total, k, -width / 2), width
 
 
@@ -236,20 +242,33 @@ def walls(geom, z_front, z_back):
     return pos, nor, uv, idx
 
 
-def name_layers(text):
-    """Capas del nombre: (frente rojo, canto rojo corto, borde blanco y su canto, bloque morado y su fondo)."""
-    letters, width = name_geometry(text)
-    outline = letters.buffer(OUTLINE, join_style=1, quad_segs=4)
-    x0, y0, x1, y1 = letters.bounds
+def letter_layers(text):
+    """Cada letra por separado (para animarlas una a una), centrada en su propio eje.
+    Devuelve [(capas, (cx, cy))] y el ancho; la textura del frente sigue el ancho de toda la palabra."""
+    _, w = text_polygons(text, 0.01)
+    word, width, letters = text_polygons(text, 0.01 * NAME_WIDTH / w, per_letter=True)
+    from shapely import affinity
+
+    x0, y0, x1, y1 = word.bounds
+    cy = (y0 + y1) / 2
     z_ring = FRONT_Z - STEP
-    return {
-        "frente": cap(letters, FRONT_Z, True, (x0, y0, x1, y1)),
-        "cantoLetras": walls(letters, FRONT_Z, z_ring),
-        "borde": cap(outline.difference(letters), z_ring, True),
-        "cantoBorde": walls(outline, z_ring, z_ring - 0.0006),
-        "bloque": walls(outline, z_ring - 0.0006, BLOCK_BACK),
-        "fondo": cap(outline, BLOCK_BACK, False),
-    }, width
+    out = []
+    for i, g in enumerate(letters):
+        gx0, _, gx1, _ = g.bounds
+        cx = (gx0 + gx1) / 2
+        g = affinity.translate(g, -cx, -cy)
+        outline = g.buffer(OUTLINE, join_style=1, quad_segs=4)
+        dz = 0.00025 * (i % 2)  # los bordes blancos de letras vecinas no quedan en el mismo plano
+        box = (x0 - cx, y0 - cy, x1 - cx, y1 - cy)
+        out.append(({
+            "frente": cap(g, FRONT_Z + dz, True, box),
+            "cantoLetras": walls(g, FRONT_Z + dz, z_ring + dz),
+            "borde": cap(outline.difference(g), z_ring + dz, True),
+            "cantoBorde": walls(outline, z_ring + dz, z_ring - 0.0006),
+            "bloque": walls(outline, z_ring - 0.0006, BLOCK_BACK),
+            "fondo": cap(outline, BLOCK_BACK, False),
+        }, (cx, cy)))
+    return out, width
 
 
 def gradient_textures():
@@ -261,13 +280,13 @@ def gradient_textures():
     w, h = 256, 128
     front = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(front)
-    top, bottom = (236, 74, 82), (166, 18, 30)
+    top, bottom = (212, 40, 50), (140, 12, 24)
     for y in range(h):
         k = y / (h - 1)
         d.line([(0, y), (w, y)], fill=tuple(round(top[i] + (bottom[i] - top[i]) * k) for i in range(3)))
     gloss = Image.new("L", (w, h), 0)
-    ImageDraw.Draw(gloss).polygon([(w * 0.05, 0), (w * 0.3, 0), (w * 0.12, h), (-w * 0.13, h)], fill=70)
-    ImageDraw.Draw(gloss).polygon([(w * 0.55, 0), (w * 0.66, 0), (w * 0.48, h), (w * 0.37, h)], fill=40)
+    ImageDraw.Draw(gloss).polygon([(w * 0.05, 0), (w * 0.3, 0), (w * 0.12, h), (-w * 0.13, h)], fill=55)
+    ImageDraw.Draw(gloss).polygon([(w * 0.55, 0), (w * 0.66, 0), (w * 0.48, h), (w * 0.37, h)], fill=30)
     front.paste((255, 255, 255), (0, 0), gloss.filter(ImageFilter.GaussianBlur(6)))
     depth = Image.new("RGB", (16, 128))
     d = ImageDraw.Draw(depth)
@@ -450,19 +469,56 @@ def lid_at(t):
 
 
 def name_at(t, base_y):
-    if t < 0.9:
-        return base_y - 0.01, -0.5, TINY
+    """(y, giro) de la palabra completa; cada letra lleva además su propio movimiento (letter_at)."""
+    span = SHOW[1] - SHOW[0]
     if t < SHOW[0]:
-        k = (t - 0.9) / 0.7
-        return base_y - 0.01 * (1 - ease_out_cubic(k)), -0.5 * (1 - ease_out_cubic(k)), max(TINY, ease_out_back(k))
+        k = clamp01((t - 0.75) / (SHOW[0] - 0.75))
+        return base_y - 0.008 * (1 - ease_out_cubic(k)), -0.35 * (1 - ease_out_cubic(k))
     if t < SHOW[1]:
         u = t - SHOW[0]
-        span = SHOW[1] - SHOW[0]
-        return base_y + 0.0025 * math.sin(2 * math.pi * u / (span / 2)), 0.12 * math.sin(2 * math.pi * u / span), 1.0
-    if t < SHOW[1] + 0.5:
-        k = (t - SHOW[1]) / 0.5
-        return base_y + 0.006 * ease_in_cubic(k), 0.0, max(TINY, 1 - ease_in_cubic(k))
-    return base_y - 0.01, -0.5, TINY
+        env = smooth(u / 0.6) * smooth((span - u) / 0.6)
+        return base_y + 0.0025 * math.sin(2 * math.pi * u / (span / 2)), 0.2 * math.sin(2 * math.pi * u / span) * env
+    return base_y + 0.004 * ease_in_cubic(clamp01((t - SHOW[1]) / 0.8)), 0.0
+
+
+NAME_HOPS = (2.25, 8.55)  # saltos en ola: cuando se abre la tapa y antes de que vuelvan las cápsulas
+NAME_FLIP = 5.3  # vuelta completa de cada letra (sobre su eje horizontal), una tras otra
+
+
+def letter_at(i, n, t, center):
+    """(posición, cuaternión, escala) de la letra i, relativa a la palabra."""
+    cx, cy = center
+    span = SHOW[1] - SHOW[0]
+    f = i / max(1, n - 1)
+    # entrada: las letras aparecen una tras otra, girando desde atrás y con rebote
+    start = 0.75 + 0.4 * f
+    if t < start:
+        return (cx, cy - 0.014, 0), quat_axis((1, 0, 0), -math.pi), TINY
+    if t < SHOW[0]:
+        k = clamp01((t - start) / 0.45)
+        return (cx, cy - 0.014 * (1 - ease_out_back(k)), 0), quat_axis((1, 0, 0), -math.pi * (1 - ease_out_cubic(k))), max(TINY, ease_out_back(k))
+    # salida: suben y se encogen en cascada
+    if t >= SHOW[1]:
+        k = clamp01((t - SHOW[1] - 0.035 * i) / 0.4)
+        if k >= 1:
+            return (cx, cy + 0.012, 0), (0, 0, 0, 1), TINY
+        return (cx, cy + 0.012 * ease_in_cubic(k), 0), quat_axis((1, 0, 0), 1.4 * ease_in_cubic(k)), max(TINY, 1 - ease_in_cubic(k))
+    u = t - SHOW[0]
+    env = smooth(u / 0.5) * smooth((span - u) / 0.5)
+    # ola continua que recorre la palabra (3 olas por ciclo, así el bucle no salta)
+    ph = 2 * math.pi * 3 * u / span - 0.6 * i
+    dy = 0.0022 * math.sin(ph) * env
+    roll = 0.07 * math.cos(ph) * env
+    sc = 1.0
+    for th in NAME_HOPS:
+        k = (t - th - 0.045 * i) / 0.45
+        if 0 < k < 1:
+            dy += 0.0075 * math.sin(math.pi * k)
+            sc += 0.12 * math.sin(math.pi * k)
+    k = clamp01((t - NAME_FLIP - 0.07 * i) / 0.65)
+    flip = 2 * math.pi * ease_in_out(k) if 0 < k < 1 else 0.0
+    q = quat_mul(quat_axis((0, 0, 1), roll), quat_axis((1, 0, 0), flip))
+    return (cx, cy + dy, 0), q, sc
 
 
 def ring_at(t):
@@ -494,6 +550,17 @@ NAME_TILT = -0.42  # el nombre se inclina hacia atrás: se lee de frente y tambi
 
 def quat_name(a):
     return quat_mul(quat_y(a), quat_axis((1, 0, 0), NAME_TILT))
+
+
+def _layer_prims(layers):
+    return [
+        (layers["frente"][0], layers["frente"][1], layers["frente"][3], "letrasFrente", layers["frente"][2]),
+        (layers["cantoLetras"][0], layers["cantoLetras"][1], layers["cantoLetras"][3], "letrasCanto", None),
+        (layers["borde"][0], layers["borde"][1], layers["borde"][3], "letrasBorde", None),
+        (layers["cantoBorde"][0], layers["cantoBorde"][1], layers["cantoBorde"][3], "letrasBorde", None),
+        (layers["bloque"][0], layers["bloque"][1], layers["bloque"][3], "letrasBloque", layers["bloque"][2]),
+        (layers["fondo"][0], layers["fondo"][1], layers["fondo"][3], "letrasFondo", None),
+    ]
 
 
 # ---------- cápsulas que salen de la caja ----------
@@ -552,6 +619,17 @@ class Capsules:
         return pos, quat_axis(c["axis"], ang), max(TINY, sc)
 
 
+def _continuous(qs):
+    """Cuaterniones del mismo hemisferio cuadro a cuadro: q y -q son el mismo giro, pero al interpolar
+    entre ambos el visor daría la vuelta larga."""
+    out = [tuple(qs[0])]
+    for q in qs[1:]:
+        if sum(a * b for a, b in zip(out[-1], q)) < 0:
+            q = tuple(-c for c in q)
+        out.append(tuple(q))
+    return out
+
+
 def samples():
     n = int(round(T * FPS))
     return [i / FPS for i in range(n + 1)]
@@ -560,7 +638,7 @@ def samples():
 def scene(bm, text):
     """Descripción de la escena: materiales, mallas y nodos (con su animación)."""
     body, inner, lid_out, lid_in = box_parts(bm)
-    layers, width = name_layers(text)
+    letters, width = letter_layers(text)
     rpos, rnor, ridx = ring_mesh(0.028, 0.031)
     cap_top, cap_bottom = capsule_halves()
     H, D = bm.H, bm.D
@@ -570,14 +648,6 @@ def scene(bm, text):
         "Cuerpo": [(body[0], body[1], body[3], "caja", body[2])],
         "Interior": [(inner[0], inner[1], inner[3], "carton", None)],
         "Tapa": [(lid_out[0], lid_out[1], lid_out[3], "caja", lid_out[2]), (lid_in[0], lid_in[1], lid_in[3], "carton", None)],
-        "Nombre": [
-            (layers["frente"][0], layers["frente"][1], layers["frente"][3], "letrasFrente", layers["frente"][2]),
-            (layers["cantoLetras"][0], layers["cantoLetras"][1], layers["cantoLetras"][3], "letrasCanto", None),
-            (layers["borde"][0], layers["borde"][1], layers["borde"][3], "letrasBorde", None),
-            (layers["cantoBorde"][0], layers["cantoBorde"][1], layers["cantoBorde"][3], "letrasBorde", None),
-            (layers["bloque"][0], layers["bloque"][1], layers["bloque"][3], "letrasBloque", layers["bloque"][2]),
-            (layers["fondo"][0], layers["fondo"][1], layers["fondo"][3], "letrasFondo", None),
-        ],
         "Aro": [(rpos, rnor, ridx, "aro", None)],
         "Capsula": [(cap_top[0], cap_top[1], cap_top[2], "rojo", None), (cap_bottom[0], cap_bottom[1], cap_bottom[2], "capsulaBlanca", None)],
     }
@@ -586,16 +656,19 @@ def scene(bm, text):
         {"name": "Cuerpo", "parent": "Caja", "mesh": "Cuerpo"},
         {"name": "Interior", "parent": "Caja", "mesh": "Interior"},
         {"name": "Tapa", "parent": "Caja", "mesh": "Tapa", "translation": (0, H, -D / 2), "rot": lambda t: quat_axis((1, 0, 0), lid_at(t))},
-        {"name": "Nombre", "parent": None, "mesh": "Nombre", "anim": lambda t: ((0, name_at(t, base_y)[0], 0), quat_name(name_at(t, base_y)[1]), name_at(t, base_y)[2])},
+        {"name": "Nombre", "parent": None, "anim": lambda t: ((0, name_at(t, base_y)[0], 0), quat_name(name_at(t, base_y)[1]), 1.0)},
         {"name": "Aro", "parent": None, "mesh": "Aro", "anim": lambda t: ((0, 0, 0), (0, 0, 0, 1), ring_at(t))},
     ]
+    for i, (layers, center) in enumerate(letters):
+        meshes[f"Letra{i + 1}"] = _layer_prims(layers)
+        nodes.append({"name": f"Letra{i + 1}", "parent": "Nombre", "mesh": f"Letra{i + 1}", "anim": (lambda k, c: lambda t: letter_at(k, len(letters), t, c))(i, center)})
     for i in range(N_CAPS):
         nodes.append({"name": f"Capsula{i + 1}", "parent": None, "mesh": "Capsula", "anim": (lambda k: lambda t: caps.at(k, t))(i)})
     materials = {
         "caja": {"texture": "caja", "rough": 0.55},
         "carton": {"color": CARDBOARD, "rough": 0.9, "double": True},
         "rojo": {"color": RED, "rough": 0.35},
-        "letrasFrente": {"texture": "letras_frente", "rough": 0.22},
+        "letrasFrente": {"texture": "letras_frente", "rough": 0.42},
         "letrasCanto": {"color": (0.66, 0.08, 0.13), "rough": 0.35},
         "letrasBorde": {"color": (0.99, 0.98, 0.97), "rough": 0.3},
         "letrasBloque": {"texture": "letras_profundidad", "rough": 0.45},
@@ -707,7 +780,7 @@ def write_glb(path, title, bm, jpg_bytes, text):
         if n.get("anim"):
             vals = [n["anim"](_time(t)) for t in ts]
             channel(i + 1, "translation", [tuple(map(float, v[0])) for v in vals], "VEC3")
-            channel(i + 1, "rotation", [v[1] for v in vals], "VEC4")
+            channel(i + 1, "rotation", _continuous([v[1] for v in vals]), "VEC4")
             channel(i + 1, "scale", [(v[2],) * 3 for v in vals], "VEC3")
         elif n.get("rot"):
             channel(i + 1, "rotation", [n["rot"](_time(t)) for t in ts], "VEC4")
@@ -797,8 +870,8 @@ def write_usdz(path, title, bm, jpg_path, text):
             x = UsdGeom.Xform.Define(stage, p)
             if n.get("anim"):
                 t_op, r_op, s_op = x.AddTranslateOp(), x.AddOrientOp(), x.AddScaleOp()
-                for i, t in enumerate(ts):
-                    tr, q, s = n["anim"](_time(t))
+                vals = [n["anim"](_time(t)) for t in ts]
+                for i, (tr, q, s) in enumerate(zip([v[0] for v in vals], _continuous([v[1] for v in vals]), [v[2] for v in vals])):
                     t_op.Set(Gf.Vec3f(*map(float, tr)), i)
                     r_op.Set(Gf.Quatf(q[3], q[0], q[1], q[2]), i)
                     s_op.Set(Gf.Vec3f(s, s, s), i)
