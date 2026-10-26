@@ -1,7 +1,9 @@
 """Modelos de AR de CORAESSENS (GLB para Android, USDZ para iPhone) con las texturas de las fotos.
 
-Usa la misma geometría y el mismo empaquetado que scripts/ar/build_models.py, con las medidas
-de esta caja. Genera dos versiones: con el nombre real (cor) y con el nombre ficticio (cor-f).
+Usa la misma geometría de caja que scripts/ar/build_models.py, con las medidas de esta caja, y le
+agrega la animación de presentación con el nombre en 3D (scripts/coraessens/animacion.py).
+Genera dos versiones: con el nombre real (cor) y con el nombre ficticio (cor-f).
+Necesita: pip install usd-core pillow fonttools shapely mapbox-earcut
 
 Uso: python3 scripts/coraessens/modelo.py   (antes: texturas.py)
 """
@@ -13,6 +15,9 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, 'scripts', 'ar'))
 import build_models as bm  # noqa: E402
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import animacion  # noqa: E402
 
 TEX = os.path.join(ROOT, 'assets', 'coraessens')
 
@@ -40,14 +45,14 @@ def atlas(prefix):
 
 def main():
     os.makedirs(bm.OUT, exist_ok=True)
-    for pid, name, prefix in (('cor', 'CORAESSENS', ''), ('cor-f', 'KARDENSA (ficticio)', 'ficticio-')):
+    box = bm.mesh()  # caja con el origen en el centro de su base
+    for pid, name, prefix, text in (('cor', 'CORAESSENS', '', 'CORAESSENS'), ('cor-f', 'KARDENSA (ficticio)', 'ficticio-', 'KARDENSA')):
         jpg = os.path.join(bm.OUT, f'{pid}.jpg')
         atlas(prefix).save(jpg, 'JPEG', quality=88, optimize=True)
         data = open(jpg, 'rb').read()
-        p = {'name': name}
-        bm.write_glb(os.path.join(bm.OUT, f'{pid}.glb'), p, data)
-        bm.write_usdz(os.path.join(bm.OUT, f'{pid}.usdz'), p, jpg)
-        print(pid, name, 'listo')
+        w = animacion.write_glb(os.path.join(bm.OUT, f'{pid}.glb'), name, box, data, text, bm.H)
+        animacion.write_usdz(os.path.join(bm.OUT, f'{pid}.usdz'), name, box, jpg, text, bm.H)
+        print(pid, name, f'listo · nombre 3D de {w * 100:.1f} cm')
 
 
 if __name__ == '__main__':

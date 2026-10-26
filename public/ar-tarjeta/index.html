@@ -144,7 +144,9 @@
       let THREE = null;
       let loader = null;
       const modelos = new Map();
+      const listos = []; // modelos ya cargados (para animarlos en cada cuadro sin esperar promesas)
       const pops = [];
+      let antes = 0;
 
       async function cargarModelo(i, anchor) {
         if (modelos.has(i)) return modelos.get(i);
@@ -154,14 +156,31 @@
           const base = new THREE.Group();
           base.rotation.x = Math.PI / 2;
           base.scale.setScalar(escala(p));
-          // la sombra se ajusta al tamaño de cada caja
-          const tam = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
+          // modelo animado (CORAESSENS): la caja sale de la tarjeta girando y aparece su nombre en 3D
+          const animado = gltf.animations.length > 0;
+          const caja = gltf.scene.getObjectByName('Caja');
+          // la sombra se ajusta al tamaño de la caja (sin el nombre en 3D)
+          let tam;
+          if (caja?.isMesh) {
+            caja.geometry.computeBoundingBox();
+            tam = caja.geometry.boundingBox.getSize(new THREE.Vector3());
+          } else tam = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
           const sombra = new THREE.Mesh(new THREE.CircleGeometry(Math.max(tam.x, tam.z) * 0.75, 48), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
           sombra.rotation.x = -Math.PI / 2;
           sombra.position.y = 0.0005;
           base.add(sombra, gltf.scene);
           anchor.group.add(base);
-          return { base, modelo: gltf.scene, escala: escala(p) };
+          const m = { base, modelo: gltf.scene, escala: escala(p), anchor, sombra, caja: animado ? caja : null };
+          if (animado) {
+            m.mixer = new THREE.AnimationMixer(gltf.scene);
+            m.accion = m.mixer.clipAction(gltf.animations[0]);
+            m.accion.play();
+            // tramo de reposo que se repite sin cortes (lo indica el propio modelo)
+            m.reposo = gltf.parser.json.extras?.reposo ?? [1.6, 8.8];
+            m.mixer.setTime(reduce ? m.reposo[0] : 0);
+          }
+          listos.push(m);
+          return m;
         });
         modelos.set(i, promesa);
         return promesa;
@@ -194,8 +213,14 @@
               $('hud').classList.add('found');
               $('estado').innerHTML = `${p.name}<small>${labDe(p)}</small>`;
               const m = await cargarModelo(i, anchor);
-              m.base.scale.setScalar(reduce ? m.escala : 0.001);
-              if (!reduce) pops.push({ base: m.base, escala: m.escala, t0: performance.now() });
+              if (m.mixer) {
+                // la animación propia del modelo se ve completa cada vez que aparece la tarjeta
+                m.base.scale.setScalar(m.escala);
+                m.mixer.setTime(reduce ? m.reposo[0] : 0);
+              } else {
+                m.base.scale.setScalar(reduce ? m.escala : 0.001);
+                if (!reduce) pops.push({ base: m.base, escala: m.escala, t0: performance.now() });
+              }
             };
             anchor.onTargetLost = () => {
               $('hud').classList.remove('found');
@@ -216,7 +241,19 @@
               base.scale.setScalar(Math.max(0.001, s) * e);
               if (x >= 1) pops.splice(k, 1);
             }
-            if (!reduce) modelos.forEach(async (pr) => { const m = await pr; m.modelo.rotation.y = t / 2600; });
+            const dt = antes ? Math.min(0.1, (t - antes) / 1000) : 0;
+            antes = t;
+            for (const m of listos) {
+              if (m.mixer) {
+                if (!reduce && m.anchor.visible) {
+                  m.mixer.update(dt);
+                  // después de la entrada, repite solo el tramo de reposo (la caja y el nombre no vuelven a bajar)
+                  if (m.accion.time >= m.reposo[1]) m.mixer.setTime(m.accion.time - (m.reposo[1] - m.reposo[0]));
+                }
+                const sc = m.caja ? m.caja.scale.x : 1;
+                m.sombra.scale.setScalar(Math.max(0.001, sc));
+              } else if (!reduce) m.modelo.rotation.y = t / 2600;
+            }
             renderer.render(scene, camera);
           });
         } catch (e) {

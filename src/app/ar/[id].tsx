@@ -136,6 +136,15 @@ export default function ArScreen() {
           </View>
         </View>
 
+        {p.photo ? (
+          <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radius.lg, padding: space.md }}>
+            <Ionicons name="sparkles-outline" size={18} color={colors.white} />
+            <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 19, color: colors.white }}>
+              Con animación: la caja sale del piso girando y aparece su nombre en 3D encima. También sobre su tarjeta impresa.
+            </Text>
+          </View>
+        ) : null}
+
         {/* medidas */}
         <View style={{ flexDirection: 'row', gap: space.sm }}>
           <Measure icon="resize-outline" label="Tamaño real" value={`${(p.sizeCm ?? AR_SIZE_CM).w} × ${(p.sizeCm ?? AR_SIZE_CM).h} × ${(p.sizeCm ?? AR_SIZE_CM).d} cm`.replace(/\./g, ',')} />
