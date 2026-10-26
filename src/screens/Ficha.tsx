@@ -28,7 +28,7 @@ import { goBack } from '@/components/ui';
 import { fichaContent, fichaPalette, type FichaContent, type FichaPal } from '@/data/ficha';
 import { labByName, products, type Product } from '@/data/mock';
 import type { VitrinaCard, VitrinaMode } from '@/data/vitrina';
-import { arCardUrl, openAR, type ArResult } from '@/lib/ar';
+import { arCardUrl, fichaPdfUrl, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -344,6 +344,20 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
               <Pill icon="scan-outline" label="AR" onPress={launchAR} variant="outline" color={pal.main} wide small />
               {c.cardId ? <Pill icon="card-outline" label="Tarjeta" onPress={openCard} variant="outline" color={pal.main} wide small /> : null}
             </View>
+            {c.cardId ? (
+              <Pill
+                icon="document-text-outline"
+                label="Ficha del producto (PDF)"
+                onPress={() => {
+                  logEvent('ficha_pdf', p.id);
+                  Linking.openURL(fichaPdfUrl(p.id)).catch(() => {});
+                }}
+                variant="outline"
+                color={pal.main}
+                wide
+                small
+              />
+            ) : null}
             {!presenting && p.photo ? <Pill icon="albums-outline" label="Diapositivas del producto" onPress={() => router.push({ pathname: '/presentacion/[id]', params: { id: p.id, modo: 'diapositivas' } })} variant="outline" color={pal.main} wide small /> : null}
             <Text style={{ fontFamily: font.regular, fontSize: 12, lineHeight: 18, color: colors.white, opacity: 0.8, textAlign: 'center', marginTop: space.sm }}>
               {c.disclaimer} La app no vende ni entrega medicamentos.

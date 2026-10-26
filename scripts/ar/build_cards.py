@@ -4,7 +4,8 @@ Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAES
 con permiso) tiene su propia tarjeta con los colores de su empaque y la foto de la caja en el panel.
 
 Cada tarjeta lleva un panel con un patrón de cápsulas distinto por producto y un código QR que abre
-la AR con tarjeta (public/ar-tarjeta). La cámara reconoce solo ese panel (la parte que no se repite
+la ficha del producto en PDF (public/fichas, scripts/fichas/build_fichas.py); desde la ficha se abre la
+AR con tarjeta (public/ar-tarjeta/?p=<id>), que solo responde a la tarjeta de ese producto. La cámara reconoce solo ese panel (la parte que no se repite
 entre tarjetas), así que después de cambiarlo hay que volver a compilar los objetivos
 (scripts/ar/compile_cards.cjs).
 
@@ -100,15 +101,15 @@ def card(p):
 
     # código QR que abre la AR con tarjeta de este producto
     qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
-    qr.add_data(f"{SITE}/ar-tarjeta/?p={p['id']}")
+    qr.add_data(f"{SITE}/fichas/{p['id']}.pdf")  # abre la ficha del producto en PDF
     qr.make(fit=True)
     qimg = qr.make_image(fill_color=PETROLEO, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
     qx, qy = CW - 60 - 270, CH - 60 - 270
     im.paste(qimg, (qx, qy))
 
     ty = qy + 6
-    d.text((x0, ty), "Realidad aumentada", font=font("bold", 34), fill=PETROLEO)
-    for line in ["1. Escanea el código con", "    la cámara del teléfono.", "2. Apunta la cámara", "    a esta tarjeta."]:
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=PETROLEO)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a esta tarjeta."]:
         ty += 50
         d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
 
@@ -172,14 +173,14 @@ def card_coraessens():
     d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
 
     qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
-    qr.add_data(f"{SITE}/ar-tarjeta/?p=cor")
+    qr.add_data(f"{SITE}/fichas/cor.pdf")  # abre la ficha del producto en PDF
     qr.make(fit=True)
     qimg = qr.make_image(fill_color=PURPLE_DEEP, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
     qx, qy = CW - 60 - 270, CH - 60 - 270
     im.paste(qimg, (qx, qy))
     ty = qy + 6
-    d.text((x0, ty), "Realidad aumentada", font=font("bold", 34), fill=PURPLE_DEEP)
-    for line in ["1. Escanea el código con", "    la cámara del teléfono.", "2. Apunta la cámara", "    a la foto de la caja."]:
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=PURPLE_DEEP)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a la foto de la caja."]:
         ty += 50
         d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
     d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)

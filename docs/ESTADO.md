@@ -44,6 +44,9 @@ Todas respetan "reducir movimiento" del sistema.
 
 ## AR con tarjeta impresa
 
+- El QR de cada tarjeta abre la **ficha del producto en PDF** (`public/fichas/<id>.pdf`): portada con la caja 3D, cifras, modo de uso, avisos, tablas del empaque (CORAESSENS) y el botón «Ver en AR», que abre `ar-tarjeta/?p=<id>`. Se generan con `node --experimental-strip-types scripts/ar/export-products.mts` y `python3 scripts/fichas/build_fichas.py`. Los textos de CORAESSENS están en `src/data/coraessens-info.ts` (sin imágenes, para que el script los pueda leer).
+- Con `?p=<id>` la página de AR solo muestra ese producto: si la cámara ve la tarjeta de otro, avisa «Esta tarjeta es de …» y no muestra nada. Sin `?p` responde a todas.
+
 - Cada producto tiene su propia hoja para imprimir: `public/ar-tarjeta/tarjetas/<id>.pdf` (la genera `build_cards.py`). La app y la página de AR con `?p=<id>` descargan solo esa; sin producto, la hoja con todas (`tarjetas-multilab.pdf`).
 
 - Página `public/ar-tarjeta/index.html` (MindAR 1.2.5 y three 0.160.1 desde jsDelivr; modelos copiados al sitio por `scripts/web/pwa.mjs`). Se abre con el QR de cada tarjeta o desde "Usar tarjeta impresa" en la pantalla de AR.

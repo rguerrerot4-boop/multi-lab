@@ -22,6 +22,8 @@ export const WEB_URL = 'https://rguerrerot4-boop.github.io/multi-lab';
 export const arCardUrl = (id: string) => `${WEB_URL}/ar-tarjeta/?p=${id}`;
 /** Hoja A4 con las tarjetas para imprimir y recortar. */
 export const AR_CARDS_PDF = `${WEB_URL}/ar-tarjeta/tarjetas-multilab.pdf`;
+/** Ficha del producto en PDF (la abre el código QR de su tarjeta impresa). */
+export const fichaPdfUrl = (id: string) => `${WEB_URL}/fichas/${id}.pdf`;
 /** Hoja A4 solo con la tarjeta de un producto. */
 export const arCardPdf = (id: string) => `${WEB_URL}/ar-tarjeta/tarjetas/${id}.pdf`;
 

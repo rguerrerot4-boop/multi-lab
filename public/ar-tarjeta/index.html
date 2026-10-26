@@ -96,6 +96,7 @@
         </div>
         <p class="notice" id="aviso"></p>
         <button class="btn primary" id="abrir">Abrir cámara</button>
+        <a class="btn ghost" id="ficha" href="#" target="_blank" rel="noopener" style="display: none">Ver la ficha del producto (PDF)</a>
         <a class="btn ghost" id="pdf" href="tarjetas-multilab.pdf" target="_blank" rel="noopener">Descargar tarjetas para imprimir</a>
         <a class="btn ghost" href="../">Ir a Multi LAB</a>
         <p class="fine" id="fino">Modelos ilustrativos de productos ficticios, salvo CORAESSENS (real, hecho con las fotos de su empaque y mostrado con permiso de Nutrabiotics). La primera vez descarga unos 3 MB y necesita internet.</p>
@@ -126,7 +127,14 @@
       const pedido = productos.find((p) => p.id === params.get('p'));
       if (pedido) $('producto').textContent = `${pedido.name} · ${pedido.real ? pedido.lab : `${pedido.lab} (ficticio)`}. Apunta la cámara a su tarjeta y el producto aparece encima.`;
       // con un producto pedido, se descarga solo su tarjeta
-      if (pedido) { $('pdf').href = `tarjetas/${pedido.id}.pdf`; $('pdf').textContent = 'Descargar su tarjeta para imprimir'; }
+      if (pedido) {
+        $('pdf').href = `tarjetas/${pedido.id}.pdf`;
+        $('pdf').textContent = 'Descargar su tarjeta para imprimir';
+        $('ficha').href = `../fichas/${pedido.id}.pdf`;
+        $('ficha').style.display = '';
+      }
+      const buscar = pedido ? `Apunta a la tarjeta de ${pedido.name}` : 'Apunta al panel de la izquierda de la tarjeta';
+      $('estado').textContent = buscar;
       if (pedido?.real) $('chip').textContent = 'Producto real · con permiso del laboratorio';
 
       const aviso = (texto) => { $('aviso').textContent = texto; $('aviso').style.display = 'block'; };
@@ -178,6 +186,11 @@
           productos.forEach((p, i) => {
             const anchor = mindar.addAnchor(i);
             anchor.onTargetFound = async () => {
+              // abierta desde la ficha de un producto: solo responde a la tarjeta de ese producto
+              if (pedido && p !== pedido) {
+                $('estado').innerHTML = `Esta tarjeta es de ${p.name}<small>Aquí solo aparece ${pedido.name}: apunta a su tarjeta o escanea el código de esta.</small>`;
+                return;
+              }
               $('hud').classList.add('found');
               $('estado').innerHTML = `${p.name}<small>${labDe(p)}</small>`;
               const m = await cargarModelo(i, anchor);
@@ -186,7 +199,7 @@
             };
             anchor.onTargetLost = () => {
               $('hud').classList.remove('found');
-              $('estado').textContent = 'Apunta al panel de la izquierda de la tarjeta';
+              $('estado').textContent = buscar;
             };
           });
           // el producto pedido por el QR se descarga mientras se abre la cámara

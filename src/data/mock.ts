@@ -113,8 +113,6 @@ export interface Lab {
 }
 export const labs: Lab[] = [
   { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
-  { id: 'andina', name: 'Andina Pharma', full: 'Laboratorio Andina Pharma', repId: 'v2', tagline: 'Línea pediátrica', hue: '#63C9D6' },
-  { id: 'bioandes', name: 'Bioandes', full: 'Bioandes Salud', repId: 'v3', tagline: 'Cuidado de uso diario', hue: '#20343A' },
   // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
   { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
 ];
@@ -464,13 +462,13 @@ export const products: Product[] = [
   {
     id: 'p5',
     name: 'PediaCalm Crema',
-    lab: 'Andina Pharma',
+    lab: 'Celvia',
     category: 'Pediatría',
     form: 'Crema · tubo 60 g',
     component: 'Base emoliente (ilustrativo)',
     concentration: 'No aplica',
     tagline: 'Crema emoliente de uso familiar',
-    description: 'Crema emoliente de textura suave. Producto ficticio para demostrar un segundo laboratorio en el catálogo.',
+    description: 'Crema emoliente de textura suave. Producto ficticio de la línea pediátrica de Celvia para el prototipo.',
     uses: ['Cuidado de piel seca (descripción de ejemplo)'],
     howTo: ['Aplicar sobre la piel limpia y seca', 'Extender suavemente'],
     precautions: ['Uso externo', 'Consultar con el profesional de salud antes de usar en bebés'],
@@ -486,13 +484,13 @@ export const products: Product[] = [
   },  {
     id: 'p6',
     name: 'AloeFresh Gel',
-    lab: 'Bioandes',
+    lab: 'Celvia',
     category: 'Hidratación',
     form: 'Gel · frasco 150 ml',
     component: 'Extracto de aloe (ilustrativo)',
     concentration: 'No aplica',
     tagline: 'Gel refrescante de aloe para uso diario',
-    description: 'Gel cosmético de textura fresca. Producto ficticio de un tercer laboratorio de demostración.',
+    description: 'Gel cosmético de textura fresca. Producto ficticio de la línea de uso diario de Celvia para el prototipo.',
     uses: ['Sensación de frescura en la piel', 'Uso cosmético diario (descripción de ejemplo)'],
     howTo: ['Aplicar una capa fina', 'Dejar absorber sin enjuagar'],
     precautions: ['Uso externo', 'Evitar el contacto con los ojos'],
@@ -509,7 +507,7 @@ export const products: Product[] = [
   {
     id: 'p7',
     name: 'ManoProtect Crema',
-    lab: 'Bioandes',
+    lab: 'Celvia',
     category: 'Reparación',
     form: 'Crema de manos · tubo 75 ml',
     component: 'Base emoliente (ilustrativo)',

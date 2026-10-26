@@ -7,7 +7,7 @@ import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } f
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
 import { productById, productNote, type IconName } from '@/data/mock';
-import { AR_SIZE_CM, arCardPdf, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
+import { AR_SIZE_CM, arCardPdf, fichaPdfUrl, arCardUrl, arDevice, openAR, type ArResult } from '@/lib/ar';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -203,6 +203,9 @@ export default function ArScreen() {
           </Text>
           <Pressable onPress={() => Linking.openURL(arCardPdf(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
             <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar la tarjeta para imprimir (PDF)</Text>
+          </Pressable>
+          <Pressable onPress={() => Linking.openURL(fichaPdfUrl(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Ver la ficha del producto (PDF)</Text>
           </Pressable>
         </View>
       </ScrollView>

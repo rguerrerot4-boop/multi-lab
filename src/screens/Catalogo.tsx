@@ -6,12 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
 import { VitrinaBanner } from '@/components/VitrinaBanner';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
-import { categories, products, repLabNames } from '@/data/mock';
+import { categories, labOfRep, products, repLabNames } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
-import { colors, font, radius, space, type } from '@/theme';
+import { colors, space, type } from '@/theme';
 
-const MINE = 'Mis laboratorios';
-const allLabs = ['Todos', ...Array.from(new Set(products.map((p) => p.lab)))];
 
 // Catálogo multimedia interactivo (compartido por ambos roles)
 export default function Catalogo() {
@@ -20,8 +18,6 @@ export default function Catalogo() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('Todos');
   const mine = repLabNames(userId ?? 'v1');
-  const labs = role === 'visitador' ? [MINE, ...allLabs] : allLabs;
-  const [lab, setLab] = useState(role === 'visitador' ? MINE : 'Todos');
   const [grid, setGrid] = useState(true);
   const cols = grid ? (width >= 700 ? 3 : 2) : 1;
 
@@ -30,11 +26,11 @@ export default function Catalogo() {
     return products.filter(
       (p) =>
         (cat === 'Todos' || p.category === cat) &&
-        (lab === 'Todos' || (lab === MINE ? mine.includes(p.lab) : p.lab === lab)) &&
+        mine.includes(p.lab) &&
         (!term || `${p.name} ${p.tagline} ${p.category} ${p.lab}`.toLowerCase().includes(term)),
     ).sort((a, b) => Number(!!b.photo) - Number(!!a.photo)); // los productos con fotos 3D van primero
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, cat, lab]);
+  }, [q, cat]);
 
   const open = (id: string) => {
     logEvent('ficha_abierta', id);
@@ -83,27 +79,11 @@ export default function Catalogo() {
                 <Chip key={c} label={c} selected={cat === c} onPress={() => setCat(c)} />
               ))}
             </ScrollView>
+            {/* solo los productos del laboratorio del visitador (Celvia) y CORAESSENS, que se muestra con permiso */}
             <View style={[styles.row, { justifyContent: 'space-between' }]}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }} style={{ flex: 1 }}>
-                {labs.map((l) => (
-                  <Pressable
-                    key={l}
-                    onPress={() => setLab(l)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: lab === l }}
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: radius.sm,
-                      backgroundColor: lab === l ? colors.ink : 'transparent',
-                    }}
-                  >
-                    <Text style={{ fontFamily: font.semibold, fontSize: 12, color: lab === l ? colors.white : colors.inkMuted }}>
-                      {l === 'Todos' ? 'Todos los laboratorios' : l}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+              <Text style={[type.caption, { flex: 1 }]}>
+                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio) y CORAESSENS (real, con permiso)
+              </Text>
               <Pressable
                 onPress={() => setGrid((g) => !g)}
                 accessibilityRole="button"
@@ -114,9 +94,6 @@ export default function Catalogo() {
                 <Ionicons name={grid ? 'list-outline' : 'grid-outline'} size={20} color={colors.primary} />
               </Pressable>
             </View>
-            <Text style={type.caption}>
-              {list.length} {list.length === 1 ? 'producto' : 'productos'} · ficticios, salvo CORAESSENS (real, con permiso)
-            </Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -144,7 +121,6 @@ export default function Catalogo() {
                 onPress={() => {
                   setQ('');
                   setCat('Todos');
-                  setLab('Todos');
                 }}
                 accessibilityRole="button"
               >

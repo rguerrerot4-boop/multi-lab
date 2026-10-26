@@ -1,0 +1,454 @@
+[
+  {
+    "id": "p1",
+    "name": "DermaCleanse Gel",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Limpieza",
+    "form": "Gel limpiador · frasco 200 ml",
+    "component": "Agentes limpiadores suaves (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Limpieza suave de uso diario",
+    "description": "Gel de limpieza facial de textura ligera. Producto ficticio creado para demostrar cómo se presenta una ficha dentro de Multi LAB.",
+    "uses": [
+      "Limpieza facial diaria",
+      "Piel mixta a grasa (descripción de ejemplo)"
+    ],
+    "howTo": [
+      "Aplicar sobre la piel húmeda",
+      "Masajear suavemente durante 30 segundos",
+      "Enjuagar con abundante agua"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Evitar el contacto con los ojos",
+      "Suspender el uso si aparece irritación"
+    ],
+    "hue": "#63C9D6",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p2",
+    "name": "BioBarrier Emulsión",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Hidratación",
+    "form": "Emulsión · tubo 50 ml",
+    "component": "Complejo hidratante (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Hidratación ligera de rápida absorción",
+    "description": "Emulsión hidratante de textura no grasa. Producto ficticio para el prototipo; la información es solo de demostración.",
+    "uses": [
+      "Hidratación diaria",
+      "Complemento de rutinas de cuidado (ejemplo)"
+    ],
+    "howTo": [
+      "Aplicar sobre la piel limpia",
+      "Extender hasta su absorción",
+      "Usar mañana y noche"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Mantener fuera del alcance de los niños"
+    ],
+    "hue": "#1E7F8C",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p3",
+    "name": "CeraRepair Bálsamo",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Reparación",
+    "form": "Bálsamo · tubo 40 g",
+    "component": "Complejo de ceramidas (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Bálsamo de textura densa para zonas secas",
+    "description": "Bálsamo de cuidado para zonas resecas. Producto ficticio; los textos no constituyen indicaciones médicas.",
+    "uses": [
+      "Zonas secas o ásperas (descripción de ejemplo)",
+      "Manos, codos y talones"
+    ],
+    "howTo": [
+      "Aplicar una capa fina",
+      "Masajear hasta integrar",
+      "Repetir según necesidad"
+    ],
+    "precautions": [
+      "Uso externo",
+      "No aplicar sobre heridas abiertas"
+    ],
+    "hue": "#20343A",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p4",
+    "name": "PhotoBlock SPF 50+",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Fotoprotección",
+    "form": "Fluido · frasco 50 ml",
+    "component": "Filtros solares (ilustrativo)",
+    "concentration": "FPS 50+ (dato de ejemplo)",
+    "tagline": "Fluido de protección solar de toque seco",
+    "description": "Fotoprotector en fluido de toque seco. Producto ficticio: los valores mostrados son de ejemplo y no provienen de estudios reales.",
+    "uses": [
+      "Protección solar diaria (ejemplo)",
+      "Actividades al aire libre"
+    ],
+    "howTo": [
+      "Aplicar 20 minutos antes de la exposición",
+      "Reaplicar cada 2 horas",
+      "Reaplicar después de nadar o sudar"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Evitar el contacto con los ojos",
+      "No sustituye otras medidas de protección"
+    ],
+    "hue": "#63C9D6",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p5",
+    "name": "PediaCalm Crema",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Pediatría",
+    "form": "Crema · tubo 60 g",
+    "component": "Base emoliente (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Crema emoliente de uso familiar",
+    "description": "Crema emoliente de textura suave. Producto ficticio de la línea pediátrica de Celvia para el prototipo.",
+    "uses": [
+      "Cuidado de piel seca (descripción de ejemplo)"
+    ],
+    "howTo": [
+      "Aplicar sobre la piel limpia y seca",
+      "Extender suavemente"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Consultar con el profesional de salud antes de usar en bebés"
+    ],
+    "hue": "#1E7F8C",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p6",
+    "name": "AloeFresh Gel",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Hidratación",
+    "form": "Gel · frasco 150 ml",
+    "component": "Extracto de aloe (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Gel refrescante de aloe para uso diario",
+    "description": "Gel cosmético de textura fresca. Producto ficticio de la línea de uso diario de Celvia para el prototipo.",
+    "uses": [
+      "Sensación de frescura en la piel",
+      "Uso cosmético diario (descripción de ejemplo)"
+    ],
+    "howTo": [
+      "Aplicar una capa fina",
+      "Dejar absorber sin enjuagar"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Evitar el contacto con los ojos"
+    ],
+    "hue": "#1E7F8C",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "p7",
+    "name": "ManoProtect Crema",
+    "lab": "Celvia",
+    "labFull": "Laboratorios Celvia",
+    "category": "Reparación",
+    "form": "Crema de manos · tubo 75 ml",
+    "component": "Base emoliente (ilustrativo)",
+    "concentration": "No aplica",
+    "tagline": "Crema de manos para lavados frecuentes",
+    "description": "Crema de manos de absorción rápida. Producto ficticio pensado para mostrar material de uso diario en consultorio.",
+    "uses": [
+      "Cuidado de manos con lavado frecuente (ejemplo)"
+    ],
+    "howTo": [
+      "Aplicar sobre las manos secas",
+      "Masajear hasta absorber"
+    ],
+    "precautions": [
+      "Uso externo",
+      "Suspender el uso si aparece irritación"
+    ],
+    "hue": "#20343A",
+    "specs": null,
+    "notes": null,
+    "real": null,
+    "sizeCm": null
+  },
+  {
+    "id": "cor",
+    "name": "CORAESSENS",
+    "lab": "Nutrabiotics",
+    "labFull": "Nutrabiotics",
+    "category": "Suplementos",
+    "form": "Cápsulas · caja de 9 (muestra)",
+    "component": "Polvo liofilizado de corazón bovino",
+    "concentration": "275 mg por cápsula",
+    "tagline": "Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF",
+    "description": "Suplemento alimenticio en cápsulas a base de polvo liofilizado de corazón bovino, magnesio, piridoxal-5-fosfato, metilcobalamina y metiltetrahidrofolato. El magnesio promueve la absorción y retención de calcio, la vitamina B12/cobalamina es necesaria para la producción de glóbulos rojos. El folato es esencial para el crecimiento y división de las células.",
+    "uses": [
+      "Suplemento dietario",
+      "Vía oral · adultos mayores a 18 años"
+    ],
+    "howTo": [
+      "Vía oral",
+      "Adultos mayores a 18 años: 1 cápsula 3 veces al día",
+      "Tomar con cada comida"
+    ],
+    "precautions": [
+      "Manténgase fuera del alcance de los niños",
+      "No es adecuado para ser consumido como única fuente de alimento",
+      "No superar la dosis recomendada",
+      "Almacénese en un lugar fresco y seco en su envase y empaque original",
+      "No use el producto si el sello de seguridad está roto o despegado"
+    ],
+    "hue": "#C9262F",
+    "specs": [
+      {
+        "value": "9",
+        "label": "Cápsulas por caja",
+        "note": "Muestra · prohibida su venta"
+      },
+      {
+        "value": "3",
+        "label": "Cápsulas al día",
+        "note": "1 cápsula con cada comida"
+      },
+      {
+        "value": "275 mg",
+        "label": "Corazón bovino liofilizado",
+        "note": "Por cápsula de 580,48 mg"
+      }
+    ],
+    "notes": [
+      {
+        "title": "Corazón bovino",
+        "text": "Polvo liofilizado, 275 mg por cápsula."
+      },
+      {
+        "title": "Magnesio",
+        "text": "Óxido de magnesio 145 mg. Promueve la absorción y retención de calcio."
+      },
+      {
+        "title": "Vitamina B12",
+        "text": "Metilcobalamina 650 mcg. Necesaria para la producción de glóbulos rojos."
+      },
+      {
+        "title": "Folato",
+        "text": "L-5 MTHF 326 mcg. Esencial para el crecimiento y división de las células."
+      },
+      {
+        "title": "Vitamina B6",
+        "text": "Piridoxal-5-fosfato 25 mg."
+      }
+    ],
+    "real": {
+      "note": "Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra."
+    },
+    "sizeCm": {
+      "w": 3.6,
+      "h": 5.2,
+      "d": 3.6
+    },
+    "info": {
+      "name": "CORAESSENS",
+      "mark": "CORAESSENS®",
+      "lab": "Nutrabiotics",
+      "labLine": "Nutrabiotics · con•ciencia nutricional",
+      "disclaimer": "Producto real de Nutrabiotics, mostrado con permiso del laboratorio. La información está tomada del empaque de la muestra y no reemplaza su ficha técnica.",
+      "arTitle": "CORAESSENS · muestra médica",
+      "arId": "cor",
+      "formula": "Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF",
+      "badges": [
+        "9 cápsulas",
+        "Suplemento dietario",
+        "Vía oral"
+      ],
+      "sample": "Muestra · prohibida su venta",
+      "cards": [
+        {
+          "id": "frente",
+          "title": "CORAESSENS",
+          "kicker": "Frente",
+          "face": "front",
+          "tone": "red",
+          "body": "Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF. 9 cápsulas. Muestra · prohibida su venta."
+        },
+        {
+          "id": "modo",
+          "title": "Modo de empleo",
+          "kicker": "Lateral izquierdo",
+          "face": "left",
+          "tone": "purple",
+          "body": "Vía oral: adultos mayores a 18 años tomar 1 cápsula 3 veces al día, con cada comida.",
+          "foot": "Contenido neto: 5,22 g (9 cápsulas de 580,48 mg)."
+        },
+        {
+          "id": "composicion",
+          "title": "Composición",
+          "kicker": "Por cápsula / ingredientes",
+          "face": "left",
+          "tone": "red",
+          "rows": [
+            {
+              "label": "Polvo liofilizado de corazón bovino",
+              "value": "275 mg"
+            },
+            {
+              "label": "Óxido de magnesio",
+              "value": "145 mg"
+            },
+            {
+              "label": "Piridoxal-5-fosfato",
+              "value": "25 mg"
+            },
+            {
+              "label": "Palmitato de ascorbilo",
+              "value": "10 mg"
+            },
+            {
+              "label": "Metilcobalamina",
+              "value": "650 mcg"
+            },
+            {
+              "label": "L-5 metiltetrahidrofolato-calcio",
+              "value": "326 mcg"
+            }
+          ],
+          "foot": "Suplemento dietario."
+        },
+        {
+          "id": "nutricional",
+          "title": "Información nutricional",
+          "kicker": "Lateral derecho",
+          "face": "right",
+          "tone": "purple",
+          "rowsHead": [
+            "Nutriente",
+            "Cantidad",
+            "%VDR"
+          ],
+          "rows": [
+            {
+              "label": "Energía (calorías)",
+              "value": "<1 kcal",
+              "extra": "0"
+            },
+            {
+              "label": "Folacina",
+              "value": "900 mcg",
+              "extra": "450"
+            },
+            {
+              "label": "Vitamina B6",
+              "value": "75 mg",
+              "extra": "3750"
+            },
+            {
+              "label": "Vitamina B12",
+              "value": "1950 mcg",
+              "extra": "195000"
+            },
+            {
+              "label": "Vitamina C",
+              "value": "12,75 mg",
+              "extra": "21,25"
+            },
+            {
+              "label": "Magnesio",
+              "value": "332,55 mg",
+              "extra": "110"
+            }
+          ],
+          "foot": "Tamaño de la porción diaria: 3 cápsulas · Porciones por envase: 3."
+        },
+        {
+          "id": "descripcion",
+          "title": "Descripción",
+          "kicker": "Reverso",
+          "face": "back",
+          "tone": "red",
+          "body": "Suplemento alimenticio en cápsulas a base de polvo liofilizado de corazón bovino, magnesio, piridoxal-5-fosfato, metilcobalamina y metiltetrahidrofolato. El magnesio promueve la absorción y retención de calcio, la vitamina B12/cobalamina es necesaria para la producción de glóbulos rojos. El folato es esencial para el crecimiento y división de las células.",
+          "foot": "Texto impreso en el empaque."
+        },
+        {
+          "id": "advertencias",
+          "title": "Advertencias",
+          "kicker": "Reverso",
+          "face": "back",
+          "tone": "purple",
+          "rows": [
+            {
+              "label": "Manténgase fuera del alcance de los niños.",
+              "value": ""
+            },
+            {
+              "label": "El producto no es adecuado para ser consumido como única fuente de alimento.",
+              "value": ""
+            },
+            {
+              "label": "No superar la dosis recomendada.",
+              "value": ""
+            },
+            {
+              "label": "Almacénese en un lugar fresco y seco en su envase y empaque original.",
+              "value": ""
+            },
+            {
+              "label": "No use el producto si el sello de seguridad está roto o despegado.",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "id": "fabricante",
+          "title": "Fabricante",
+          "kicker": "Reverso",
+          "face": "back",
+          "tone": "red",
+          "body": "Fabricado por C.I. Laboratorios Improfarme S.A.S., Bogotá D.C., Colombia, para NUTRABIOTICS S.A.S. Importado y distribuido en Ecuador por Moléculas Biológicas Biomolec Cía. Ltda., Quito, Ecuador. Notificación sanitaria 10537-ALE-0619.",
+          "foot": "Lote de la muestra fotografiada: 25-211 · Fab. oct-2025 · Exp. oct-2027."
+        },
+        {
+          "id": "tapas",
+          "title": "Tapa y base",
+          "kicker": "Extremos",
+          "face": "top",
+          "tone": "purple",
+          "body": "Logotipo de Nutrabiotics en ambos extremos de la caja."
+        }
+      ]
+    }
+  }
+]
