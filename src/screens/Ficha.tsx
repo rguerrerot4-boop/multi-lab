@@ -63,6 +63,7 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
   const [full, setFull] = useState(false);
   const [zoom, setZoom] = useState<VitrinaCard | null>(null);
   const [ar, setAr] = useState<ArResult | null>(null);
+  const [arTick, setArTick] = useState(0); // cada intento de AR muestra el aviso de nuevo
   const [share, setShare] = useState(false);
   const [note, setNote] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -116,7 +117,9 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
   };
   const launchAR = async () => {
     logEvent('ar_abierto', c.ar.id);
-    setAr(await openAR(c.ar));
+    const r = await openAR(c.ar);
+    setArTick((t) => t + 1);
+    setAr(r);
   };
   const openCard = () => {
     if (!c.cardId) return;
@@ -216,7 +219,6 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
                 <Pill icon="cube-outline" label="Ver en 3D" onPress={() => setFull(true)} color={pal.main} />
                 <Pill icon="scan-outline" label="Ver en AR" onPress={launchAR} variant="outline" color={pal.main} />
               </View>
-              {ar ? <ArNote result={ar} pal={pal} /> : null}
             </View>
           </View>
           <TornEdge width={width} color={pal.paper} />
@@ -365,6 +367,9 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
         </View>
       </Animated.ScrollView>
 
+      {/* aviso de la realidad aumentada: flota arriba y se va solo (no empuja el contenido de la portada) */}
+      {ar ? <ArNote key={arTick} result={ar} pal={pal} hasCard={!!c.cardId} top={insets.top + 64} reduce={reduce} onDone={() => setAr(null)} /> : null}
+
       {/* ---------- barra de acciones (aparece al bajar de la portada) ---------- */}
       <ActionBar show={bar} pal={pal} actions={actions} bottom={insets.bottom} reduce={reduce} />
 
@@ -383,18 +388,37 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
 
 // ---------- partes ----------
 
-function ArNote({ result, pal }: { result: ArResult; pal: FichaPal }) {
+function ArNote({ result, pal, hasCard, top, reduce, onDone }: { result: ArResult; pal: FichaPal; hasCard: boolean; top: number; reduce: boolean; onDone: () => void }) {
+  const alt = hasCard ? 'la vista 3D o la tarjeta impresa' : 'la vista 3D';
   const text =
     result === 'abierto'
       ? 'Abriendo el visor de realidad aumentada del teléfono…'
       : result === 'solo-celular'
-        ? 'La realidad aumentada se abre desde un celular (Android con Google o iPhone con Safari). Aquí puedes usar la vista 3D o la tarjeta impresa.'
-        : 'Este teléfono no tiene el visor de realidad aumentada. Usa la vista 3D o la tarjeta impresa.';
+        ? `La realidad aumentada se abre desde un celular (Android con Google o iPhone con Safari). Aquí puedes usar ${alt}.`
+        : `Este teléfono no tiene el visor de realidad aumentada. Usa ${alt}.`;
+  const a = useRef(new Animated.Value(0)).current;
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    Animated.timing(a, { toValue: 1, duration: reduce ? 0 : 220, useNativeDriver: true }).start();
+    const t = setTimeout(() => Animated.timing(a, { toValue: 0, duration: reduce ? 0 : 220, useNativeDriver: true }).start(() => done.current()), 6000);
+    return () => clearTimeout(t);
+  }, [a, reduce]);
   return (
-    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: pal.veil, borderRadius: radius.md, padding: space.md }}>
-      <Ionicons name="information-circle-outline" size={18} color={colors.white} />
-      <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 12, lineHeight: 17, color: colors.white }}>{text}</Text>
-    </View>
+    <Animated.View
+      style={{ position: 'absolute', top, left: space.lg, right: space.lg, alignItems: 'center', opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }] }}
+    >
+      <Pressable
+        onPress={() => done.current()}
+        accessibilityRole="alert"
+        accessibilityLabel={text}
+        style={{ maxWidth: 520, flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: pal.bgDeep, borderRadius: radius.md, padding: space.md, borderWidth: 1, borderColor: pal.veilLine }}
+      >
+        <Ionicons name="information-circle-outline" size={18} color={colors.white} />
+        <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 12, lineHeight: 17, color: colors.white }}>{text}</Text>
+        <Ionicons name="close" size={16} color={colors.white} />
+      </Pressable>
+    </Animated.View>
   );
 }
 

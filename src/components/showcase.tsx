@@ -234,7 +234,8 @@ export function Marquee({ text, size, color, reduce, reverse, faded }: { text: s
 export function Streaks({ width, height, reduce }: { width: number; height: number; reduce: boolean }) {
   const items = useMemo(() => {
     const r = rng(7);
-    return Array.from({ length: 22 }, () => ({ x: r() * width, y: r() * height * 0.8, l: 10 + r() * 22, o: 0.25 + r() * 0.5 }));
+    // solo en la parte de arriba: abajo va el texto de la portada y los trazos lo cruzarían
+    return Array.from({ length: 18 }, () => ({ x: r() * width, y: r() * height * 0.5, l: 10 + r() * 22, o: 0.25 + r() * 0.5 }));
   }, [width, height]);
   const drift = useRef(new Animated.Value(0)).current;
   useEffect(() => {

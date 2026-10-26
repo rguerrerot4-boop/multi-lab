@@ -172,7 +172,7 @@ export default function ArScreen() {
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
         {!device ? (
-          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono.$' Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.'`} />
+          <Notice icon="information-circle-outline" text="El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono. Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora." />
         ) : null}
 
         <View style={{ gap: space.sm }}>
