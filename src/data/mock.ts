@@ -129,7 +129,7 @@ export const areaOf = (title: string): Area =>
 
 // Puntos interactivos del visor 3D (textos de demostración)
 const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
-  { face: 'front', u: 0.5, v: 0.4, title: p.name, text: `${p.tagline}. ${p.description.split('.')[0]}.` },
+  { face: 'front', u: 0.9, v: 0.42, title: p.name, text: `${p.tagline}. ${p.description.split('.')[0]}.` },
   { face: 'front', u: 0.82, v: 0.8, title: 'Presentación', text: `${p.form}. Componente principal: ${p.component}.` },
   { face: 'right', u: 0.5, v: 0.55, title: 'Usos descritos', text: `${p.uses.join(' · ')}. Texto de ejemplo, no son indicaciones aprobadas.` },
   { face: 'back', u: 0.3, v: 0.3, title: 'Modo de uso', text: p.howTo.map((h, i) => `${i + 1}. ${h}`).join('  ') },
@@ -138,7 +138,7 @@ const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
 
 // Puntos del visor 3D de CORAESSENS, con el texto impreso en cada cara
 const realSpots: Hotspot[] = [
-  { face: 'front', u: 0.42, v: 0.12, title: 'CORAESSENS®', text: 'Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF. 9 cápsulas.' },
+  { face: 'front', u: 0.9, v: 0.2, title: 'CORAESSENS®', text: 'Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF. 9 cápsulas.' },
   { face: 'front', u: 0.5, v: 0.93, title: 'Muestra médica', text: 'Muestra · prohibida su venta.' },
   { face: 'left', u: 0.5, v: 0.1, title: 'Modo de empleo', text: 'Vía oral: adultos mayores a 18 años tomar 1 cápsula 3 veces al día, con cada comida.' },
   { face: 'left', u: 0.5, v: 0.45, title: 'Composición por cápsula', text: 'Corazón bovino liofilizado 275 mg · óxido de magnesio 145 mg · piridoxal-5-fosfato 25 mg · palmitato de ascorbilo 10 mg · metilcobalamina 650 mcg · L-5 metiltetrahidrofolato-calcio 326 mcg.' },
@@ -558,7 +558,7 @@ export const products: Product[] = [
     hue: '#C9262F', // rojo del empaque (packColors.coraessens.red)
     isNew: true,
     keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'magnesio', 'vitamina b12', 'metilcobalamina', 'vitamina b6', 'folato', 'corazón bovino', 'oral'],
-    areas: ['Medicina general', 'Dermatología'],
+    areas: ['Medicina general'], // el empaque no la dirige a ninguna especialidad
     real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra.' },
     specs: [
       { value: '9', label: 'Cápsulas por caja', note: 'Muestra · prohibida su venta' },

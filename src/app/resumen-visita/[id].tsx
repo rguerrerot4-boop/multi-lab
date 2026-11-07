@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Avatar, Button, EmptyState, Screen, styles } from '@/components/ui';
-import { formatClock } from '@/components/visit';
+import { formatDuration } from '@/components/visit';
 import { ReportSummary } from '@/components/VisitReport';
 import { deliveredTotal, personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -49,7 +49,7 @@ export default function ResumenVisita() {
   const share = () => {
     const lines = [
       `Resumen de la visita · ${doc.name}`,
-      `Duración: ${formatClock((r.endedAt ?? Date.now()) - r.startedAt)}`,
+      `Duración: ${formatDuration((r.endedAt ?? Date.now()) - r.startedAt)}`,
       r.presented.length ? `Presentado: ${r.presented.map((p) => productById(p)?.name).join(', ')}` : '',
       total ? `Material entregado: ${total}` : '',
       r.nextSteps.length ? `Siguientes pasos: ${r.nextSteps.join(', ')}` : '',

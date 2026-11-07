@@ -6,6 +6,7 @@ import { Avatar, BrandHeader, Button, EmptyState, PressableScale, Screen, Status
 import { dateFor, dayLabel, personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
+import { capFirst } from '@/lib/texto';
 
 const DAYS = [-1, 0, 1, 2, 3, 4, 5, 6];
 
@@ -20,7 +21,7 @@ export default function Agenda() {
       <View style={[styles.row, { justifyContent: 'space-between' }]}>
         <View>
           <Text style={type.h1}>Agenda</Text>
-          <Text style={[type.bodyMuted, { textTransform: 'capitalize' }]}>{month}</Text>
+          <Text style={type.bodyMuted}>{capFirst(month)}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: space.sm }}>
           <Button label="Registro" icon="reader-outline" variant="secondary" small onPress={() => router.push('/registro')} />

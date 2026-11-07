@@ -3,10 +3,11 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { AppHeader, Avatar, Chip, EmptyState, PressableScale, Screen, Segmented, styles } from '@/components/ui';
-import { formatClock, hourLabel } from '@/components/visit';
+import { formatDuration, hourLabel } from '@/components/visit';
 import { dateFor, dayLabel, deliveredTotal, people, personById, productById, type IconName, type Visit } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space, type } from '@/theme';
+import { capFirst } from '@/lib/texto';
 
 type Period = 'semana' | 'mes' | 'todo';
 const PERIOD_DAYS: Record<Period, number> = { semana: 7, mes: 30, todo: 9999 };
@@ -65,7 +66,7 @@ export default function Registro() {
         <Stat icon="checkmark-done-outline" value={String(list.length)} label="Visitas" />
         <Stat icon="people-outline" value={String(doctorsSeen)} label="Profesionales" />
         <Stat icon="cube-outline" value={String(delivered)} label={`Entregados · ${samples} muestras`} />
-        <Stat icon="time-outline" value={avg ? formatClock(avg) : '—'} label="Duración promedio" />
+        <Stat icon="time-outline" value={avg ? formatDuration(avg) : '—'} label="Duración promedio" />
       </View>
 
       <View style={[styles.input, { borderColor: colors.border }]}>
@@ -107,8 +108,8 @@ export default function Registro() {
       ) : (
         groups.map((g) => (
           <View key={g.day} style={{ gap: space.sm }}>
-            <Text style={[type.overline, { textTransform: 'capitalize' }]}>
-              {dayLabel(g.day)}
+            <Text style={type.overline}>
+              {capFirst(dayLabel(g.day))}
               {g.day < -1 ? ` · hace ${-g.day} días` : ''}
             </Text>
             {g.items.map((v) => (
@@ -153,7 +154,7 @@ function Entry({ v }: { v: Visit }) {
         {r ? (
           <>
             <Badge icon="cube-outline" text={`${total} entregados`} />
-            {r.endedAt ? <Badge icon="time-outline" text={formatClock(r.endedAt - r.startedAt)} /> : null}
+            {r.endedAt ? <Badge icon="time-outline" text={formatDuration(r.endedAt - r.startedAt)} /> : null}
             {interest ? <Badge icon="pulse-outline" text={`Interés ${r.interest!.toLowerCase()}`} bg={interest.bg} fg={interest.fg} /> : null}
             {r.signature ? <Badge icon="create-outline" text="Firmada" bg={colors.successSoft} fg={colors.success} /> : null}
           </>

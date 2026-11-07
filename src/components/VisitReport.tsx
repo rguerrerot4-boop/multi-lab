@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, View } from 'react-native';
 import { Card, styles } from '@/components/ui';
-import { formatClock, hourLabel, SignatureView } from '@/components/visit';
+import { formatDuration, hourLabel, SignatureView } from '@/components/visit';
 import { DELIVERY_KINDS, deliveredTotal, productById, type VisitReport } from '@/data/mock';
 import { colors, radius, space, type } from '@/theme';
 
@@ -14,7 +14,7 @@ export function ReportSummary({ report, signerFallback }: { report: VisitReport;
   return (
     <View style={{ gap: space.md }}>
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Stat icon="time-outline" value={report.endedAt ? formatClock(dur) : '—'} label="Duración" />
+        <Stat icon="time-outline" value={report.endedAt ? formatDuration(dur) : '—'} label="Duración" />
         <Stat icon="easel-outline" value={String(report.presented.length)} label="Presentados" />
         <Stat icon="cube-outline" value={String(total)} label="Entregados" />
       </View>

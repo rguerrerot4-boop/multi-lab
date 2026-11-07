@@ -15,6 +15,16 @@ export function useNow(ms = 1000) {
   return now;
 }
 
+/** Duración de una visita terminada, para leerla de un vistazo: «12 min», «1 h 5 min», «menos de 1 min». */
+export function formatDuration(ms: number) {
+  const min = Math.round(Math.max(0, ms) / 60000);
+  if (min < 1) return 'menos de 1 min';
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
 export function formatClock(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(s / 3600);

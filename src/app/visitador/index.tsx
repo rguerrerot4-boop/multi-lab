@@ -12,6 +12,7 @@ import { dayLabel, deliveredTotal, labOfRep,
   repLabNames, matchProducts, personById, productById, type IconName, type ProductNeed } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, shadow, space, type } from '@/theme';
+import { capFirst } from '@/lib/texto';
 
 const WEEK_GOAL = 12;
 
@@ -46,7 +47,7 @@ export default function VisitadorInicio() {
   return (
     <Screen header={<BrandHeader unread={unreadNotices} onBell={() => router.push('/notificaciones')} />}>
       <View style={{ gap: 2 }}>
-        <Text style={[type.caption, { textTransform: 'capitalize' }]}>{date}</Text>
+        <Text style={type.caption}>{capFirst(date)}</Text>
         <Text style={type.h1}>
           {hello}, {me.name.split(' ')[0]}
         </Text>

@@ -8,6 +8,7 @@ import { Avatar, BrandHeader, Button, Card, ListItem, PressableScale, Screen, Se
 import { dayLabel, personById, productById } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, radius, space, type } from '@/theme';
+import { capFirst } from '@/lib/texto';
 
 // Dashboard del profesional de la salud
 export default function MedicoInicio() {
@@ -24,7 +25,7 @@ export default function MedicoInicio() {
   return (
     <Screen header={<BrandHeader unread={unreadNotices} onBell={() => router.push('/notificaciones')} />}>
       <View style={{ gap: 2 }}>
-        <Text style={[type.caption, { textTransform: 'capitalize' }]}>{today}</Text>
+        <Text style={type.caption}>{capFirst(today)}</Text>
         <Text style={type.h1}>Hola, {me.name.split(' ').slice(0, 2).join(' ')}</Text>
         <Text style={type.bodyMuted}>
           {me.title} · {me.org}
