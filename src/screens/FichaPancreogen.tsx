@@ -54,7 +54,7 @@ interface Pose {
 const POSES: Record<Sec, Pose> = {
   hero: { x: 0.5, y: 0.45, h: 0.5, rot: 0 },
   explora: { x: 0.75, y: 0.5, h: 0.56, rot: 0 },
-  capsulas: { x: 0.5, y: 0.7, h: 0.38, rot: 0 },
+  capsulas: { x: 0.5, y: 0.73, h: 0.36, rot: 0 }, // más abajo: la tapa, al salir, no tapa el texto
   composicion: { x: 0.24, y: 0.5, h: 0.54, rot: frameFacing(0.835) }, // la tabla de frente
   nutricional: { x: 0.2, y: 0.25, h: 0.28, rot: frameFacing(0.835) },
   modo: { x: 0.24, y: 0.5, h: 0.54, rot: frameFacing(1.012) }, // modo de empleo (reverso)

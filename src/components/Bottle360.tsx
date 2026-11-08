@@ -58,7 +58,7 @@ export function framesPerPx(drawnHeight: number, scale = 1) {
 }
 const BOTTLE_W_FRAC = 295 / 420; // ancho del frasco dentro del cuadro de giro
 /** margen del lienzo 3D alrededor de la caja del cuadro de giro (la tapa y las cápsulas salen al abrir) */
-const GL_PAD_X = { l: 0.45, r: 0.45, t: 0.34, b: 0.04 };
+const GL_PAD_X = { l: 0.95, r: 0.95, t: 0.4, b: 0.06 }; // las cápsulas giran a ~6,5 cm del eje
 
 export interface BottleSpot {
   id: string;
