@@ -114,7 +114,7 @@ export default function ArScreen() {
             }}
           />
           <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: stageH * 0.1 }}>
-            {p.bottle ? <View style={{ alignItems: 'center' }}><BottleSpin frames={p.bottle.frames} height={stageH * 0.8} /></View> : <Product3D product={p} width={stageW} height={stageH * 0.9} autoRotate interactive={false} zoom={0.95} />}
+            {p.bottle ? <View style={{ alignItems: 'center' }}><BottleSpin frames={p.bottle.frames} model={p.bottle.model} height={stageH * 0.8} /></View> : <Product3D product={p} width={stageW} height={stageH * 0.9} autoRotate interactive={false} zoom={0.95} />}
           </View>
           {/* esquinas de cámara */}
           {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (

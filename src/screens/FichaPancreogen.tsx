@@ -53,12 +53,12 @@ interface Pose {
 }
 const POSES: Record<Sec, Pose> = {
   hero: { x: 0.5, y: 0.45, h: 0.5, rot: 0 },
-  explora: { x: 0.76, y: 0.5, h: 0.5, rot: 0 },
+  explora: { x: 0.75, y: 0.5, h: 0.56, rot: 0 },
   capsulas: { x: 0.5, y: 0.7, h: 0.38, rot: 0 },
-  composicion: { x: 0.24, y: 0.5, h: 0.5, rot: frameFacing(0.835) }, // la tabla de frente
+  composicion: { x: 0.24, y: 0.5, h: 0.54, rot: frameFacing(0.835) }, // la tabla de frente
   nutricional: { x: 0.2, y: 0.25, h: 0.28, rot: frameFacing(0.835) },
-  modo: { x: 0.24, y: 0.5, h: 0.5, rot: frameFacing(1.012) }, // modo de empleo (reverso)
-  avisos: { x: 0.84, y: 0.42, h: 0.3, rot: frameFacing(1.1) }, // fabricante y registro
+  modo: { x: 0.24, y: 0.5, h: 0.54, rot: frameFacing(1.012) }, // modo de empleo (reverso)
+  avisos: { x: 0.84, y: 0.42, h: 0.33, rot: frameFacing(1.1) }, // fabricante y registro
   cierre: { x: 0.5, y: 0.325, h: 0.42, rot: -FRAMES },
 };
 
@@ -268,6 +268,23 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   }, [openProgress, drag]);
 
   // arrastre lateral sobre el frasco: lo gira (con inercia); el desplazamiento vertical sigue funcionando
+  // web: en cada cuadro se toma el desplazamiento real de la página (scrollTop). El evento de scroll llega
+  // desfasado de la pantalla (y en iPhone, a saltos durante la inercia): con él el frasco temblaba al bajar.
+  const scrollTopRef = useRef(-1);
+  useFrameLoop(
+    () => {
+      const node = (scroll.current as unknown as { getScrollableNode?: () => HTMLElement } | null)?.getScrollableNode?.();
+      if (!node) return;
+      const t = node.scrollTop;
+      if (t !== scrollTopRef.current) {
+        scrollTopRef.current = t;
+        if (Math.abs(nodeValue(scrollY as never) - t) > 0.25) scrollY.setValue(t);
+      }
+    },
+    isWeb,
+    true,
+  );
+
   // la etiqueta sigue al dedo: cuadros por píxel según el tamaño con que se ve el frasco en esa sección
   const kpx = useRef(0.1);
   const pan = useMemo(
@@ -369,6 +386,7 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   const mm = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
   const frames = PANCREOGEN.frames[mode];
   const openFrames = PANCREOGEN.open[mode];
+  const model = mode === 'real' ? p.bottle?.model : p.bottle?.modelFicticio;
   const col = (x: number) => ({ alignSelf: 'center' as const, width: W, paddingHorizontal: space.xl, ...(x ? {} : {}) });
   // columna de texto al lado contrario del frasco
   const textSide = (k: Sec) => (POSES[k].x > 0.5 ? { paddingRight: W * 0.42 } : { paddingLeft: W * 0.44 });
@@ -666,11 +684,13 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
             { key: 'fin', pose: POSES.cierre, at: cierreA, vis: fly.endVis, rot: rotEnd },
           ].map((l) => ({ ...l, left: side + l.pose.x * W, top: l.at + l.pose.y * Hs - base / 2 }))}
           frames={frames}
+          model={model}
           panHandlers={pan.panHandlers}
         >
           <Bottle360
             key={mode}
             frames={frames}
+            model={model}
             open={openFrames}
             rot={rot}
             openProgress={openProgress}
@@ -718,7 +738,7 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
       <SpotCard spot={spot} index={spot ? spots.findIndex((x) => x.id === spot.id) : 0} total={spots.length} bottom={insets.bottom} reduce={reduce} onClose={() => setSpot(null)} onStep={stepSpot} />
 
       <Modal visible={full} animationType={reduce ? 'none' : 'fade'} onRequestClose={() => setFull(false)}>
-        <BottleViewer frames={frames} title={N.mark} onClose={() => setFull(false)} reduce={reduce} />
+        <BottleViewer frames={frames} model={model} title={N.mark} onClose={() => setFull(false)} reduce={reduce} />
       </Modal>
       <ShareSheet product={p} visible={share} onClose={() => setShare(false)} />
     </View>
@@ -831,6 +851,7 @@ function FlyingBottle({
   hidden,
   landings,
   frames,
+  model,
   panHandlers,
   children,
 }: {
@@ -844,6 +865,7 @@ function FlyingBottle({
   hidden: boolean;
   landings: Landing[];
   frames: Parameters<typeof Bottle360>[0]['frames'];
+  model?: string;
   panHandlers: object;
   children: ReactNode;
 }) {
@@ -860,6 +882,8 @@ function FlyingBottle({
   useEffect(() => {
     // el navegador se queda con el desplazamiento vertical y deja el arrastre lateral para girar el frasco
     if (isWeb && scaler.current) scaler.current.style.touchAction = 'pan-y';
+    // capas propias en la GPU: moverlas y escalarlas no vuelve a pintar la página
+    if (isWeb) [outer.current, scaler.current].forEach((el) => el && (el.style.willChange = 'transform, opacity'));
   }, []);
   useFrameLoop(() => {
     const vis = nodeValue(fly.stickyVis as never, 1);
@@ -874,7 +898,7 @@ function FlyingBottle({
     });
   });
   const follow = useMemo(() => scrollY.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolateLeft: 'clamp' }), [scrollY]);
-  const bobY = useMemo(() => bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }), [bob]);
+  const bobY = useMemo(() => bob.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }), [bob]);
   const nativeTy = useMemo(() => Animated.add(Animated.add(fly.ty, introY), bobY), [fly.ty, introY, bobY]);
 
   const copies = landings.map((l, i) =>
@@ -882,14 +906,14 @@ function FlyingBottle({
       <View key={l.key} ref={(r) => void (landEls.current[i] = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: l.left, top: l.top, opacity: 0 }}>
         <View ref={(r) => void (bobEls.current[i + 1] = domEl(r))}>
           <View style={{ marginLeft: -bw / 2, transform: [{ scale: l.pose.h / 0.6 }] }}>
-            <Bottle360 frames={frames} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
+            <Bottle360 frames={frames} model={model} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
           </View>
         </View>
       </View>
     ) : (
       <Animated.View key={l.key} pointerEvents="none" style={{ position: 'absolute', left: l.left, top: l.top, opacity: l.vis, transform: [{ translateY: bobY }] }}>
         <View style={{ marginLeft: -bw / 2, transform: [{ scale: l.pose.h / 0.6 }] }}>
-          <Bottle360 frames={frames} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
+          <Bottle360 frames={frames} model={model} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
         </View>
       </Animated.View>
     ),
@@ -1048,7 +1072,7 @@ function SpotCard({ spot, index, total, bottom, reduce, onClose, onStep }: { spo
 }
 
 /** Vista 3D a pantalla completa: arrastrar para girar, botones para girar de a 45° */
-export function BottleViewer({ frames, title, onClose, reduce }: { frames: Parameters<typeof Bottle360>[0]['frames']; title: string; onClose: () => void; reduce: boolean }) {
+export function BottleViewer({ frames, model, title, onClose, reduce }: { frames: Parameters<typeof Bottle360>[0]['frames']; model?: string; title: string; onClose: () => void; reduce: boolean }) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const rot = useRef(new Animated.Value(0)).current;
@@ -1066,8 +1090,14 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const h = Math.min(height * 0.72, 720);
+  // «Acercar»: el frasco se dibuja más grande (en 3D real sigue nítido) y se recorre arriba y abajo
+  const [zoom, setZoom] = useState(false);
+  const Z = zoom ? 1.8 : 1;
+  const panY = useRef(new Animated.Value(0)).current;
+  const py = useRef(0);
+  const maxY = (h * (Z - 1)) / 2 + (zoom ? h * 0.08 : 0);
   // la etiqueta sigue al dedo (mismo sentido que en el catálogo) y al soltar sigue con inercia
-  const kpx = framesPerPx(h);
+  const kpx = framesPerPx(h * Z);
   const release = (dx: number, vx: number) => {
     const start = v.current + dx * kpx;
     const vel = reduce ? 0 : Math.max(-0.12, Math.min(0.12, vx * kpx));
@@ -1083,15 +1113,31 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
         onPanResponderGrant: () => {
           auto.current?.stop();
           rot.stopAnimation((x) => (v.current = x));
+          panY.stopAnimation((y) => (py.current = y));
         },
-        onPanResponderMove: (_, g) => rot.setValue(v.current + g.dx * kpx),
-        onPanResponderRelease: (_, g) => release(g.dx, g.vx),
+        onPanResponderMove: (_, g) => {
+          rot.setValue(v.current + g.dx * kpx);
+          if (zoom) panY.setValue(Math.max(-maxY, Math.min(maxY, py.current + g.dy)));
+        },
+        onPanResponderRelease: (_, g) => {
+          release(g.dx, g.vx);
+          if (zoom) py.current = Math.max(-maxY, Math.min(maxY, py.current + g.dy));
+        },
         onPanResponderTerminate: (_, g) => release(g.dx, g.vx),
         onPanResponderTerminationRequest: () => false,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rot, reduce, kpx],
+    [rot, reduce, kpx, zoom, maxY],
   );
+  const toggleZoom = () => {
+    auto.current?.stop();
+    rot.stopAnimation((x) => (v.current = x));
+    // al acercar se empieza por la parte de arriba de la etiqueta (marca y nombre)
+    const to = zoom ? 0 : h * 0.32;
+    py.current = to;
+    Animated.timing(panY, { toValue: to, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    setZoom((z) => !z);
+  };
   const turn = (d: number) => {
     auto.current?.stop();
     rot.stopAnimation((x) => {
@@ -1106,7 +1152,7 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
         <RoundButton icon="close" label="Cerrar la vista 3D" onPress={onClose} color={C.tealDeep} />
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: font.bold, fontSize: 18, color: colors.white }}>{title}</Text>
-          <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.white, opacity: 0.8 }}>Arrastra para girar el frasco</Text>
+          <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.white, opacity: 0.8 }}>{zoom ? 'Arrastra de lado para girar y hacia arriba o abajo para recorrer la etiqueta' : 'Arrastra para girar el frasco'}</Text>
         </View>
       </View>
       <View
@@ -1114,14 +1160,17 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
           const el = domEl(r);
           if (el) el.style.touchAction = 'none'; // en el visor todo el arrastre gira el frasco
         }}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
         {...pan.panHandlers}
       >
-        <Bottle360 frames={frames} rot={rot} height={h} spotColor={C.teal} reduce={reduce} />
+        <Animated.View style={{ transform: [{ translateY: panY }] }}>
+          <Bottle360 frames={frames} model={model} rot={rot} height={h * Z} spotColor={C.teal} reduce={reduce} />
+        </Animated.View>
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.md, padding: space.lg }}>
-        <Pill icon="arrow-undo-outline" label="Girar a la izquierda" onPress={() => turn(-7.5)} variant="outline" color={C.teal} small />
-        <Pill icon="arrow-redo-outline" label="Girar a la derecha" onPress={() => turn(7.5)} variant="outline" color={C.teal} small />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, padding: space.lg }}>
+        <Pill icon="arrow-undo-outline" label="Izquierda" onPress={() => turn(-7.5)} variant="outline" color={C.teal} small />
+        <Pill icon={zoom ? 'contract-outline' : 'search-outline'} label={zoom ? 'Alejar' : 'Acercar'} onPress={toggleZoom} variant="outline" color={C.teal} small />
+        <Pill icon="arrow-redo-outline" label="Derecha" onPress={() => turn(7.5)} variant="outline" color={C.teal} small />
       </View>
     </View>
   );

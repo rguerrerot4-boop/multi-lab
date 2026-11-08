@@ -88,7 +88,7 @@ export interface Product {
   /** caja 3D con las fotos del empaque (vitrina 3D) */
   photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string };
   /** frasco fotografiado en 360° (cuadros renderizados del modelo 3D), con su propio catálogo */
-  bottle?: { frames: ImageSourcePropType[]; framesFicticio: ImageSourcePropType[]; thumb: ImageSourcePropType; thumbFicticio: ImageSourcePropType };
+  bottle?: { frames: ImageSourcePropType[]; framesFicticio: ImageSourcePropType[]; thumb: ImageSourcePropType; thumbFicticio: ImageSourcePropType; /** modelo .glb animado (la web lo dibuja en 3D real) */ model?: string; modelFicticio?: string };
   arTitle?: string; // título en el visor AR del teléfono
   /** cifras destacadas de la ficha (si no hay, se arman con la presentación, el componente y la concentración) */
   specs?: { value: string; label: string; note: string }[];

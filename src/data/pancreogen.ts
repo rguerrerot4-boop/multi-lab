@@ -5,6 +5,7 @@ import type { ImageSourcePropType } from 'react-native';
 import type { VitrinaMode } from './coraessens-info';
 import { productById } from './mock';
 import { PANCREOGEN_INFO } from './pancreogen-info';
+import { arModelUrls } from '@/lib/ar';
 
 type Img = ImageSourcePropType;
 
@@ -227,4 +228,4 @@ export const PANCREOGEN = {
 
 // el producto del catálogo usa los mismos cuadros (miniaturas, visor 3D, presentación)
 const pan = productById(PANCREOGEN.id);
-if (pan) pan.bottle = { frames: GIRO, framesFicticio: GIRO_F, thumb: PANCREOGEN.thumb.real, thumbFicticio: PANCREOGEN.thumb.ficticio };
+if (pan) pan.bottle = { frames: GIRO, framesFicticio: GIRO_F, thumb: PANCREOGEN.thumb.real, thumbFicticio: PANCREOGEN.thumb.ficticio, model: arModelUrls('pan').glb, modelFicticio: arModelUrls('pan-f').glb };

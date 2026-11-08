@@ -26,7 +26,7 @@ export default function Visor() {
   const close = () => goBack(p ? `/producto/${p.id}` : '/');
   const reduce = useReduceMotion();
   // frasco 360° (cuadros del modelo 3D): su propio visor
-  if (p?.bottle) return <BottleViewer frames={p.bottle.frames} title={p.name} onClose={close} reduce={reduce} />;
+  if (p?.bottle) return <BottleViewer frames={p.bottle.frames} model={p.bottle.model} title={p.name} onClose={close} reduce={reduce} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

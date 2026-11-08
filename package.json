@@ -24,11 +24,13 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
-    "react-native-webview": "13.16.1"
+    "react-native-webview": "13.16.1",
+    "three": "0.160.0"
   },
   "devDependencies": {
     "@types/leaflet": "1.9",
     "@types/react": "~19.2.2",
+    "@types/three": "0.160.0",
     "typescript": "~6.0.3"
   },
   "scripts": {

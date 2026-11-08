@@ -4,9 +4,10 @@
 // También dibuja la secuencia de apertura (la tapa se desenrosca y salen las cápsulas) y los puntos
 // interactivos, que siguen la etiqueta al girar porque su posición se proyecta con la misma cámara
 // con la que se renderizaron los cuadros (scripts/pancreogen: pan.html).
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, Text, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import type { GLBottle } from '@/lib/bottleGL';
 import { cssAnim, domEl, isWeb, nodeValue, setStyle, useFrameLoop } from '@/lib/webAnim';
 import { font } from '@/theme';
 
@@ -56,6 +57,8 @@ export function framesPerPx(drawnHeight: number, scale = 1) {
   return FRAMES / (2 * Math.PI * Math.max(30, radiusPx));
 }
 const BOTTLE_W_FRAC = 295 / 420; // ancho del frasco dentro del cuadro de giro
+/** margen del lienzo 3D alrededor de la caja del cuadro de giro (la tapa y las cápsulas salen al abrir) */
+const GL_PAD_X = { l: 0.45, r: 0.45, t: 0.34, b: 0.04 };
 
 export interface BottleSpot {
   id: string;
@@ -69,6 +72,8 @@ export function Bottle360(props: BottleProps) {
 
 interface BottleProps {
   frames: ImageSourcePropType[];
+  /** modelo .glb animado (web): si se puede, el frasco se dibuja en 3D real y los cuadros quedan de respaldo */
+  model?: string;
   open?: ImageSourcePropType[];
   /** ángulo en cuadros (cualquier número real; 60 = una vuelta) */
   rot: Animated.Value | Animated.AnimatedInterpolation<number> | Animated.AnimatedAddition<number>;
@@ -122,36 +127,105 @@ function spotTable(spot: BottleSpot, k: number, S: number) {
 const SPOT = 34;
 
 // ---------- web: un solo bucle por cuadro escribe el estilo de los cuadros visibles ----------
-function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, spotColor, reduce, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
+function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, spotColor, reduce, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
   const k = height / FH;
   const width = FW * k;
   const ok = OPEN.k * k;
+  // 3D real con WebGL (si hay modelo y el navegador puede); mientras carga, los cuadros
+  const host = useRef<HTMLElement | null>(null);
+  const gl = useRef<GLBottle | null>(null);
+  const [glOn, setGlOn] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const size = useRef({ width, height });
+  size.current = { width, height };
+  const placeCanvas = (c: HTMLCanvasElement, w: number, h: number) =>
+    Object.assign(c.style, {
+      position: 'absolute',
+      left: `${-GL_PAD_X.l * w}px`,
+      top: `${-GL_PAD_X.t * h}px`,
+      width: `${w * (1 + GL_PAD_X.l + GL_PAD_X.r)}px`,
+      height: `${h * (1 + GL_PAD_X.t + GL_PAD_X.b)}px`,
+      pointerEvents: 'none',
+      zIndex: '2',
+    });
+  // el contexto 3D se crea una vez por modelo; al cambiar de tamaño solo se ajusta (resize)
+  useEffect(() => {
+    if (!model || !host.current || typeof document === 'undefined') return;
+    let alive = true;
+    const canvas = document.createElement('canvas');
+    const { width: w0, height: h0 } = size.current;
+    placeCanvas(canvas, w0, h0);
+    host.current.appendChild(canvas);
+    canvasRef.current = canvas;
+    import('@/lib/bottleGL')
+      .then((m) => m.createBottleGL(canvas, model, CAM, FRAMES, w0, h0, GL_PAD_X))
+      .then((b) => {
+        if (!alive) return b.dispose();
+        gl.current = b;
+        const { width: w, height: h } = size.current;
+        if (w !== w0 || h !== h0) {
+          placeCanvas(canvas, w, h);
+          b.resize(w, h);
+        }
+        b.render(nodeValue(rot as never), openProgress ? nodeValue(openProgress as never) : 0);
+        setGlOn(true);
+      })
+      .catch(() => canvas.remove());
+    return () => {
+      alive = false;
+      gl.current?.dispose();
+      gl.current = null;
+      canvas.remove();
+      canvasRef.current = null;
+      setGlOn(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model]);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    placeCanvas(canvasRef.current, width, height);
+    gl.current?.resize(width, height);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, height]);
   const giroEls = useRef<(HTMLElement | null)[]>([]);
   const openEls = useRef<(HTMLElement | null)[]>([]);
   const openBox = useRef<HTMLElement | null>(null);
   const spotEls = useRef<(HTMLElement | null)[]>([]);
   const tables = useMemo(() => (spots ?? []).map((s) => spotTable(s, k, SPOT)), [spots, k]);
-  const last = useRef({ g: -1, top: -1, a: 0, v: NaN, o: -1, open: -1, m: NaN, vis: NaN });
+  const last = useRef({ g: -1, top: -1, a: 0, v: NaN, moved: 0, o: -1, open: -1, m: NaN, vis: NaN });
   // al cambiar de modo o de tamaño se vuelve a pintar todo
   useEffect(() => {
-    last.current = { g: -1, top: -1, a: 0, v: NaN, o: -1, open: -1, m: NaN, vis: NaN };
-  }, [frames, open, spots, k]);
+    last.current = { g: -1, top: -1, a: 0, v: NaN, moved: 0, o: -1, open: -1, m: NaN, vis: NaN };
+  }, [frames, open, spots, k, glOn]);
   useFrameLoop(() => {
-    const L = last.current;
     const v = nodeValue(rot as never);
     const m = ((v % FRAMES) + FRAMES) % FRAMES;
     const p = openProgress ? nodeValue(openProgress as never) : 0;
     const opened = p > 0.004 && !!open ? 1 : 0;
+    if (gl.current) {
+      gl.current.render(v, p);
+    } else {
+      drawFrames(v, m, p, opened);
+    }
+    updateSpots(m);
+  });
+  /** respaldo sin WebGL: cuadros de 6° mezclados mientras gira */
+  const drawFrames = (v: number, m: number, p: number, opened: number) => {
+    const L = last.current;
     // giro: el cuadro de abajo opaco y el siguiente encima con opacidad = fracción del ángulo (mezcla suave
-    // entre cuadros de 6°). Quieto, la mezcla se asienta en el cuadro más cercano (sin imagen doble).
-    const moving = Number.isFinite(L.v) && Math.abs(v - L.v) > 0.003;
+    // entre cuadros de 6°). Quieto, la mezcla se asienta en el cuadro más cercano (sin imagen doble). Se
+    // considera «en movimiento» hasta 160 ms después del último cambio: los eventos del dedo llegan con
+    // otro ritmo que los cuadros de la pantalla y, si no, la imagen parpadea entre mezclada y asentada.
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (Number.isFinite(L.v) && Math.abs(v - L.v) > 0.0005) L.moved = now;
     L.v = v;
+    const moving = now - L.moved < 160;
     const fl = Math.floor(m);
     const t = m - fl;
     const g = opened ? -2 : fl % FRAMES;
     const top = opened ? -2 : (fl + 1) % FRAMES;
     const want = moving ? t : t > 0.5 ? 1 : 0;
-    L.a = moving ? want : L.a + (want - L.a) * 0.3;
+    L.a = moving ? want : L.a + (want - L.a) * 0.2;
     if (g !== L.g || top !== L.top) {
       [L.g, L.top].forEach((n) => n >= 0 && n !== g && n !== top && setStyle(giroEls.current[n], 'opacity', '0'));
       if (g >= 0) {
@@ -176,7 +250,9 @@ function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpot
         L.o = o;
       }
     }
-    // puntos
+  };
+  const updateSpots = (m: number) => {
+    const L = last.current;
     const vis = showSpots ? nodeValue(showSpots as never, 1) : 1;
     if (tables.length && (Math.abs(m - L.m) > 0.002 || vis !== L.vis)) {
       L.m = m;
@@ -194,14 +270,15 @@ function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpot
         setStyle(el, 'visibility', o < 0.05 ? 'hidden' : 'visible');
       });
     }
-  });
+  };
   return (
-    <View style={{ width, height }} pointerEvents="box-none">
+    <View ref={(r) => void (host.current = domEl(r))} style={{ width, height }} pointerEvents="box-none">
       <FloorShadow width={width} k={k} shadow={shadow} />
-      {frames.map((src, i) => (
+      {/* con 3D real los cuadros no se montan (menos memoria en el teléfono) */}
+      {!glOn && frames.map((src, i) => (
         <Image key={i} ref={(r) => void (giroEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: 0 }} />
       ))}
-      {open ? (
+      {open && !glOn ? (
         <View ref={(r) => void (openBox.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0, zIndex: 3 }}>
           {open.map((src, i) => (
             <Image key={i} ref={(r) => void (openEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }} />
@@ -370,7 +447,7 @@ export function BottleThumb({ source, height }: { source: ImageSourcePropType; h
 }
 
 /** Frasco que gira solo (vistas previas) */
-export function BottleSpin({ frames, height, reduce, seconds = 12 }: { frames: ImageSourcePropType[]; height: number; reduce?: boolean; seconds?: number }) {
+export function BottleSpin({ frames, model, height, reduce, seconds = 12 }: { frames: ImageSourcePropType[]; model?: string; height: number; reduce?: boolean; seconds?: number }) {
   const rot = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (reduce) return;
@@ -378,5 +455,5 @@ export function BottleSpin({ frames, height, reduce, seconds = 12 }: { frames: I
     loop.start();
     return () => loop.stop();
   }, [rot, reduce, seconds]);
-  return <Bottle360 frames={frames} rot={rot} height={height} spotColor="#1F6B6E" reduce={reduce} />;
+  return <Bottle360 frames={frames} model={model} rot={rot} height={height} spotColor="#1F6B6E" reduce={reduce} />;
 }
