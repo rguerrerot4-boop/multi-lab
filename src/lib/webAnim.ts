@@ -59,7 +59,7 @@ export function cssAnim(el: HTMLElement | null, value: string, periodMs?: number
 }
 
 /** asigna un estilo solo si cambió (evita trabajo del navegador) */
-export function setStyle(el: HTMLElement | null, key: 'transform' | 'opacity' | 'visibility' | 'pointerEvents', value: string) {
+export function setStyle(el: HTMLElement | null, key: 'transform' | 'opacity' | 'visibility' | 'pointerEvents' | 'zIndex', value: string) {
   if (!el) return;
   if (el.style[key] !== value) el.style[key] = value;
 }

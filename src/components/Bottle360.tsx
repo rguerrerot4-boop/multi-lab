@@ -47,6 +47,16 @@ export function project(u: number, v: number, frame: number) {
 /** cuadro (giro) en el que un punto de la etiqueta queda de frente */
 export const frameFacing = (u: number) => -(u - 0.5) * FRAMES;
 
+/**
+ * Cuadros por píxel para que la etiqueta siga al dedo (como si se tomara el frasco): un arco de radio R
+ * píxeles mide 2πR por vuelta. `drawnHeight` es el alto con que se dibuja el cuadro de giro (sin escala).
+ */
+export function framesPerPx(drawnHeight: number, scale = 1) {
+  const radiusPx = ((BOTTLE_W_FRAC * FW) / 2) * (drawnHeight / FH) * scale;
+  return FRAMES / (2 * Math.PI * Math.max(30, radiusPx));
+}
+const BOTTLE_W_FRAC = 295 / 420; // ancho del frasco dentro del cuadro de giro
+
 export interface BottleSpot {
   id: string;
   u: number;
@@ -121,10 +131,10 @@ function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpot
   const openBox = useRef<HTMLElement | null>(null);
   const spotEls = useRef<(HTMLElement | null)[]>([]);
   const tables = useMemo(() => (spots ?? []).map((s) => spotTable(s, k, SPOT)), [spots, k]);
-  const last = useRef({ g: -1, o: -1, open: -1, m: NaN, vis: NaN });
+  const last = useRef({ g: -1, top: -1, a: 0, v: NaN, o: -1, open: -1, m: NaN, vis: NaN });
   // al cambiar de modo o de tamaño se vuelve a pintar todo
   useEffect(() => {
-    last.current = { g: -1, o: -1, open: -1, m: NaN, vis: NaN };
+    last.current = { g: -1, top: -1, a: 0, v: NaN, o: -1, open: -1, m: NaN, vis: NaN };
   }, [frames, open, spots, k]);
   useFrameLoop(() => {
     const L = last.current;
@@ -132,13 +142,27 @@ function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpot
     const m = ((v % FRAMES) + FRAMES) % FRAMES;
     const p = openProgress ? nodeValue(openProgress as never) : 0;
     const opened = p > 0.004 && !!open ? 1 : 0;
-    // giro: se muestra solo el cuadro más cercano
-    const g = opened ? -2 : Math.round(m) % FRAMES;
-    if (g !== L.g) {
-      if (L.g >= 0) setStyle(giroEls.current[L.g], 'opacity', '0');
-      if (g >= 0) setStyle(giroEls.current[g], 'opacity', '1');
+    // giro: el cuadro de abajo opaco y el siguiente encima con opacidad = fracción del ángulo (mezcla suave
+    // entre cuadros de 6°). Quieto, la mezcla se asienta en el cuadro más cercano (sin imagen doble).
+    const moving = Number.isFinite(L.v) && Math.abs(v - L.v) > 0.003;
+    L.v = v;
+    const fl = Math.floor(m);
+    const t = m - fl;
+    const g = opened ? -2 : fl % FRAMES;
+    const top = opened ? -2 : (fl + 1) % FRAMES;
+    const want = moving ? t : t > 0.5 ? 1 : 0;
+    L.a = moving ? want : L.a + (want - L.a) * 0.3;
+    if (g !== L.g || top !== L.top) {
+      [L.g, L.top].forEach((n) => n >= 0 && n !== g && n !== top && setStyle(giroEls.current[n], 'opacity', '0'));
+      if (g >= 0) {
+        setStyle(giroEls.current[g], 'opacity', '1');
+        setStyle(giroEls.current[g], 'zIndex', '1');
+        setStyle(giroEls.current[top], 'zIndex', '2');
+      }
       L.g = g;
+      L.top = top;
     }
+    if (top >= 0) setStyle(giroEls.current[top], 'opacity', L.a.toFixed(3));
     // apertura
     if (open) {
       if (opened !== L.open) {
@@ -178,14 +202,14 @@ function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpot
         <Image key={i} ref={(r) => void (giroEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: 0 }} />
       ))}
       {open ? (
-        <View ref={(r) => void (openBox.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }}>
+        <View ref={(r) => void (openBox.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0, zIndex: 3 }}>
           {open.map((src, i) => (
             <Image key={i} ref={(r) => void (openEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }} />
           ))}
         </View>
       ) : null}
       {spots?.map((s, n) => (
-        <View key={s.id} ref={(r) => void (spotEls.current[n] = domEl(r))} style={{ position: 'absolute', left: 0, top: 0, width: SPOT, height: SPOT, opacity: 0 }}>
+        <View key={s.id} ref={(r) => void (spotEls.current[n] = domEl(r))} style={{ position: 'absolute', left: 0, top: 0, width: SPOT, height: SPOT, opacity: 0, zIndex: 5 }}>
           <SpotFace n={n + 1} active={activeSpot === s.id} onPress={() => onSpot?.(s.id)} reduce={!!reduce} color={spotColor} />
         </View>
       ))}

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNo
 import { Animated, Easing, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
-import { Bottle360, FRAMES, frameFacing } from '@/components/Bottle360';
+import { Bottle360, framesPerPx, FRAMES, frameFacing } from '@/components/Bottle360';
 import { ProductVisual } from '@/components/ProductVisual';
 import { ShareSheet } from '@/components/ShareSheet';
 import { ModeToggle, Pill, RoundButton, useReduceMotion } from '@/components/showcase';
@@ -268,21 +268,35 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   }, [openProgress, drag]);
 
   // arrastre lateral sobre el frasco: lo gira (con inercia); el desplazamiento vertical sigue funcionando
+  // la etiqueta sigue al dedo: cuadros por píxel según el tamaño con que se ve el frasco en esa sección
+  const kpx = useRef(0.1);
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy) * 1.4,
-        onPanResponderGrant: () => drag.stopAnimation((v) => (dragV.current = v)),
-        onPanResponderMove: (_, g) => drag.setValue(dragV.current + (g.dx / 220) * 12),
-        onPanResponderRelease: (_, g) => {
-          dragV.current += (g.dx / 220) * 12;
-          if (reduce) return;
-          Animated.decay(drag, { velocity: g.vx * 0.06, deceleration: 0.993, useNativeDriver: true }).start(() => drag.stopAnimation((v) => (dragV.current = v)));
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy) * 1.2,
+        onPanResponderGrant: () => {
+          kpx.current = framesPerPx(base, nodeValue(fly.scale as never, 1));
+          drag.stopAnimation((v) => (dragV.current = v));
         },
-        onPanResponderTerminationRequest: () => true,
+        onPanResponderMove: (_, g) => drag.setValue(dragV.current + g.dx * kpx.current),
+        onPanResponderRelease: (_, g) => spinRelease(g.dx, g.vx),
+        onPanResponderTerminate: (_, g) => spinRelease(g.dx, g.vx),
+        // mientras se gira, el desplazamiento de la página no le quita el gesto
+        onPanResponderTerminationRequest: () => false,
       }),
-    [drag, reduce],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drag, reduce, base, fly.scale],
   );
+  /** suelta el frasco: sigue girando con inercia y se detiene suave en un cuadro */
+  function spinRelease(dx: number, vx: number) {
+    const start = dragV.current + dx * kpx.current;
+    dragV.current = start;
+    const vel = reduce ? 0 : Math.max(-0.12, Math.min(0.12, vx * kpx.current)); // cuadros por ms
+    // distancia de frenado de una inercia exponencial (≈ v·τ), y llegada a un cuadro entero
+    const to = Math.round(start + vel * 380);
+    dragV.current = to;
+    Animated.timing(drag, { toValue: to, duration: Math.min(1100, 260 + Math.abs(to - start) * 45), easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }
 
   /** gira el frasco hasta dejar un punto de frente y abre su tarjeta */
   const focusSpot = (id: string) => {
@@ -843,6 +857,10 @@ function FlyingBottle({
     // la flotación es CSS y va en fase en el frasco y en sus copias (mismo reloj)
     bobEls.current.forEach((el) => cssAnim(el, 'mlBob 3.6s ease-in-out infinite', 3600));
   }, [reduce, landings.length]);
+  useEffect(() => {
+    // el navegador se queda con el desplazamiento vertical y deja el arrastre lateral para girar el frasco
+    if (isWeb && scaler.current) scaler.current.style.touchAction = 'pan-y';
+  }, []);
   useFrameLoop(() => {
     const vis = nodeValue(fly.stickyVis as never, 1);
     setStyle(outer.current, 'transform', `translate(${nodeValue(fly.tx as never).toFixed(1)}px, ${(nodeValue(fly.ty as never) + nodeValue(introY as never)).toFixed(1)}px)`);
@@ -1047,6 +1065,16 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
     return () => auto.current?.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const h = Math.min(height * 0.72, 720);
+  // la etiqueta sigue al dedo (mismo sentido que en el catálogo) y al soltar sigue con inercia
+  const kpx = framesPerPx(h);
+  const release = (dx: number, vx: number) => {
+    const start = v.current + dx * kpx;
+    const vel = reduce ? 0 : Math.max(-0.12, Math.min(0.12, vx * kpx));
+    const to = Math.round(start + vel * 380);
+    v.current = to;
+    Animated.timing(rot, { toValue: to, duration: Math.min(1100, 260 + Math.abs(to - start) * 45), easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  };
   const pan = useMemo(
     () =>
       PanResponder.create({
@@ -1056,22 +1084,21 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
           auto.current?.stop();
           rot.stopAnimation((x) => (v.current = x));
         },
-        onPanResponderMove: (_, g) => rot.setValue(v.current - (g.dx / 220) * 12),
-        onPanResponderRelease: (_, g) => {
-          v.current -= (g.dx / 220) * 12;
-          if (!reduce) Animated.decay(rot, { velocity: -g.vx * 0.06, deceleration: 0.993, useNativeDriver: true }).start(() => rot.stopAnimation((x) => (v.current = x)));
-        },
+        onPanResponderMove: (_, g) => rot.setValue(v.current + g.dx * kpx),
+        onPanResponderRelease: (_, g) => release(g.dx, g.vx),
+        onPanResponderTerminate: (_, g) => release(g.dx, g.vx),
+        onPanResponderTerminationRequest: () => false,
       }),
-    [rot, reduce],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rot, reduce, kpx],
   );
   const turn = (d: number) => {
     auto.current?.stop();
     rot.stopAnimation((x) => {
       v.current = Math.round((x + d) / 7.5) * 7.5;
-      Animated.spring(rot, { toValue: v.current, useNativeDriver: true, stiffness: 120, damping: 18 }).start();
+      Animated.timing(rot, { toValue: v.current, duration: 520, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }).start();
     });
   };
-  const h = Math.min(height * 0.72, 720);
   return (
     <View style={{ flex: 1, backgroundColor: C.night, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <LinearGradient colors={[C.tealDeep, C.night]} style={StyleSheet.absoluteFill} />
@@ -1082,7 +1109,14 @@ export function BottleViewer({ frames, title, onClose, reduce }: { frames: Param
           <Text style={{ fontFamily: font.regular, fontSize: 12, color: colors.white, opacity: 0.8 }}>Arrastra para girar el frasco</Text>
         </View>
       </View>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} {...pan.panHandlers}>
+      <View
+        ref={(r) => {
+          const el = domEl(r);
+          if (el) el.style.touchAction = 'none'; // en el visor todo el arrastre gira el frasco
+        }}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+        {...pan.panHandlers}
+      >
         <Bottle360 frames={frames} rot={rot} height={h} spotColor={C.teal} reduce={reduce} />
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.md, padding: space.lg }}>

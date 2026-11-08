@@ -42,7 +42,7 @@ EDGE = 0.0028  # redondeo del borde de la base
 TEAL = (0.10, 0.36, 0.37)
 TEAL_DEEP = (0.05, 0.22, 0.23)
 WHITE = (0.97, 0.97, 0.96)
-SILVER = (0.78, 0.79, 0.81)
+SILVER = (0.66, 0.67, 0.69)  # plástico plateado mate (sRGB)
 N_CAPS = 12
 
 
@@ -117,30 +117,53 @@ def mouth_mesh(seg=96):
     return (rim_p, rim_n, None, rim_i), (wall_p, wall_n, None, wall_i), (hole_p, hole_n, None, hole_i)
 
 
+def cap_profile():
+    """Perfil (radio, altura) de la tapa, de abajo hacia arriba, como la tapa real (fotos IMG_2313/2336):
+    plástico plateado mate, lado recto con un leve bisel abajo, tres ondas muy suaves en el tercio de arriba
+    y el borde superior redondeado. Las normales salen de la pendiente del perfil."""
+    e = 0.0018  # radio del borde de arriba
+    pts = [(RC * 0.982, 0.0), (RC * 0.996, 0.0004), (RC, 0.0010)]
+    top0, top1 = HC * 0.55, HC * 0.86  # franja con ondas
+    n = 48
+    for i in range(1, n + 1):
+        h = 0.0010 + (HC - e - 0.0010) * i / n
+        r = RC
+        if top0 < h < top1:
+            t = (h - top0) / (top1 - top0)
+            r += 0.00005 * math.sin(t * 2 * 2 * math.pi) * math.sin(t * math.pi)
+        pts.append((r, h))
+    for k in range(1, 9):
+        a = (math.pi / 2) * k / 8
+        pts.append((RC - e + e * math.cos(a), HC - e + e * math.sin(a)))
+    nrm = []
+    for i, (r, h) in enumerate(pts):
+        r0, h0 = pts[max(0, i - 1)]
+        r1, h1 = pts[min(len(pts) - 1, i + 1)]
+        dr, dh = r1 - r0, h1 - h0
+        L = math.hypot(dr, dh) or 1
+        nrm.append((dh / L, -dr / L))
+    nrm[-1] = (0.0, 1.0)
+    return pts, nrm, RC - e
+
+
 def cap_mesh(seg=144):
-    """Tapa: lado plateado con el borde superior redondeado y la cara de arriba con la foto."""
-    e = 0.0016
-    # lado con dos ranuras finas cerca de la base (como la tapa real) y el borde de arriba redondeado
-    g = 0.00028
-    prof = [(RC * 0.985, 0.0), (RC, 0.0006), (RC, 0.0030), (RC - g, 0.0034), (RC, 0.0038), (RC, 0.0052), (RC - g, 0.0056), (RC, 0.0060), (RC, HC - e)]
-    nrm = [(0.6, -0.8), (1, 0), (1, 0), (0.8, 0.6), (0.8, -0.6), (1, 0), (0.8, 0.6), (0.8, -0.6), (1, 0)]
-    for k in range(1, 7):
-        a = (math.pi / 2) * k / 6
-        prof.append((RC - e + e * math.cos(a), HC - e + e * math.sin(a)))
-        nrm.append((math.cos(a), math.sin(a)))
-    pos, nor, idx = [], [], []
+    """Tapa: lado plateado mate y la cara de arriba con la foto (con el logotipo en relieve)."""
+    prof, nrm, rt = cap_profile()
+    pos, nor, uv, idx = [], [], [], []
     for (r, h), (nr, nh) in zip(prof, nrm):
-        for s in range(seg):
+        for s in range(seg + 1):
             th = 2 * math.pi * s / seg
             pos.append((r * math.sin(th), h, r * math.cos(th)))
             nor.append((nr * math.sin(th), nh, nr * math.cos(th)))
+            uv.append((s / seg, 1 - h / HC))
+    # el perfil va de abajo hacia arriba (al revés que el del cuerpo): el orden de los vértices se invierte
+    # para que las caras miren hacia afuera (antes miraban hacia adentro y desde arriba la tapa se veía hueca)
     for j in range(len(prof) - 1):
         for s in range(seg):
-            a, b = j * seg + s, j * seg + (s + 1) % seg
-            c, d = a + seg, b + seg
-            idx += [a, c, b, b, c, d]
-    side = (pos, nor, None, idx)
-    rt = RC - e
+            a, b = j * (seg + 1) + s, j * (seg + 1) + s + 1
+            c, d = a + seg + 1, b + seg + 1
+            idx += [a, b, c, b, d, c]
+    side = (pos, nor, uv, idx)
     tp, tn, tu, ti = [(0.0, HC, 0.0)], [(0, 1, 0)], [(0.5, 0.5)], []
     for s in range(seg):
         th = 2 * math.pi * s / seg
@@ -151,7 +174,15 @@ def cap_mesh(seg=144):
         tu.append((0.5 + 0.5 * x / rt, 0.5 + 0.5 * z / rt))
     for s in range(seg):
         ti += [0, 1 + s, 1 + (s + 1) % seg]
-    return side, (tp, tn, tu, ti)
+    # cara de abajo (se ve si se mira la tapa suelta desde abajo, por ejemplo en realidad aumentada)
+    bp, bn, bi = [(0.0, 0.0012, 0.0)], [(0, -1, 0)], []
+    for s in range(seg):
+        th = 2 * math.pi * s / seg
+        bp.append((RC * 0.975 * math.sin(th), 0.0012, RC * 0.975 * math.cos(th)))
+        bn.append((0, -1, 0))
+    for s in range(seg):
+        bi += [0, 1 + (s + 1) % seg, 1 + s]
+    return side, (tp, tn, tu, ti), (bp, bn, None, bi)
 
 
 def ring_text(text, radius=0.034, height=0.0075, depth=0.0024):
@@ -340,7 +371,7 @@ class Capsules:
 
 def scene(name_text, prefix, animated=True):
     side, base = body_mesh()
-    cside, ctop = cap_mesh()
+    cside, ctop, cbot = cap_mesh()
     faces, sides = ring_text(name_text)
     rp, rn, ri = ring_mesh(0.030, 0.033)
     ctop_half, cbot_half = A.capsule_halves(length=0.0217, radius=0.0038)
@@ -353,7 +384,7 @@ def scene(name_text, prefix, animated=True):
             (wall[0], wall[1], wall[3], 'interior', None),
             (hole[0], hole[1], hole[3], 'interior', None),
         ],
-        'Tapa': [(cside[0], cside[1], cside[3], 'plata', None), (ctop[0], ctop[1], ctop[3], 'tapaFoto', ctop[2])],
+        'Tapa': [(cside[0], cside[1], cside[3], 'plata', cside[2]), (ctop[0], ctop[1], ctop[3], 'tapaFoto', ctop[2]), (cbot[0], cbot[1], cbot[3], 'interior', None)],
     }
     nodes = [
         {'name': 'Frasco', 'parent': None, 'anim': (lambda t: ((0, bottle_at(t)[0], 0), qy(bottle_at(t)[1]), bottle_at(t)[2])) if animated else None},
@@ -365,8 +396,10 @@ def scene(name_text, prefix, animated=True):
         'etiqueta': {'texture': f'{prefix}etiqueta', 'rough': 0.34, 'clearcoat': (0.7, 0.14)},
         'blanco': {'color': WHITE, 'rough': 0.38},
         'interior': {'color': (0.16, 0.2, 0.21), 'rough': 0.8},
-        'plata': {'color': SILVER, 'rough': 0.55, 'metal': 0.55},
-        'tapaFoto': {'texture': f'{prefix}tapa', 'rough': 0.5, 'metal': 0.3},
+        # la tapa es plástico plateado mate (no metal pulido): poco metálica y rugosa, así se ve igual en
+        # cualquier visor (catálogo, Scene Viewer, AR Quick Look) sin reflejos de lámparas
+        'plata': {'texture': 'tapaLado', 'rough': 0.5, 'metal': 0.38},
+        'tapaFoto': {'texture': f'{prefix}tapa', 'rough': 0.52, 'metal': 0.34},
     }
     if animated:
         meshes['Nombre'] = [(faces[0], faces[1], faces[3], 'nombreFrente', None), (sides[0], sides[1], sides[3], 'nombreCanto', None)]
@@ -571,10 +604,53 @@ def write_usdz(path, scene_, files):
             raise SystemExit(f'No se pudo crear {path}')
 
 
+def cap_top(src):
+    """La foto de la cara de arriba de la tapa, aclarada al tono del lado (la foto quedó oscura) y sin el
+    borde sombreado; se guarda junto a la original como <nombre>-ajustada.jpg."""
+    from PIL import Image, ImageFilter
+    import numpy as np
+
+    im = Image.open(src).convert('RGB')
+    a = np.asarray(im).astype(np.float32)
+    H, W = a.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W]
+    rr = np.hypot(xx - W / 2, yy - H / 2) / (W / 2)
+    L = a.mean(2)
+    # sombreado de baja frecuencia (luz de la foto) → se aplana y se lleva al gris del lado
+    low = np.asarray(Image.fromarray(L.astype(np.uint8)).filter(ImageFilter.GaussianBlur(W / 10))).astype(np.float32)
+    target = np.array(SILVER, np.float32) * 255
+    flat = (L - low)[..., None] * 1.15 + target[None, None, :]
+    # fuera del disco (borde y fondo de la foto) queda el gris liso
+    m = np.clip((0.97 - rr) / 0.04, 0, 1)[..., None]
+    out = flat * m + target[None, None, :] * (1 - m)
+    dst = os.path.splitext(src)[0] + '-ajustada.jpg'
+    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(dst, quality=92)
+    return dst
+
+
+def cap_grain(tex):
+    """Grano fino del plástico arenado de la tapa (lado): gris plateado con puntitos claros y oscuros."""
+    from PIL import Image
+    import numpy as np
+
+    rng = np.random.default_rng(7)
+    W, H = 2048, 384
+    n = rng.normal(0, 1, (H, W)).astype(np.float32)
+    from scipy.ndimage import gaussian_filter
+
+    # se repite sin costura alrededor de la tapa (desenfoque con borde envolvente)
+    fine = gaussian_filter(n * 40, 0.6, mode='wrap')
+    base = np.array(SILVER, np.float32) * 255
+    out = base[None, None, :] + fine[..., None] * 0.35
+    dst = os.path.join(tex, 'tapa-lado.jpg')
+    Image.fromarray(out.clip(0, 255).astype(np.uint8)).save(dst, quality=90)
+    return dst
+
+
 def main(tex, static_dir=None):
     os.makedirs(OUT, exist_ok=True)
     for pid, title, prefix, text in (('pan', 'PANCREOGEN', '', 'PANCREOGEN • 90 CÁPSULAS • '), ('pan-f', 'PANCRIVA (ficticio)', 'ficticio-', 'PANCRIVA • 90 CÁPSULAS • ')):
-        files = {f'{prefix}etiqueta': os.path.join(tex, f'{prefix}etiqueta.jpg'), f'{prefix}tapa': os.path.join(tex, f'{prefix}tapa.jpg')}
+        files = {f'{prefix}etiqueta': os.path.join(tex, f'{prefix}etiqueta.jpg'), f'{prefix}tapa': cap_top(os.path.join(tex, f'{prefix}tapa.jpg')), 'tapaLado': cap_grain(tex)}
         images = {k: (open(v, 'rb').read(), 'image/jpeg') for k, v in files.items()}
         sc = scene(text, prefix)
         write_glb(os.path.join(OUT, f'{pid}.glb'), title, sc, images)
