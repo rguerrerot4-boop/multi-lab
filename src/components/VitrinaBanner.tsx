@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Image, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect } from 'react';
+import { Image, Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { PressableScale } from '@/components/ui';
 import { PANCREOGEN } from '@/data/pancreogen';
+import { arModelUrls } from '@/lib/ar';
 import { CORAESSENS } from '@/data/vitrina';
 import { colors, font, packColors, radius, space } from '@/theme';
 
@@ -41,6 +43,12 @@ const P = packColors.pancreogen;
 
 /** Acceso al catálogo 3D de PANCREOGEN (frasco 360°), con los colores de su etiqueta */
 export function PancreogenBanner() {
+  // en la web empieza a descargar el frasco 3D apenas se ve el banner (la ficha abre más rápido)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const t = setTimeout(() => void import('@/lib/bottleGL').then((m) => m.preloadBottle(arModelUrls('pan').glb)).catch(() => undefined), 1200);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <PressableScale onPress={() => router.push('/producto/pan')} accessibilityLabel="Abrir el catálogo 3D de PANCREOGEN">
       <View style={{ borderRadius: radius.xl, overflow: 'hidden', minHeight: 132 }}>
@@ -57,7 +65,7 @@ export function PancreogenBanner() {
             <Ionicons name="arrow-forward" size={16} color={colors.white} />
           </View>
         </LinearGradient>
-        <Image source={PANCREOGEN.thumb.real} style={{ position: 'absolute', right: 26, top: 10, width: 112 * (298 / 915), height: 112, transform: [{ rotate: '-7deg' }] }} resizeMode="contain" accessibilityIgnoresInvertColors />
+        <Image source={PANCREOGEN.thumb.real} style={{ position: 'absolute', right: 26, top: 10, width: 112 * (292 / 900), height: 112, transform: [{ rotate: '-7deg' }] }} resizeMode="contain" accessibilityIgnoresInvertColors />
       </View>
     </PressableScale>
   );

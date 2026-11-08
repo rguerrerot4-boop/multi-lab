@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { router, useIsFocused } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { Animated, Easing, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
@@ -116,11 +116,22 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
     return () => clearInterval(t);
   }, [presenting]);
 
-  // entrada: el frasco cae girando desde arriba y rebota
+  // entrada: el frasco cae girando desde arriba y frena suave (sin rebote: el rebote se veía como temblor).
+  // En la web espera a que el frasco 3D esté listo (como mucho 2,5 s) para no cambiar de imágenes a 3D a
+  // mitad de la entrada.
+  const focused = useIsFocused();
+  const [bottleReady, setBottleReady] = useState(false);
+  const onBottleReady = useCallback(() => setBottleReady(true), []);
+  useEffect(() => {
+    if (bottleReady) return;
+    const t = setTimeout(() => setBottleReady(true), 2500);
+    return () => clearTimeout(t);
+  }, [bottleReady]);
   useEffect(() => {
     if (reduce) return intro.setValue(1);
-    Animated.spring(intro, { toValue: 1, useNativeDriver: true, stiffness: 70, damping: 11, mass: 1, delay: 150 } as Animated.SpringAnimationConfig).start();
-  }, [intro, reduce]);
+    if (!bottleReady) return;
+    Animated.timing(intro, { toValue: 1, duration: 1500, delay: 80, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [intro, reduce, bottleReady]);
   // flota suave en el sitio
   const bob = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -670,39 +681,43 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
         </View>
 
         {/* ---------- el frasco: baja por el catálogo con el desplazamiento ---------- */}
-        <FlyingBottle
-          scrollY={scrollY}
-          Hs={Hs}
-          base={base}
-          fly={fly}
-          introY={introY}
-          bob={bob}
-          reduce={reduce}
-          hidden={stickyOff}
-          landings={[
-            { key: 'nut', pose: POSES.nutricional, at: nutA, vis: fly.nutVis, rot: rotNut },
-            { key: 'fin', pose: POSES.cierre, at: cierreA, vis: fly.endVis, rot: rotEnd },
-          ].map((l) => ({ ...l, left: side + l.pose.x * W, top: l.at + l.pose.y * Hs - base / 2 }))}
-          frames={frames}
-          model={model}
-          panHandlers={pan.panHandlers}
-        >
-          <Bottle360
-            key={mode}
+        {/* solo con la ficha a la vista: si se abre otra pantalla encima, el 3D se libera */}
+        {focused && (
+          <FlyingBottle
+            scrollY={scrollY}
+            Hs={Hs}
+            base={base}
+            fly={fly}
+            introY={introY}
+            bob={bob}
+            reduce={reduce}
+            hidden={stickyOff}
+            landings={[
+              { key: 'nut', pose: POSES.nutricional, at: nutA, vis: fly.nutVis, rot: rotNut },
+              { key: 'fin', pose: POSES.cierre, at: cierreA, vis: fly.endVis, rot: rotEnd },
+            ].map((l) => ({ ...l, left: side + l.pose.x * W, top: l.at + l.pose.y * Hs - base / 2 }))}
             frames={frames}
             model={model}
-            open={openFrames}
-            rot={rot}
-            openProgress={openProgress}
-            height={base}
-            spots={spots}
-            showSpots={spotsVis}
-            activeSpot={spot?.id ?? null}
-            onSpot={focusSpot}
-            reduce={reduce}
-            spotColor={C.teal}
-          />
-        </FlyingBottle>
+            panHandlers={pan.panHandlers}
+          >
+            <Bottle360
+              key={mode}
+              frames={frames}
+              model={model}
+              onReady={onBottleReady}
+              open={openFrames}
+              rot={rot}
+              openProgress={openProgress}
+              height={base}
+              spots={spots}
+              showSpots={spotsVis}
+              activeSpot={spot?.id ?? null}
+              onSpot={focusSpot}
+              reduce={reduce}
+              spotColor={C.teal}
+            />
+          </FlyingBottle>
+        )}
       </Animated.ScrollView>
 
       {/* ---------- arriba: volver, cronómetro y nombre real / ficticio ---------- */}

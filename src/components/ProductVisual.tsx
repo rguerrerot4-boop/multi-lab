@@ -17,7 +17,7 @@ export function ProductVisual({ product, height = 150, view = 0 }: { product: Pr
         <View style={[s.capsH, { top: height * 0.12, left: -height * 0.2, width: height * 0.9, height: height * 0.28 }]} />
         <Image
           source={view === 1 ? product.bottle.frames[10] : view === 2 ? product.bottle.frames[50] : product.bottle.thumb}
-          style={view ? { width: bh * 0.42, height: bh } : { width: bh * (298 / 915), height: bh }}
+          style={view ? { width: bh * 0.42, height: bh } : { width: bh * (292 / 900), height: bh }}
           resizeMode="contain"
           accessibilityLabel={`Foto del frasco de ${product.name}`}
         />

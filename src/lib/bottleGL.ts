@@ -37,6 +37,11 @@ function loadModel(url: string) {
   return p;
 }
 
+/** empieza a descargar el modelo antes de abrir la ficha (por ejemplo, al ver el banner) */
+export function preloadBottle(url: string) {
+  void loadModel(url).catch(() => undefined);
+}
+
 export interface GLBottle {
   /** dibuja el frasco girado `frame` cuadros (60 = una vuelta) y abierto `open` (0–1) */
   render(frame: number, open: number): void;
@@ -128,8 +133,10 @@ export async function createBottleGL(canvas: HTMLCanvasElement, url: string, cam
     },
     dispose() {
       mixer.stopAllAction();
-      renderer.dispose();
       env.dispose();
+      renderer.dispose();
+      // libera el contexto WebGL al salir o al cambiar de modo (los navegadores permiten pocos a la vez)
+      renderer.forceContextLoss();
     },
   };
 }

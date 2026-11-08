@@ -74,6 +74,8 @@ interface BottleProps {
   frames: ImageSourcePropType[];
   /** modelo .glb animado (web): si se puede, el frasco se dibuja en 3D real y los cuadros quedan de respaldo */
   model?: string;
+  /** avisa cuando el frasco ya se puede mostrar: en 3D real ('3d') o con los cuadros ('cuadros') */
+  onReady?: (how: '3d' | 'cuadros') => void;
   open?: ImageSourcePropType[];
   /** ángulo en cuadros (cualquier número real; 60 = una vuelta) */
   rot: Animated.Value | Animated.AnimatedInterpolation<number> | Animated.AnimatedAddition<number>;
@@ -127,7 +129,7 @@ function spotTable(spot: BottleSpot, k: number, S: number) {
 const SPOT = 34;
 
 // ---------- web: un solo bucle por cuadro escribe el estilo de los cuadros visibles ----------
-function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, spotColor, reduce, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
+function Bottle360Web({ frames, model, onReady, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, spotColor, reduce, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
   const k = height / FH;
   const width = FW * k;
   const ok = OPEN.k * k;
@@ -135,7 +137,21 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
   const host = useRef<HTMLElement | null>(null);
   const gl = useRef<GLBottle | null>(null);
   const [glOn, setGlOn] = useState(false);
+  // los cuadros (respaldo) solo se montan si no hay modelo, si el 3D falla o si tarda más de 1,8 s: así no
+  // se descargan 60 imágenes de más ni se cambia de imágenes a 3D delante de la persona
+  const [framesOn, setFramesOn] = useState(!model);
+  useEffect(() => {
+    if (!model) return setFramesOn(true);
+    if (glOn) return;
+    const t = setTimeout(() => setFramesOn(true), 1800);
+    return () => clearTimeout(t);
+  }, [model, glOn]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const readyRef = useRef(onReady);
+  readyRef.current = onReady;
+  useEffect(() => {
+    if (!model) readyRef.current?.('cuadros');
+  }, [model]);
   const size = useRef({ width, height });
   size.current = { width, height };
   const placeCanvas = (c: HTMLCanvasElement, w: number, h: number) =>
@@ -169,8 +185,13 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
         }
         b.render(nodeValue(rot as never), openProgress ? nodeValue(openProgress as never) : 0);
         setGlOn(true);
+        readyRef.current?.('3d');
       })
-      .catch(() => canvas.remove());
+      .catch(() => {
+        canvas.remove();
+        setFramesOn(true);
+        readyRef.current?.('cuadros');
+      });
     return () => {
       alive = false;
       gl.current?.dispose();
@@ -192,11 +213,11 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
   const openBox = useRef<HTMLElement | null>(null);
   const spotEls = useRef<(HTMLElement | null)[]>([]);
   const tables = useMemo(() => (spots ?? []).map((s) => spotTable(s, k, SPOT)), [spots, k]);
-  const last = useRef({ g: -1, top: -1, a: 0, v: NaN, moved: 0, o: -1, open: -1, m: NaN, vis: NaN });
+  const last = useRef<{ g: number; top: number; a: number; v: number; pv?: number; moved: number; o: number; open: number; m: number; vis: number }>({ g: -1, top: -1, a: 0, v: NaN, moved: 0, o: -1, open: -1, m: NaN, vis: NaN });
   // al cambiar de modo o de tamaño se vuelve a pintar todo
   useEffect(() => {
     last.current = { g: -1, top: -1, a: 0, v: NaN, moved: 0, o: -1, open: -1, m: NaN, vis: NaN };
-  }, [frames, open, spots, k, glOn]);
+  }, [frames, open, spots, k, glOn, framesOn]);
   useFrameLoop(() => {
     const v = nodeValue(rot as never);
     const m = ((v % FRAMES) + FRAMES) % FRAMES;
@@ -220,12 +241,16 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
     if (Number.isFinite(L.v) && Math.abs(v - L.v) > 0.0005) L.moved = now;
     L.v = v;
     const moving = now - L.moved < 160;
+    // girando rápido (la entrada, una inercia larga) no se mezcla: con cuadros que cambian tanto, la mezcla
+    // se ve como imagen doble
+    const fast = Math.abs(v - (L.pv ?? v)) > 0.45;
+    L.pv = v;
     const fl = Math.floor(m);
     const t = m - fl;
     const g = opened ? -2 : fl % FRAMES;
     const top = opened ? -2 : (fl + 1) % FRAMES;
-    const want = moving ? t : t > 0.5 ? 1 : 0;
-    L.a = moving ? want : L.a + (want - L.a) * 0.2;
+    const want = moving && !fast ? t : t > 0.5 ? 1 : 0;
+    L.a = moving && !fast ? want : fast ? want : L.a + (want - L.a) * 0.2;
     if (g !== L.g || top !== L.top) {
       [L.g, L.top].forEach((n) => n >= 0 && n !== g && n !== top && setStyle(giroEls.current[n], 'opacity', '0'));
       if (g >= 0) {
@@ -275,10 +300,10 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
     <View ref={(r) => void (host.current = domEl(r))} style={{ width, height }} pointerEvents="box-none">
       <FloorShadow width={width} k={k} shadow={shadow} />
       {/* con 3D real los cuadros no se montan (menos memoria en el teléfono) */}
-      {!glOn && frames.map((src, i) => (
+      {!glOn && framesOn && frames.map((src, i) => (
         <Image key={i} ref={(r) => void (giroEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: 0 }} />
       ))}
-      {open && !glOn ? (
+      {open && !glOn && framesOn ? (
         <View ref={(r) => void (openBox.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0, zIndex: 3 }}>
           {open.map((src, i) => (
             <Image key={i} ref={(r) => void (openEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }} />
@@ -295,9 +320,10 @@ function Bottle360Web({ frames, model, open, rot, openProgress, height, spots, s
 }
 
 // ---------- nativo: cada cuadro con su opacidad animada (controlador nativo) ----------
-function Bottle360Native({ frames, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, reduce, spotColor, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
+function Bottle360Native({ frames, onReady, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, reduce, spotColor, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
   const k = height / FH;
   const width = FW * k;
+  useEffect(() => onReady?.('cuadros'), [onReady]);
   const mod = useMemo(() => Animated.modulo(rot as Animated.Animated as never, FRAMES), [rot]);
   // los cuadros de giro se ocultan mientras se ve la apertura
   const giroVis = useMemo(
@@ -443,7 +469,7 @@ function SpotFace({ n, active, onPress, reduce, color }: { n: number; active: bo
 
 /** Miniatura fija del frasco (cuadro de frente), recortada */
 export function BottleThumb({ source, height }: { source: ImageSourcePropType; height: number }) {
-  return <Image source={source} style={{ height, width: height * (298 / 915) }} resizeMode="contain" accessibilityIgnoresInvertColors />;
+  return <Image source={source} style={{ height, width: height * (292 / 900) }} resizeMode="contain" accessibilityIgnoresInvertColors />;
 }
 
 /** Frasco que gira solo (vistas previas) */
