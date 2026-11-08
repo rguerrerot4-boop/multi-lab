@@ -1,0 +1,254 @@
+// Frasco en 360° hecho con cuadros renderizados del modelo 3D (como las páginas de producto que giran
+// con el desplazamiento). Cada cuadro es una imagen con fondo transparente; se muestra el cuadro del
+// ángulo actual cambiando su opacidad (todo con el controlador nativo de animaciones).
+// También dibuja la secuencia de apertura (la tapa se desenrosca y salen las cápsulas) y los puntos
+// interactivos, que siguen la etiqueta al girar porque su posición se proyecta con la misma cámara
+// con la que se renderizaron los cuadros (scripts/pancreogen: pan.html).
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Easing, Image, Pressable, Text, View, type ImageSourcePropType } from 'react-native';
+import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { font } from '@/theme';
+
+export const FRAMES = 60; // una vuelta: 6° por cuadro
+const FW = 420; // tamaño de cada cuadro de giro (px)
+const FH = 1000;
+// cámara de los cuadros de giro: perspectiva de 18°, a 0,44 m, 6° desde arriba, mirando a 6,18 cm de altura
+const CAM = { fov: (18 * Math.PI) / 180, dist: 0.44, elev: (6 * Math.PI) / 180, ty: 0.0618 };
+const BODY_R = 0.0201; // radio de la etiqueta (m)
+const BODY_H = 0.0956; // alto del cuerpo, de la base al borde de la tapa
+// cuadros de apertura (760 × 1000) con otra cámara: el frasco se ve 1,5013 veces más chico.
+// Su punto (380, 945) coincide con el punto (210, 966) del cuadro de giro (centro de la base).
+const OPEN = { w: 760, h: 1000, k: 1.5013, ax: 380, ay: 945, gx: 210, gy: 966 };
+
+/** proyecta un punto de la etiqueta (u, v) girada `frame` cuadros a píxeles del cuadro de giro */
+export function project(u: number, v: number, frame: number) {
+  const th = (u - 0.5) * 2 * Math.PI + (frame * 2 * Math.PI) / FRAMES;
+  const P = [BODY_R * Math.sin(th), BODY_H * (1 - v), BODY_R * Math.cos(th)];
+  const C = [0, CAM.ty + Math.sin(CAM.elev) * CAM.dist, Math.cos(CAM.elev) * CAM.dist];
+  // ejes de la cámara (mira al objetivo, «arriba» = +y)
+  const f = [0 - C[0], CAM.ty - C[1], 0 - C[2]];
+  const fl = Math.hypot(f[0], f[1], f[2]);
+  const F = [f[0] / fl, f[1] / fl, f[2] / fl];
+  const Rt = [F[2] * 0 - F[1] * 0, 0, 0]; // cross(F, up) con up = (0,1,0) → (-F.z, 0, F.x)
+  Rt[0] = -F[2];
+  Rt[2] = F[0];
+  const rl = Math.hypot(Rt[0], Rt[1], Rt[2]);
+  const Rn = [Rt[0] / rl, Rt[1] / rl, Rt[2] / rl];
+  const U = [Rn[1] * F[2] - Rn[2] * F[1], Rn[2] * F[0] - Rn[0] * F[2], Rn[0] * F[1] - Rn[1] * F[0]];
+  const d = [P[0] - C[0], P[1] - C[1], P[2] - C[2]];
+  const xc = d[0] * Rn[0] + d[1] * Rn[1] + d[2] * Rn[2];
+  const yc = d[0] * U[0] + d[1] * U[1] + d[2] * U[2];
+  const zc = d[0] * F[0] + d[1] * F[1] + d[2] * F[2];
+  const k = FH / 2 / Math.tan(CAM.fov / 2);
+  return { x: FW / 2 + (xc / zc) * k, y: FH / 2 - (yc / zc) * k, facing: Math.cos(th) };
+}
+
+/** cuadro (giro) en el que un punto de la etiqueta queda de frente */
+export const frameFacing = (u: number) => -(u - 0.5) * FRAMES;
+
+export interface BottleSpot {
+  id: string;
+  u: number;
+  v: number;
+}
+
+export function Bottle360({
+  frames,
+  open,
+  rot,
+  openProgress,
+  height,
+  spots,
+  showSpots,
+  activeSpot,
+  onSpot,
+  reduce,
+  spotColor,
+  shadow = 'rgba(0,0,0,0.45)',
+}: {
+  frames: ImageSourcePropType[];
+  open?: ImageSourcePropType[];
+  /** ángulo en cuadros (cualquier número real; 60 = una vuelta) */
+  rot: Animated.Value | Animated.AnimatedInterpolation<number> | Animated.AnimatedAddition<number>;
+  /** 0 = cerrado, 1 = tapa arriba y cápsulas afuera */
+  openProgress?: Animated.AnimatedInterpolation<number> | Animated.Value;
+  height: number;
+  spots?: BottleSpot[];
+  showSpots?: Animated.AnimatedInterpolation<number> | Animated.Value;
+  activeSpot?: string | null;
+  onSpot?: (id: string) => void;
+  reduce?: boolean;
+  spotColor: string;
+  shadow?: string;
+}) {
+  const k = height / FH;
+  const width = FW * k;
+  const mod = useMemo(() => Animated.modulo(rot as Animated.Animated as never, FRAMES), [rot]);
+  // los cuadros de giro se ocultan mientras se ve la apertura
+  const giroVis = useMemo(
+    () => (openProgress ? openProgress.interpolate({ inputRange: [0, 0.004, 1], outputRange: [1, 0, 0], extrapolate: 'clamp' }) : null),
+    [openProgress],
+  );
+  const opacity = (i: number) => {
+    const o =
+      i === 0
+        ? mod.interpolate({ inputRange: [0, 0.5, 0.501, FRAMES - 0.501, FRAMES - 0.5, FRAMES], outputRange: [1, 1, 0, 0, 1, 1], extrapolate: 'clamp' })
+        : mod.interpolate({ inputRange: [i - 0.501, i - 0.5, i + 0.5, i + 0.501], outputRange: [0, 1, 1, 0], extrapolate: 'clamp' });
+    return giroVis ? Animated.multiply(o, giroVis) : o;
+  };
+  const openIdx = useMemo(() => (openProgress && open ? openProgress.interpolate({ inputRange: [0, 1], outputRange: [0, open.length - 1], extrapolate: 'clamp' }) : null), [openProgress, open]);
+  const openOpacity = (i: number) =>
+    openIdx!.interpolate({
+      inputRange: i === 0 ? [0, 0.5, 0.501] : [i - 0.501, i - 0.5, i + 0.5, i + 0.501],
+      outputRange: i === 0 ? [1, 1, 0] : [0, 1, 1, 0],
+      extrapolate: 'clamp',
+    });
+  const openVis = useMemo(() => (openProgress ? openProgress.interpolate({ inputRange: [0, 0.004, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }) : null), [openProgress]);
+  const ok = OPEN.k * k;
+
+  return (
+    <View style={{ width, height }} pointerEvents="box-none">
+      {/* sombra en el piso */}
+      <View pointerEvents="none" style={{ position: 'absolute', left: -width * 0.3, right: -width * 0.3, top: 966 * k - width * 0.16, height: width * 0.32 }}>
+        <Svg width="100%" height="100%" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <Defs>
+            <RadialGradient id="sh" cx="50" cy="16" rx="50" ry="16" gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={shadow} stopOpacity="1" />
+              <Stop offset="0.45" stopColor={shadow} stopOpacity="0.45" />
+              <Stop offset="1" stopColor={shadow} stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx="50" cy="16" rx="50" ry="16" fill="url(#sh)" />
+        </Svg>
+      </View>
+      {frames.map((src, i) => (
+        <Animated.Image key={i} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: opacity(i) }} />
+      ))}
+      {open && openIdx && openVis ? (
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: openVis }}>
+          {open.map((src, i) => (
+            <Animated.Image key={i} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width: OPEN.w * ok, height: OPEN.h * ok, opacity: openOpacity(i) }} />
+          ))}
+        </Animated.View>
+      ) : null}
+      {spots?.map((s, n) => (
+        <SpotDot key={s.id} spot={s} n={n + 1} mod={mod} k={k} vis={showSpots} active={activeSpot === s.id} onPress={() => onSpot?.(s.id)} reduce={!!reduce} color={spotColor} />
+      ))}
+    </View>
+  );
+}
+
+/** Punto interactivo: sigue la etiqueta al girar, late y se apaga cuando queda del lado de atrás */
+function SpotDot({
+  spot,
+  n,
+  mod,
+  k,
+  vis,
+  active,
+  onPress,
+  reduce,
+  color,
+}: {
+  spot: BottleSpot;
+  n: number;
+  mod: Animated.AnimatedInterpolation<number>;
+  k: number;
+  vis?: Animated.AnimatedInterpolation<number> | Animated.Value;
+  active: boolean;
+  onPress: () => void;
+  reduce: boolean;
+  color: string;
+}) {
+  const S = 34;
+  const { xs, ys, os, inputs } = useMemo(() => {
+    const inputs: number[] = [];
+    const xs: number[] = [];
+    const ys: number[] = [];
+    const os: number[] = [];
+    for (let i = 0; i <= FRAMES * 2; i++) {
+      const f = i / 2;
+      const p = project(spot.u, spot.v, f);
+      inputs.push(f);
+      xs.push(p.x * k - S / 2);
+      ys.push(p.y * k - S / 2);
+      // visible solo de frente (se apaga al acercarse al borde)
+      os.push(Math.max(0, Math.min(1, (p.facing - 0.25) / 0.3)));
+    }
+    return { xs, ys, os, inputs };
+  }, [spot.u, spot.v, k]);
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) return;
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, delay: n * 140, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduce, n]);
+  const facing = mod.interpolate({ inputRange: inputs, outputRange: os });
+  const opacity = vis ? Animated.multiply(facing, vis) : facing;
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: S,
+        height: S,
+        opacity,
+        transform: [{ translateX: mod.interpolate({ inputRange: inputs, outputRange: xs }) }, { translateY: mod.interpolate({ inputRange: inputs, outputRange: ys }) }],
+      }}
+    >
+      <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Punto ${n} del frasco`} style={{ width: S, height: S, alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            width: S,
+            height: S,
+            borderRadius: S / 2,
+            borderWidth: 2,
+            borderColor: '#FFFFFF',
+            opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 0] }),
+            transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.7] }) }],
+          }}
+        />
+        <View
+          style={{
+            width: active ? 26 : 22,
+            height: active ? 26 : 22,
+            borderRadius: 13,
+            backgroundColor: active ? '#FFFFFF' : color,
+            borderWidth: 2,
+            borderColor: '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOpacity: 0.35,
+            shadowRadius: 6,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 4,
+          }}
+        >
+          <Text style={{ fontFamily: font.bold, fontSize: 11, color: active ? color : '#FFFFFF' }}>{n}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/** Miniatura fija del frasco (cuadro de frente), recortada */
+export function BottleThumb({ source, height }: { source: ImageSourcePropType; height: number }) {
+  return <Image source={source} style={{ height, width: height * (298 / 915) }} resizeMode="contain" accessibilityIgnoresInvertColors />;
+}
+
+/** Frasco que gira solo (vistas previas) */
+export function BottleSpin({ frames, height, reduce, seconds = 12 }: { frames: ImageSourcePropType[]; height: number; reduce?: boolean; seconds?: number }) {
+  const rot = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) return;
+    const loop = Animated.loop(Animated.timing(rot, { toValue: FRAMES, duration: seconds * 1000, easing: Easing.linear, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [rot, reduce, seconds]);
+  return <Bottle360 frames={frames} rot={rot} height={height} spotColor="#1F6B6E" reduce={reduce} />;
+}

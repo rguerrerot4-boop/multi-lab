@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HotspotCard, Product3D } from '@/components/Product3D';
 import { goBack } from '@/components/ui';
 import { productById } from '@/data/mock';
+import { useReduceMotion } from '@/components/showcase';
+import { BottleViewer } from '@/screens/FichaPancreogen';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
 
@@ -22,6 +24,9 @@ export default function Visor() {
   const [spot, setSpot] = useState<number | null>(null);
 
   const close = () => goBack(p ? `/producto/${p.id}` : '/');
+  const reduce = useReduceMotion();
+  // frasco 360° (cuadros del modelo 3D): su propio visor
+  if (p?.bottle) return <BottleViewer frames={p.bottle.frames} title={p.name} onClose={close} reduce={reduce} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

@@ -402,7 +402,7 @@ export default function Ficha({ product: p, presenting = false, visita, initialM
 
 // ---------- partes ----------
 
-function ArNote({ result, pal, hasCard, top, reduce, onDone }: { result: ArResult; pal: FichaPal; hasCard: boolean; top: number; reduce: boolean; onDone: () => void }) {
+export function ArNote({ result, pal, hasCard, top, reduce, onDone }: { result: ArResult; pal: FichaPal; hasCard: boolean; top: number; reduce: boolean; onDone: () => void }) {
   const alt = hasCard ? 'la vista 3D o la tarjeta impresa' : 'la vista 3D';
   const text =
     result === 'abierto'
@@ -797,7 +797,7 @@ function Outro({ name, stamp, show, reduce, width, pal }: { name: string; stamp:
   );
 }
 
-function ActionBar({ show, pal, actions, bottom, reduce }: { show: boolean; pal: FichaPal; actions: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void }[]; bottom: number; reduce: boolean }) {
+export function ActionBar({ show, pal, actions, bottom, reduce }: { show: boolean; pal: FichaPal; actions: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; onPress: () => void }[]; bottom: number; reduce: boolean }) {
   const a = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(a, { toValue: show ? 1 : 0, duration: reduce ? 0 : 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();

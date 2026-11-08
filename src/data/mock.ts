@@ -5,6 +5,7 @@
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
 import type { BoxTextures } from '@/components/PhotoBox3D';
+import type { ImageSourcePropType } from 'react-native';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
 export type Role = 'medico' | 'visitador';
@@ -86,6 +87,8 @@ export interface Product {
   real?: { note: string };
   /** caja 3D con las fotos del empaque (vitrina 3D) */
   photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string };
+  /** frasco fotografiado en 360° (cuadros renderizados del modelo 3D), con su propio catálogo */
+  bottle?: { frames: ImageSourcePropType[]; framesFicticio: ImageSourcePropType[]; thumb: ImageSourcePropType; thumbFicticio: ImageSourcePropType };
   arTitle?: string; // título en el visor AR del teléfono
   /** cifras destacadas de la ficha (si no hay, se arman con la presentación, el componente y la concentración) */
   specs?: { value: string; label: string; note: string }[];
@@ -228,6 +231,7 @@ export const INITIAL_KIT: Record<string, Record<DeliveryKind, number>> = {
   p3: { muestra: 5, impreso: 20, digital: 99 },
   p4: { muestra: 20, impreso: 40, digital: 99 },
   cor: { muestra: 10, impreso: 15, digital: 99 },
+  pan: { muestra: 6, impreso: 15, digital: 99 },
 };
 
 export interface RequestItem {
@@ -575,6 +579,55 @@ export const products: Product[] = [
     // las fotos del empaque (photo) se agregan en src/data/vitrina.ts, que se carga en src/app/_layout.tsx
     arTitle: 'CORAESSENS · muestra médica',
     sizeCm: { w: 3.6, h: 5.2, d: 3.6 },
+  },
+  {
+    // PRODUCTO REAL (con permiso de Nutrabiotics). Todo el texto está tomado del frasco (src/data/pancreogen-info.ts).
+    id: 'pan',
+    name: 'PANCREOGEN',
+    lab: 'Nutrabiotics',
+    category: 'Suplementos',
+    form: 'Cápsulas · frasco de 90',
+    component: 'Polvo liofilizado de páncreas bovino',
+    concentration: '537,56 mg por cápsula',
+    tagline: 'Fórmula a base de menudo (páncreas) bovino liofilizado, vitaminas y minerales esenciales',
+    description:
+      'Suplemento alimenticio en cápsulas a base de polvo liofilizado de páncreas bovino, canela, vitaminas y minerales esenciales. La vitamina D ayuda al organismo a utilizar el calcio y el fósforo.',
+    uses: ['Suplemento dietario', 'Vía oral · adultos mayores de 18 años'],
+    howTo: ['Vía oral', 'Adultos mayores de 18 años: 1 cápsula 3 veces al día'],
+    precautions: [
+      'Manténgase fuera del alcance de los niños',
+      'No es adecuado para ser consumido como única fuente de alimento',
+      'No superar la dosis recomendada',
+      'Almacénese en un lugar fresco y seco en su envase y empaque original',
+      'No use el producto si el sello de seguridad está roto o despegado',
+    ],
+    docs: ['Fotos del frasco (360°).png'],
+    slides: [
+      { title: 'Fórmula', body: 'Polvo liofilizado de páncreas bovino, canela, vitaminas (C, D3 y biotina) y minerales (manganeso, zinc, cromo y vanadio).', icon: 'flask-outline' },
+      { title: 'Modo de empleo', body: 'Vía oral: adultos mayores de 18 años tomar 1 cápsula 3 veces al día.', icon: 'time-outline' },
+      { title: 'Presentación', body: 'Frasco de 90 cápsulas de 537,56 mg. Contenido neto 48,3 g. Porción diaria: 3 cápsulas; 30 porciones por envase.', icon: 'cube-outline' },
+    ],
+    icon: 'nutrition-outline',
+    hue: '#1F6B6E', // teal de la etiqueta (packColors.pancreogen.teal)
+    isNew: true,
+    keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'páncreas bovino', 'canela', 'vitamina d', 'vitamina c', 'biotina', 'zinc', 'cromo', 'manganeso', 'vanadio', 'oral'],
+    areas: ['Medicina general'], // el frasco no lo dirige a ninguna especialidad
+    real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del frasco.' },
+    specs: [
+      { value: '90', label: 'Cápsulas por frasco', note: 'Suplemento dietario' },
+      { value: '3', label: 'Cápsulas al día', note: '1 cápsula 3 veces al día' },
+      { value: '48,3 g', label: 'Contenido neto', note: '90 cápsulas de 537,56 mg' },
+    ],
+    notes: [
+      { title: 'Páncreas bovino', text: 'Polvo liofilizado de páncreas bovino.' },
+      { title: 'Vitamina D', text: '48,74 mcg por porción diaria (975 %VDR). Ayuda al organismo a utilizar el calcio y el fósforo.' },
+      { title: 'Cromo', text: '585,3 mcg por porción diaria (488 %VDR).' },
+      { title: 'Manganeso', text: '8,25 mg por porción diaria (413 %VDR).' },
+      { title: 'Zinc', text: '15,39 mg por porción diaria (103 %VDR).' },
+    ],
+    // el frasco 360° (bottle) se agrega en src/data/pancreogen.ts, que se carga en src/app/_layout.tsx
+    arTitle: 'PANCREOGEN · Nutrabiotics',
+    sizeCm: { w: 4, h: 12.4, d: 4 },
   },
 ];
 

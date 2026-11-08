@@ -45,6 +45,8 @@ for name, folder in (("R", "400Regular"), ("M", "500Medium"), ("S", "600SemiBold
 
 
 def palette(p):
+    if p["id"] == "pan":  # teal de la etiqueta de PANCREOGEN
+        return dict(main="#1F6B6E", mainDeep="#0E3A3C", bg="#0E3A3C", bgDeep="#061718", paper="#EEF3F3", line="#CFDCDC", ink="#0B2526", giant="#8FD3CC", muted="#4F6467")
     if p["id"] == "cor":
         return dict(main="#C9262F", mainDeep="#99161F", bg="#5C2C78", bgDeep="#341447", paper="#FBEDEE", line="#E9C9CD", ink="#2B1236", giant="#C9262F", muted="#6E5A72")
     main = "#1E7F8C" if p["hue"] == "#63C9D6" else p["hue"]
@@ -222,7 +224,7 @@ def footer(c, p, pal, page):
 # ---------- páginas ----------
 def page_cover(c, p, pal):
     info = p.get("info") or {}
-    real = p["id"] == "cor"
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN)
     name = info.get("name", p["name"])
     hero_h = 470
     top = PH - hero_h
@@ -250,11 +252,18 @@ def page_cover(c, p, pal):
         x, y, l = r.uniform(0, PW), r.uniform(PH - 330, PH - 70), r.uniform(8, 20)
         c.line(x, y, x + l * 0.78, y + l * 0.62)
     c.restoreState()
-    # caja 3D
-    faces, (w, h, d) = faces_for(p)
-    box = render_box(faces, w, h, d)
-    bs = 300
-    c.drawImage(png(box), PW / 2 - bs / 2 + 80, PH - 52 - bs, bs, bs, mask="auto")
+    if p["id"] == "pan":
+        # frasco 360° (cuadro de frente del modelo con la etiqueta fotografiada)
+        bottle = Image.open(os.path.join(ROOT, "assets", "pancreogen", "frente.png")).convert("RGBA")
+        bh = 300
+        bw = bh * bottle.width / bottle.height
+        c.drawImage(png(bottle), PW / 2 - bw / 2 + 120, PH - 52 - bh, bw, bh, mask="auto")
+    else:
+        # caja 3D
+        faces, (w, h, d) = faces_for(p)
+        box = render_box(faces, w, h, d)
+        bs = 300
+        c.drawImage(png(box), PW / 2 - bs / 2 + 80, PH - 52 - bs, bs, bs, mask="auto")
     # logotipo (sin alterar) sobre una pastilla blanca
     logo = os.path.join(ROOT, "assets", "logo-full.png")
     lw, lh = Image.open(logo).size
@@ -325,7 +334,7 @@ def page_cover(c, p, pal):
 
 def page_detail(c, p, pal):
     info = p.get("info") or {}
-    real = p["id"] == "cor"
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN)
     c.setFillColor(white)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
     # cabecera
@@ -402,18 +411,19 @@ def page_detail(c, p, pal):
             if len(head) > 2 and head[2]:
                 c.drawRightString(x + col_w, ty, head[2])
             ty -= 14
+        fs, ld = (8.8, 11.5) if len(tb["rows"]) <= 9 else (8.0, 10.2)  # tablas largas (PANCREOGEN): letra un poco menor
         for row in tb["rows"]:
             val = row.get("value", "")
             extra = row.get("extra")
             label_w = col_w - (100 if tb.get("wide") else (96 if extra is not None else 64)) if val else col_w - 12
-            lines = wrap(c, row["label"], "Mont-R", 8.8, label_w)
+            lines = wrap(c, row["label"], "Mont-R", fs, label_w)
             if not val:
                 c.setFillColor(HexColor(pal["main"]))
                 c.circle(x + 3, ty + 3, 2.4, fill=1, stroke=0)
             c.setFillColor(HexColor(pal["ink"]))
-            c.setFont("Mont-R", 8.8)
+            c.setFont("Mont-R", fs)
             for k, ln in enumerate(lines):
-                c.drawString(x + (10 if not val else 0), ty - k * 11.5, ln)
+                c.drawString(x + (10 if not val else 0), ty - k * ld, ln)
             if val:
                 c.setFont("Mont-S", 8.8)
                 if tb.get("wide"):
@@ -426,7 +436,7 @@ def page_detail(c, p, pal):
                     if extra is not None:
                         c.setFont("Mont-R", 8.8)
                         c.drawRightString(x + col_w, ty, extra)
-            ty -= 11.5 * len(lines) + 5
+            ty -= ld * len(lines) + (5 if fs > 8.5 else 4)
             c.setStrokeColor(HexColor(pal["line"]))
             c.setLineWidth(0.5)
             c.line(x, ty + 9, x + col_w, ty + 9)
@@ -441,12 +451,13 @@ def page_detail(c, p, pal):
         c.setFillColor(HexColor(pal["ink"]))
         c.drawString(M, y, "Fabricante")
         y = para(c, M, y - 16, fab["body"], "Mont-R", 8.5, PW - 2 * M, pal["ink"], 12)
+        # (en PANCREOGEN el pie trae el registro y el contenido neto)
         y = para(c, M, y - 2, fab.get("foot", ""), "Mont-M", 8, PW - 2 * M, pal["muted"], 11) - 10
 
     # realidad aumentada con la tarjeta de este producto
     ar_url = f"{SITE}/ar-tarjeta/?p={p['id']}"
     app_url = f"{SITE}/producto/{p['id']}"
-    bh = 150
+    bh = 150 if y - 150 >= 70 else max(112, y - 70)  # si el contenido es largo, el recuadro se achica
     by = max(70, y - bh)
     c.setFillColor(HexColor(pal["bgDeep"]))
     c.roundRect(M, by, PW - 2 * M, bh, 18, fill=1, stroke=0)

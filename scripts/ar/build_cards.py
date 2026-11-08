@@ -1,7 +1,8 @@
 """Genera las tarjetas impresas de realidad aumentada (una por producto).
 
-Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS (producto real,
-con permiso) tiene su propia tarjeta con los colores de su empaque y la foto de la caja en el panel.
+Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS y PANCREOGEN
+(productos reales, con permiso) tienen su propia tarjeta con los colores de su empaque y la foto del
+producto en el panel.
 
 Cada tarjeta lleva un panel con un patrón de cápsulas distinto por producto y un código QR que abre
 la ficha del producto en PDF (public/fichas, scripts/fichas/build_fichas.py); desde la ficha se abre la
@@ -190,6 +191,78 @@ def card_coraessens():
     return im, panel
 
 
+# ---------- tarjeta propia de PANCREOGEN (colores de su etiqueta: teal, blanco y plata) ----------
+PAN = {"id": "pan", "name": "PANCREOGEN", "lab": "Nutrabiotics", "category": "Suplemento dietario", "real": True, "escala": 0.5}  # el frasco es alto: 50 %
+P_TEAL, P_DEEP, P_NIGHT, P_MINT, P_SILVER = "#1F6B6E", "#0E3A3C", "#061718", "#8FD3CC", "#C9CED2"
+
+
+def card_pancreogen():
+    from PIL import ImageFilter
+
+    im = Image.new("RGB", (CW, CH), WHITE)
+    d = ImageDraw.Draw(im)
+    # panel que reconoce la cámara: fondo teal oscuro, anillos y cápsulas teal, blancas y menta, y el frasco
+    panel = Image.new("RGB", (PANEL, CH), P_NIGHT)
+    pd = ImageDraw.Draw(panel)
+    for k, rr in enumerate(range(60, 900, 54)):  # anillos concéntricos (detalle para el seguimiento)
+        pd.ellipse((PANEL / 2 - rr, CH * 0.55 - rr, PANEL / 2 + rr, CH * 0.55 + rr), outline=P_DEEP if k % 2 else P_TEAL, width=9)
+    rnd = random.Random("multilab-pan")
+    for _ in range(54):
+        w = rnd.randint(44, 160)
+        h = rnd.randint(28, 60)
+        pill = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        a, b = rnd.choice([(P_TEAL, WHITE), (WHITE, P_MINT), (P_MINT, P_TEAL), (P_SILVER, P_DEEP)])
+        pdraw = ImageDraw.Draw(pill)
+        pdraw.rounded_rectangle((0, 0, w - 1, h - 1), h // 2, fill=a)
+        pdraw.rounded_rectangle((w // 2, 0, w - 1, h - 1), h // 2, fill=b)
+        pdraw.rectangle((w // 2, 0, w // 2 + h // 2, h - 1), fill=b)
+        pill = pill.rotate(rnd.choice([0, 25, 45, 70, 90, 115, 135, 160]), expand=True)
+        panel.paste(pill, (rnd.randint(-40, PANEL - 20), rnd.randint(-40, CH - 20)), pill)
+    bottle = Image.open(os.path.join(ROOT, "assets", "pancreogen", "frente.png")).convert("RGBA")
+    bh = 760
+    bottle = bottle.resize((round(bottle.width * bh / bottle.height), bh), Image.LANCZOS)
+    shadow = Image.new("RGBA", (bottle.width + 120, 90), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).ellipse((10, 10, bottle.width + 110, 80), fill=(0, 0, 0, 170))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(16))
+    bx, by = (PANEL - bottle.width) // 2, (CH - bh) // 2 + 10
+    panel.paste(shadow, (bx - 60, by + bh - 50), shadow)
+    panel.paste(bottle, (bx, by), bottle)
+    im.paste(panel, (0, 0))
+
+    logo = Image.open(os.path.join(ROOT, "assets", "logo-full.png")).convert("RGBA")
+    lh = 84
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    x0 = PANEL + 60
+    im.paste(logo, (x0, 60), logo)
+    y = 200
+    d.text((x0, y), "SUPLEMENTO DIETARIO", font=font("bold", 30), fill=P_TEAL)
+    y += 52
+    d.text((x0, y), "PANCREOGEN®", font=font("bold", 68), fill=P_DEEP)
+    y += 92
+    d.text((x0, y), "Nutrabiotics · 90 cápsulas", font=font("medium", 30), fill=INK_MUTED)
+    y += 60
+    badge = "Producto real · con permiso"
+    bwid = d.textlength(badge, font=font("semibold", 26)) + 44
+    d.rounded_rectangle((x0, y, x0 + bwid, y + 52), 26, fill=P_TEAL)
+    d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
+
+    qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(f"{SITE}/fichas/pan.pdf")  # abre la ficha del producto en PDF
+    qr.make(fit=True)
+    qimg = qr.make_image(fill_color=P_NIGHT, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
+    qx, qy = CW - 60 - 270, CH - 60 - 270
+    im.paste(qimg, (qx, qy))
+    ty = qy + 6
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=P_DEEP)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a la foto del frasco."]:
+        ty += 50
+        d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
+    d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)
+    d.rectangle((0, CH - 14, CW, CH), fill=P_TEAL)
+    d.rectangle((0, 0, CW - 1, CH - 1), outline="#DCE5E7", width=3)
+    return im, panel
+
+
 def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (prototipo académico)"):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
@@ -228,11 +301,16 @@ def main():
     c.save(os.path.join(OUT, "tarjetas", "cor.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "cor.png"), optimize=True)
     cards.append(c)
+    # y la de PANCREOGEN después (objetivo siguiente)
+    c, panel = card_pancreogen()
+    c.save(os.path.join(OUT, "tarjetas", "pan.png"), optimize=True)
+    panel.save(os.path.join(OUT, "objetivos", "pan.png"), optimize=True)
+    cards.append(c)
     sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
     # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
-    for p, c in zip(products + [COR], cards):
+    for p, c in zip(products + [COR, PAN], cards):
         sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
-    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR]
+    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))

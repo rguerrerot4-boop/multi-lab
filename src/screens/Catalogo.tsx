@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
-import { VitrinaBanner } from '@/components/VitrinaBanner';
+import { Destacados } from '@/components/VitrinaBanner';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
 import { categories, labOfRep, products, repLabNames } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
@@ -28,7 +28,7 @@ export default function Catalogo() {
         (cat === 'Todos' || p.category === cat) &&
         mine.includes(p.lab) &&
         (!term || `${p.name} ${p.tagline} ${p.category} ${p.lab}`.toLowerCase().includes(term)),
-    ).sort((a, b) => Number(!!b.photo) - Number(!!a.photo)); // los productos con fotos 3D van primero
+    ).sort((a, b) => Number(!!(b.photo || b.bottle)) - Number(!!(a.photo || a.bottle))); // los productos con fotos 3D van primero
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, cat]);
 
@@ -56,7 +56,7 @@ export default function Catalogo() {
                 {role === 'visitador' ? 'Elige un producto para abrir su ficha o presentarlo.' : 'Explora productos y su información multimedia.'}
               </Text>
             </View>
-            <VitrinaBanner />
+            <Destacados />
             <View style={[styles.input, { borderColor: colors.border }]}>
               <Ionicons name="search" size={18} color={colors.inkMuted} />
               <TextInput
@@ -82,7 +82,7 @@ export default function Catalogo() {
             {/* solo los productos del laboratorio del visitador (Celvia) y CORAESSENS, que se muestra con permiso */}
             <View style={[styles.row, { justifyContent: 'space-between' }]}>
               <Text style={[type.caption, { flex: 1 }]}>
-                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio) y CORAESSENS (real, con permiso)
+                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio), CORAESSENS y PANCREOGEN (reales, con permiso)
               </Text>
               <Pressable
                 onPress={() => setGrid((g) => !g)}

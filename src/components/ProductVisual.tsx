@@ -8,6 +8,22 @@ import { PressableScale, Tag, logoMark } from './ui';
 // Composición visual del producto (sustituye fotografías reales en el prototipo).
 // Usa las cápsulas del logotipo como recurso gráfico, sin alterar el logo.
 export function ProductVisual({ product, height = 150, view = 0 }: { product: Product; height?: number; view?: number }) {
+  // frasco fotografiado en 360°: el cuadro de frente sobre los colores de su etiqueta
+  if (product.bottle) {
+    const P = packColors.pancreogen;
+    const bh = height * 0.86;
+    return (
+      <LinearGradient colors={[P.teal, P.night]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.wrap, { height }]}>
+        <View style={[s.capsH, { top: height * 0.12, left: -height * 0.2, width: height * 0.9, height: height * 0.28 }]} />
+        <Image
+          source={view === 1 ? product.bottle.frames[10] : view === 2 ? product.bottle.frames[50] : product.bottle.thumb}
+          style={view ? { width: bh * 0.42, height: bh } : { width: bh * (298 / 915), height: bh }}
+          resizeMode="contain"
+          accessibilityLabel={`Foto del frasco de ${product.name}`}
+        />
+      </LinearGradient>
+    );
+  }
   // producto fotografiado: la foto real de la caja sobre los colores de su empaque
   if (product.photo) {
     const C = packColors.coraessens;

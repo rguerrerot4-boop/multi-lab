@@ -86,4 +86,17 @@ export const packColors = {
     veil: 'rgba(255, 255, 255, 0.16)', // velo blanco sobre el morado (chips, botones)
     veilLine: 'rgba(255, 255, 255, 0.4)',
   },
+  pancreogen: {
+    teal: '#1F6B6E', // teal de la etiqueta (acciones, cifras; contraste AA sobre blanco)
+    tealDeep: '#0E3A3C', // pastilla del nombre
+    night: '#061718', // fondo más profundo del catálogo
+    mint: '#8FD3CC', // brillos y acentos sobre fondo oscuro (nunca como texto sobre claro)
+    silver: '#C9CED2', // tapa plateada
+    silverDeep: '#8A9599', // franja gris de la etiqueta
+    paper: '#EEF3F3', // fondo claro de las secciones
+    ink: '#0B2526', // texto sobre fondo claro
+    line: '#CFDCDC',
+    veil: 'rgba(255, 255, 255, 0.10)',
+    veilLine: 'rgba(255, 255, 255, 0.28)',
+  },
 };

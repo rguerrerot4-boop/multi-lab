@@ -74,6 +74,16 @@ Todas respetan "reducir movimiento" del sistema.
 - Animaciones: texto gigante en bucle, trazos flotando, caja flotando y girando, tarjetas que escalan al centrarse con la foto saliendo de la tarjeta, cierre que entra por los lados. Con "reducir movimiento" todo queda quieto.
 - Tarjeta impresa propia: `card_coraessens()` en `scripts/ar/build_cards.py` (colores del empaque y la foto del frente en el panel que reconoce la cámara). Es el último objetivo de `tarjetas.mind` (índice 7) y aparece al 80 % de su tamaño (`escala` en `productos.json`). Probado con cámara simulada: reconoce CORAESSENS y las tarjetas anteriores siguen funcionando.
 
+## PANCREOGEN (frasco real, catálogo 3D con scroll)
+
+- Pantalla propia `src/screens/FichaPancreogen.tsx` (la usa `/producto/[id]` cuando el producto tiene `bottle`; también la presentación y el visor 3D). Diseño distinto al de CORAESSENS, inspirado en las páginas de producto de Apple: el frasco queda fijo en la pantalla y, al desplazarse, baja por el catálogo cambiando de lugar, tamaño y giro en cada sección (portada, explora, cápsulas, composición, información nutricional, modo de empleo, avisos, cierre). En «Cápsulas» se destapa y salen las cápsulas (cuadros renderizados que avanzan con el scroll), con contador «90 cápsulas» fijo.
+- Frasco 360°: `src/components/Bottle360.tsx`, 60 cuadros WebP con transparencia (6° cada uno) en `assets/pancreogen/` (real y ficticio) y 40 de apertura. Gira con el dedo (con inercia). 8 puntos interactivos numerados que siguen la etiqueta al girar (proyección con la misma cámara del render); al tocarlos el frasco gira hacia ese punto y se abre una tarjeta con Anterior/Siguiente. Riel de secciones a la derecha. Con «reducir movimiento» queda quieto.
+- Textos en `src/data/pancreogen-info.ts`, transcritos del frasco (la página de nutrabiotics.info se arma en el navegador y no dio texto). La etiqueta de lote tiene precio de venta: se tapó en las texturas y no aparece. Las cápsulas de la animación (verde azulado y blanco) son ilustrativas.
+- Scripts (`scripts/pancreogen/`): `desenrollar.py` (desenrolla la etiqueta de cada foto con perspectiva), `componer.py` (une las piezas en la etiqueta de 360°), `texturas.py` (etiqueta, tapa y versión ficticia PANCRIVA · Bioandes), `modelo.py` (modelo animado y estático: `ar/models/pan.*`, `pan-f.*`; el frasco sube girando, se destapa, salen 12 cápsulas en espiral, vuelven y se tapa; aro con el nombre). Los cuadros se renderizan con three.js sin pantalla a partir de `pan-estatico.glb`. Las fotos originales (IMG_2311–2336) no están en el repositorio.
+- Medidas aproximadas: 4 × 12,4 cm (cuerpo 9,6 cm y tapa 2,8 cm).
+- Tarjeta impresa: `card_pancreogen()` en `build_cards.py`, objetivo 8 de `tarjetas.mind`, al 50 % (`escala`). La página AR busca el nodo `Frasco` si no hay `Caja`. Ficha PDF `public/fichas/pan.pdf` con las tablas del frasco.
+- Banner `PancreogenBanner` en el carrusel `Destacados` (catálogo e inicio del médico).
+
 ## Respaldo en Figma
 
 - Archivo actual: "Multi LAB · Prototipo de la app (capturas oct 2026)" — https://www.figma.com/design/CHdntcll7WDS1F5Xv78q7l

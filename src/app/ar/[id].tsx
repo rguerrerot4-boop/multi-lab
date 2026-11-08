@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Ellipse, Line, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
+import { BottleSpin } from '@/components/Bottle360';
 import { Product3D } from '@/components/Product3D';
 import { Button, goBack } from '@/components/ui';
 import { productById, productNote, type IconName } from '@/data/mock';
@@ -113,7 +114,7 @@ export default function ArScreen() {
             }}
           />
           <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: stageH * 0.1 }}>
-            <Product3D product={p} width={stageW} height={stageH * 0.9} autoRotate interactive={false} zoom={0.95} />
+            {p.bottle ? <View style={{ alignItems: 'center' }}><BottleSpin frames={p.bottle.frames} height={stageH * 0.8} /></View> : <Product3D product={p} width={stageW} height={stageH * 0.9} autoRotate interactive={false} zoom={0.95} />}
           </View>
           {/* esquinas de cámara */}
           {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (
@@ -136,7 +137,15 @@ export default function ArScreen() {
           </View>
         </View>
 
-        {p.photo ? (
+        {p.bottle ? (
+          <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radius.lg, padding: space.md }}>
+            <Ionicons name="sparkles-outline" size={18} color={colors.white} />
+            <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 19, color: colors.white }}>
+              Con animación: el frasco sube girando, un anillo con su nombre lo rodea, la tapa se desenrosca y salen cápsulas en espiral que giran alrededor. También sobre su tarjeta impresa.
+            </Text>
+          </View>
+        ) : null}
+                {p.photo ? (
           <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: radius.lg, padding: space.md }}>
             <Ionicons name="sparkles-outline" size={18} color={colors.white} />
             <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 19, color: colors.white }}>

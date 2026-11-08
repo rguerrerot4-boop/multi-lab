@@ -48,5 +48,13 @@
   "category": "Suplemento dietario",
   "real": true,
   "escala": 0.8
+ },
+ {
+  "id": "pan",
+  "name": "PANCREOGEN",
+  "lab": "Nutrabiotics",
+  "category": "Suplemento dietario",
+  "real": true,
+  "escala": 0.5
  }
 ]

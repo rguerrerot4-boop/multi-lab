@@ -99,7 +99,7 @@
         <a class="btn ghost" id="ficha" href="#" target="_blank" rel="noopener" style="display: none">Ver la ficha del producto (PDF)</a>
         <a class="btn ghost" id="pdf" href="tarjetas-multilab.pdf" target="_blank" rel="noopener">Descargar tarjetas para imprimir</a>
         <a class="btn ghost" href="../">Ir a Multi LAB</a>
-        <p class="fine" id="fino">Modelos ilustrativos de productos ficticios, salvo CORAESSENS (real, hecho con las fotos de su empaque y mostrado con permiso de Nutrabiotics). La primera vez descarga unos 3 MB y necesita internet.</p>
+        <p class="fine" id="fino">Modelos ilustrativos de productos ficticios, salvo CORAESSENS y PANCREOGEN (reales, hechos con las fotos de su empaque y mostrados con permiso de Nutrabiotics). La primera vez descarga unos 3 MB y necesita internet.</p>
       </div>
     </section>
 
@@ -156,9 +156,9 @@
           const base = new THREE.Group();
           base.rotation.x = Math.PI / 2;
           base.scale.setScalar(escala(p));
-          // modelo animado (CORAESSENS): la caja sale de la tarjeta girando y aparece su nombre en 3D
+          // modelo animado (CORAESSENS y PANCREOGEN): el producto sale de la tarjeta girando y aparece su nombre en 3D
           const animado = gltf.animations.length > 0;
-          const caja = gltf.scene.getObjectByName('Caja');
+          const caja = gltf.scene.getObjectByName('Caja') ?? gltf.scene.getObjectByName('Frasco');
           // la sombra se ajusta al tamaño de la caja (sin el nombre en 3D)
           const cuerpo = gltf.scene.getObjectByName('Cuerpo') ?? caja;
           let tam;

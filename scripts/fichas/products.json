@@ -450,5 +450,213 @@
         }
       ]
     }
+  },
+  {
+    "id": "pan",
+    "name": "PANCREOGEN",
+    "lab": "Nutrabiotics",
+    "labFull": "Nutrabiotics",
+    "category": "Suplementos",
+    "form": "Cápsulas · frasco de 90",
+    "component": "Polvo liofilizado de páncreas bovino",
+    "concentration": "537,56 mg por cápsula",
+    "tagline": "Fórmula a base de menudo (páncreas) bovino liofilizado, vitaminas y minerales esenciales",
+    "description": "Suplemento alimenticio en cápsulas a base de polvo liofilizado de páncreas bovino, canela, vitaminas y minerales esenciales. La vitamina D ayuda al organismo a utilizar el calcio y el fósforo.",
+    "uses": [
+      "Suplemento dietario",
+      "Vía oral · adultos mayores de 18 años"
+    ],
+    "howTo": [
+      "Vía oral",
+      "Adultos mayores de 18 años: 1 cápsula 3 veces al día"
+    ],
+    "precautions": [
+      "Manténgase fuera del alcance de los niños",
+      "No es adecuado para ser consumido como única fuente de alimento",
+      "No superar la dosis recomendada",
+      "Almacénese en un lugar fresco y seco en su envase y empaque original",
+      "No use el producto si el sello de seguridad está roto o despegado"
+    ],
+    "hue": "#1F6B6E",
+    "specs": [
+      {
+        "value": "90",
+        "label": "Cápsulas por frasco",
+        "note": "Suplemento dietario"
+      },
+      {
+        "value": "3",
+        "label": "Cápsulas al día",
+        "note": "1 cápsula 3 veces al día"
+      },
+      {
+        "value": "48,3 g",
+        "label": "Contenido neto",
+        "note": "90 cápsulas de 537,56 mg"
+      }
+    ],
+    "notes": [
+      {
+        "title": "Páncreas bovino",
+        "text": "Polvo liofilizado de páncreas bovino."
+      },
+      {
+        "title": "Vitamina D",
+        "text": "48,74 mcg por porción diaria (975 %VDR). Ayuda al organismo a utilizar el calcio y el fósforo."
+      },
+      {
+        "title": "Cromo",
+        "text": "585,3 mcg por porción diaria (488 %VDR)."
+      },
+      {
+        "title": "Manganeso",
+        "text": "8,25 mg por porción diaria (413 %VDR)."
+      },
+      {
+        "title": "Zinc",
+        "text": "15,39 mg por porción diaria (103 %VDR)."
+      }
+    ],
+    "real": {
+      "note": "Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del frasco."
+    },
+    "sizeCm": {
+      "w": 4,
+      "h": 12.4,
+      "d": 4
+    },
+    "info": {
+      "name": "PANCREOGEN",
+      "mark": "PANCREOGEN®",
+      "lab": "Nutrabiotics",
+      "labLine": "Nutrabiotics · con ciencia nutricional",
+      "disclaimer": "Producto real de Nutrabiotics, mostrado con permiso del laboratorio. La información está tomada del frasco y no reemplaza su ficha técnica.",
+      "arTitle": "PANCREOGEN · Nutrabiotics",
+      "arId": "pan",
+      "formula": "Fórmula a base de menudo (páncreas) bovino liofilizado, vitaminas y minerales esenciales",
+      "badges": [
+        "90 cápsulas",
+        "Suplemento dietario"
+      ],
+      "sample": "Producto de venta libre",
+      "cards": [
+        {
+          "id": "composicion",
+          "title": "Composición por cápsula",
+          "rows": [
+            {
+              "label": "Polvo liofilizado de páncreas bovino",
+              "value": ""
+            },
+            {
+              "label": "Cápsula (Gelatina, agua, lauril sulfato de sodio)",
+              "value": ""
+            },
+            {
+              "label": "Canela en polvo (Cinnamomum zeylanicum L.)",
+              "value": ""
+            },
+            {
+              "label": "Manganeso gluconato anhidro (Eq. a 2,75 mg de Mn)",
+              "value": ""
+            },
+            {
+              "label": "Celulosa microcristalina",
+              "value": ""
+            },
+            {
+              "label": "Zinc citrato anhidro (Eq. a 5,13 mg de Zn)",
+              "value": ""
+            },
+            {
+              "label": "Palmitato de ascorbilo (Eq. a 4,25 mg de vitamina C)",
+              "value": ""
+            },
+            {
+              "label": "Dióxido de silicio",
+              "value": ""
+            },
+            {
+              "label": "Estearato de magnesio vegetal",
+              "value": ""
+            },
+            {
+              "label": "Vitamina D3 (Eq. a 650 UI de vitamina D)",
+              "value": ""
+            },
+            {
+              "label": "Cromo cloruro hexahidrato (Eq. a 195,1 mcg de Cr)",
+              "value": ""
+            },
+            {
+              "label": "Biotina",
+              "value": ""
+            },
+            {
+              "label": "Vanadato de sodio anhidro (Eq. a 16,61 mcg de Vn)",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "id": "nutricional",
+          "title": "Información nutricional",
+          "rowsHead": [
+            "Por porción diaria (3 cápsulas)",
+            "Cantidad",
+            "%VDR"
+          ],
+          "rows": [
+            {
+              "label": "Energía (Calorías)",
+              "value": "<1 kcal/kJ",
+              "extra": "0"
+            },
+            {
+              "label": "Vitamina C",
+              "value": "12,75 mg",
+              "extra": "21,25"
+            },
+            {
+              "label": "Vitamina D",
+              "value": "48,74 mcg",
+              "extra": "975"
+            },
+            {
+              "label": "Biotina",
+              "value": "600 mcg",
+              "extra": "200"
+            },
+            {
+              "label": "Cromo",
+              "value": "585,3 mcg",
+              "extra": "488"
+            },
+            {
+              "label": "Manganeso",
+              "value": "8,25 mg",
+              "extra": "413"
+            },
+            {
+              "label": "Zinc",
+              "value": "15,39 mg",
+              "extra": "103"
+            },
+            {
+              "label": "Vanadio",
+              "value": "49,84 mcg",
+              "extra": "*"
+            }
+          ],
+          "foot": "Porciones por envase: 30. *Valor Diario de referencia (%VD) no establecido. Valores de referencia de nutrientes para una dieta de 8380 kJ (2000 kcal)."
+        },
+        {
+          "id": "fabricante",
+          "title": "Fabricante",
+          "body": "Fabricado por Laboratorios Quipropharma S.A.S., Bogotá D.C., Colombia, Carrera 22 # 164-42, para Nutrabiotics S.A.S. Importado y distribuido en Ecuador por Moléculas Biológicas Biomolec Cía. Ltda., Av. Eugenio Espejo #2410 y Rincón del Valle, Quito, Ecuador.",
+          "foot": "Notificación Sanitaria 10846-ALE-0819. Contenido neto: 48,3 g (90 cápsulas de 537,56 mg)."
+        }
+      ]
+    }
   }
 ]

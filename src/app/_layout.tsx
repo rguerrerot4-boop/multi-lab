@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { WelcomeHost } from "@/components/WelcomeTransition";
 import { AppProvider } from "@/store/AppStore";
 import "@/data/vitrina"; // agrega las fotos del empaque a los productos que las tienen
+import "@/data/pancreogen"; // agrega el frasco 360° de PANCREOGEN
 import { colors } from "@/theme";
 
 // En navegador: sin el resaltado gris/azul al tocar y sin contorno de foco al usar el dedo o el ratón
