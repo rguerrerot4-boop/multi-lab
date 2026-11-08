@@ -55,7 +55,7 @@ const POSES: Record<Sec, Pose> = {
   explora: { x: 0.76, y: 0.5, h: 0.5, rot: 0 },
   capsulas: { x: 0.5, y: 0.7, h: 0.38, rot: 0 },
   composicion: { x: 0.24, y: 0.5, h: 0.5, rot: frameFacing(0.835) }, // la tabla de frente
-  nutricional: { x: 0.2, y: 0.27, h: 0.32, rot: frameFacing(0.835) },
+  nutricional: { x: 0.2, y: 0.25, h: 0.28, rot: frameFacing(0.835) },
   modo: { x: 0.24, y: 0.5, h: 0.5, rot: frameFacing(1.012) }, // modo de empleo (reverso)
   avisos: { x: 0.84, y: 0.42, h: 0.3, rot: frameFacing(1.1) }, // fabricante y registro
   cierre: { x: 0.5, y: 0.325, h: 0.42, rot: -FRAMES },
@@ -151,13 +151,21 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   // la sección de cápsulas es más alta: el frasco se queda quieto mientras se abre y se cierra
   const openStart = capsL.y - Hs * 0.15;
   const openEnd = capsL.y + capsL.h - Hs * 0.85;
+  // en la tabla nutricional (más alta que la pantalla) el frasco deja de estar fijo y sube con el contenido,
+  // para no quedar encima de la tabla
+  const nutL = layout.nutricional;
+  const nutA = anchors.nutricional;
+  const nutD = nutL ? Math.max(0, nutL.y + nutL.h - Hs * 0.55 - nutA) : 0;
   const keys = useMemo(() => {
     const list: { s: number; pose: Pose }[] = [];
     SECS.forEach((k) => {
       if (k === 'capsulas') {
         list.push({ s: openStart - Hs * 0.12, pose: POSES.capsulas });
         list.push({ s: openEnd + Hs * 0.12, pose: POSES.capsulas });
-      } else list.push({ s: anchors[k], pose: POSES[k] });
+      } else {
+        list.push({ s: anchors[k], pose: POSES[k] });
+        if (k === 'nutricional' && nutD > 1) list.push({ s: anchors[k] + nutD, pose: POSES[k] });
+      }
     });
     // en orden y sin repetidos (interpolate exige entradas crecientes)
     const out: typeof list = [];
@@ -166,7 +174,7 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
       out.push({ s, pose: k.pose });
     });
     return out;
-  }, [anchors, openStart, openEnd, Hs]);
+  }, [anchors, openStart, openEnd, Hs, nutD]);
   const inputs = keys.map((k) => k.s);
   const ease = Easing.inOut(Easing.cubic);
   const interp = (f: (p: Pose) => number) => scrollY.interpolate({ inputRange: inputs, outputRange: keys.map((k) => f(k.pose)), extrapolate: 'clamp', easing: ease });
@@ -176,6 +184,12 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
     scrollY.interpolate({ inputRange: [-1000, 0, last.s, last.s + 1], outputRange: [0, 0, last.s, last.s], extrapolate: 'clamp' }),
     interp((q) => q.y * Hs - base / 2),
   );
+  const attach = scrollY.interpolate({
+    inputRange: nutD > 1 ? [nutA - Hs * 0.12, nutA + nutD, Math.max(anchors.modo, nutA + nutD + 1)] : [0, 1],
+    outputRange: nutD > 1 ? [0, -nutD - Hs * 0.12, 0] : [0, 0],
+    extrapolate: 'clamp',
+  });
+  const tyAll = Animated.add(ty, attach);
   const scale = interp((q) => q.h / 0.6);
   const tx = interp((q) => side + q.x * W);
   const rotScroll = interp((q) => q.rot);
@@ -621,7 +635,7 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
             top: 0,
             transform: [
               { translateX: tx },
-              { translateY: Animated.add(ty, Animated.add(intro.interpolate({ inputRange: [0, 1], outputRange: [-Hs * 0.9, 0] }), bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }))) },
+              { translateY: Animated.add(tyAll, Animated.add(intro.interpolate({ inputRange: [0, 1], outputRange: [-Hs * 0.9, 0] }), bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }))) },
             ],
           }}
         >
