@@ -1,7 +1,7 @@
 """Modelos de AR de PANCREOGEN (GLB para Android, USDZ para iPhone) con la etiqueta fotografiada.
 
-El frasco es un cilindro con la etiqueta desenrollada de las fotos (texturas.py) y una tapa plateada con
-la foto de la tapa. Animación propia, distinta de la de CORAESSENS (ciclo de 12 s):
+El frasco es un cilindro con la etiqueta reconstruida en limpio (texturas.py → etiqueta_limpia.py) y una
+tapa plateada metalizada con la foto de la tapa. Animación propia, distinta de la de CORAESSENS (ciclo de 12 s):
   0,0–1,4 s   el frasco sube girando desde el piso y se abre un aro
   0,8–1,6 s   aparece un anillo con el nombre en 3D alrededor del frasco
   1,6–10,8 s  función (tramo que se repite sin cortes; la AR con tarjeta repite solo este tramo):
@@ -42,7 +42,7 @@ EDGE = 0.0028  # redondeo del borde de la base
 TEAL = (0.10, 0.36, 0.37)
 TEAL_DEEP = (0.05, 0.22, 0.23)
 WHITE = (0.97, 0.97, 0.96)
-SILVER = (0.80, 0.81, 0.83)
+SILVER = (0.78, 0.79, 0.81)
 N_CAPS = 12
 
 
@@ -120,8 +120,10 @@ def mouth_mesh(seg=96):
 def cap_mesh(seg=144):
     """Tapa: lado plateado con el borde superior redondeado y la cara de arriba con la foto."""
     e = 0.0016
-    prof = [(RC * 0.985, 0.0), (RC, 0.0006), (RC, HC - e)]
-    nrm = [(0.6, -0.8), (1, 0), (1, 0)]
+    # lado con dos ranuras finas cerca de la base (como la tapa real) y el borde de arriba redondeado
+    g = 0.00028
+    prof = [(RC * 0.985, 0.0), (RC, 0.0006), (RC, 0.0030), (RC - g, 0.0034), (RC, 0.0038), (RC, 0.0052), (RC - g, 0.0056), (RC, 0.0060), (RC, HC - e)]
+    nrm = [(0.6, -0.8), (1, 0), (1, 0), (0.8, 0.6), (0.8, -0.6), (1, 0), (0.8, 0.6), (0.8, -0.6), (1, 0)]
     for k in range(1, 7):
         a = (math.pi / 2) * k / 6
         prof.append((RC - e + e * math.cos(a), HC - e + e * math.sin(a)))
@@ -359,11 +361,12 @@ def scene(name_text, prefix, animated=True):
         {'name': 'Tapa', 'parent': 'Frasco', 'mesh': 'Tapa', 'anim': (lambda t: (cap_at(t)[0], cap_at(t)[1], 1.0)) if animated else None, 'translation': (0, HB, 0)},
     ]
     materials = {
-        'etiqueta': {'texture': f'{prefix}etiqueta', 'rough': 0.32},
-        'blanco': {'color': WHITE, 'rough': 0.45},
+        # la etiqueta es papel plastificado brillante (capa transparente); la tapa, plástico plateado metalizado
+        'etiqueta': {'texture': f'{prefix}etiqueta', 'rough': 0.34, 'clearcoat': (0.7, 0.14)},
+        'blanco': {'color': WHITE, 'rough': 0.38},
         'interior': {'color': (0.16, 0.2, 0.21), 'rough': 0.8},
-        'plata': {'color': SILVER, 'rough': 0.38, 'metal': 0.35},
-        'tapaFoto': {'texture': f'{prefix}tapa', 'rough': 0.45, 'metal': 0.3},
+        'plata': {'color': SILVER, 'rough': 0.55, 'metal': 0.55},
+        'tapaFoto': {'texture': f'{prefix}tapa', 'rough': 0.5, 'metal': 0.3},
     }
     if animated:
         meshes['Nombre'] = [(faces[0], faces[1], faces[3], 'nombreFrente', None), (sides[0], sides[1], sides[3], 'nombreCanto', None)]
@@ -406,6 +409,8 @@ def write_glb(path, title, scene_, images, animated=True):
             g['alphaMode'] = 'BLEND'
         if m.get('double'):
             g['doubleSided'] = True
+        if m.get('clearcoat'):
+            g['extensions'] = {'KHR_materials_clearcoat': {'clearcoatFactor': m['clearcoat'][0], 'clearcoatRoughnessFactor': m['clearcoat'][1]}}
         gl_mats.append(g)
     mesh_keys = list(meshes)
     gl_meshes = []
@@ -449,6 +454,8 @@ def write_glb(path, title, scene_, images, animated=True):
         'samplers': [{'magFilter': 9729, 'minFilter': 9987, 'wrapS': 33071, 'wrapT': 33071}],
         'images': [{'bufferView': img_views[i], 'mimeType': images[k][1]} for i, k in enumerate(tex_keys)],
     }
+    if any(m.get('clearcoat') for m in materials.values()):
+        gltf['extensionsUsed'] = ['KHR_materials_clearcoat']
     if animated:
         ts = [i / FPS for i in range(int(round(T * FPS)) + 1)]
         times = b.add(np.array(ts, np.float32), 5126, 'SCALAR', minmax=True)
@@ -508,6 +515,9 @@ def write_usdz(path, scene_, files):
             sh.CreateInput('metallic', Sdf.ValueTypeNames.Float).Set(m.get('metal', 0.0))
             if m.get('opacity', 1.0) < 1:
                 sh.CreateInput('opacity', Sdf.ValueTypeNames.Float).Set(m['opacity'])
+            if m.get('clearcoat'):
+                sh.CreateInput('clearcoat', Sdf.ValueTypeNames.Float).Set(m['clearcoat'][0])
+                sh.CreateInput('clearcoatRoughness', Sdf.ValueTypeNames.Float).Set(m['clearcoat'][1])
             if m.get('texture'):
                 reader = UsdShade.Shader.Define(stage, f'/Producto/Materiales/{k}/LectorST')
                 reader.CreateIdAttr('UsdPrimvarReader_float2')

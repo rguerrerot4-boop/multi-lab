@@ -1,0 +1,42 @@
+<!doctype html><html><head><meta charset="utf-8"><script type="importmap">{"imports":{"three":"/three/build/three.module.js"}}</script></head>
+<body style="margin:0;background:transparent"><script type="module">
+// Renderiza el frasco de PANCREOGEN para los cuadros del catálogo (fondo transparente).
+// Parámetros: f (glb), w, h, fov, dist, elev (°), ty (altura del objetivo, m), hide (nodos), fix (nodo al que
+// se le quita el giro de la animación, para que la etiqueta quede de frente), exp, key.
+import * as THREE from 'three';
+import { GLTFLoader } from '/three/examples/jsm/loaders/GLTFLoader.js';
+import { RoomEnvironment } from '/three/examples/jsm/environments/RoomEnvironment.js';
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 420), H = +(q.get('h') || 1000), PR = +(q.get('pr') || 1);
+const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+r.setPixelRatio(PR); r.setSize(W, H); document.body.appendChild(r.domElement);
+r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = +(q.get('exp') || 1.05);
+r.setClearColor(0x000000, 0);
+const sc = new THREE.Scene();
+const pm = new THREE.PMREMGenerator(r); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, +(q.get('key') || 1.4)); key.position.set(-1.2, 1.6, 2.2); sc.add(key);
+const rim = new THREE.DirectionalLight(0xdff6ff, 0.9); rim.position.set(2, 0.8, -1.5); sc.add(rim);
+sc.add(new THREE.AmbientLight(0xffffff, 0.15));
+window.frame = null;
+new GLTFLoader().load('/glb/' + (q.get('f') || 'pan-estatico') + '.glb', (g) => {
+  const root = g.scene; sc.add(root);
+  (q.get('hide') || '').split(',').filter(Boolean).forEach((n) => { const o = root.getObjectByName(n); if (o) o.visible = false; });
+  const fix = q.get('fix') ? root.getObjectByName(q.get('fix')) : null;
+  const mixer = g.animations.length ? new THREE.AnimationMixer(root) : null;
+  if (mixer) mixer.clipAction(g.animations[0]).play();
+  const fov = +(q.get('fov') || 18), elev = +(q.get('elev') || 6) * Math.PI / 180;
+  const cam = new THREE.PerspectiveCamera(fov, W / H, 0.01, 10);
+  const target = new THREE.Vector3(0, +(q.get('ty') || 0.0618), 0);
+  const dist = +(q.get('dist') || 0.44);
+  cam.position.set(0, target.y + Math.sin(elev) * dist, Math.cos(elev) * dist); cam.lookAt(target);
+  // ángulo: gira el modelo (la cámara y las luces quedan fijas)
+  window.frame = (deg, t) => {
+    root.rotation.y = deg * Math.PI / 180;
+    if (mixer && t !== undefined) mixer.setTime(t);
+    if (fix) { fix.quaternion.set(0, 0, 0, 1); fix.position.y = 0; }
+    r.render(sc, cam);
+    return true;
+  };
+  window.ready = true;
+});
+</script></body></html>

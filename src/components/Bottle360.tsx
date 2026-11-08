@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Image, Pressable, Text, View, type ImageSourcePropType } from 'react-native';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import { cssAnim, domEl, isWeb, nodeValue, setStyle, useFrameLoop } from '@/lib/webAnim';
 import { font } from '@/theme';
 
 export const FRAMES = 60; // una vuelta: 6° por cuadro
@@ -52,20 +53,11 @@ export interface BottleSpot {
   v: number;
 }
 
-export function Bottle360({
-  frames,
-  open,
-  rot,
-  openProgress,
-  height,
-  spots,
-  showSpots,
-  activeSpot,
-  onSpot,
-  reduce,
-  spotColor,
-  shadow = 'rgba(0,0,0,0.45)',
-}: {
+export function Bottle360(props: BottleProps) {
+  return isWeb ? <Bottle360Web {...props} /> : <Bottle360Native {...props} />;
+}
+
+interface BottleProps {
   frames: ImageSourcePropType[];
   open?: ImageSourcePropType[];
   /** ángulo en cuadros (cualquier número real; 60 = una vuelta) */
@@ -74,13 +66,135 @@ export function Bottle360({
   openProgress?: Animated.AnimatedInterpolation<number> | Animated.Value;
   height: number;
   spots?: BottleSpot[];
-  showSpots?: Animated.AnimatedInterpolation<number> | Animated.Value;
+  showSpots?: Animated.AnimatedInterpolation<number> | Animated.Value | Animated.AnimatedMultiplication<number>;
   activeSpot?: string | null;
   onSpot?: (id: string) => void;
   reduce?: boolean;
   spotColor: string;
   shadow?: string;
-}) {
+}
+
+/** sombra en el piso, bajo el frasco */
+function FloorShadow({ width, k, shadow }: { width: number; k: number; shadow: string }) {
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: -width * 0.3, right: -width * 0.3, top: 966 * k - width * 0.16, height: width * 0.32 }}>
+      <Svg width="100%" height="100%" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <Defs>
+          <RadialGradient id="sh" cx="50" cy="16" rx="50" ry="16" gradientUnits="userSpaceOnUse">
+            <Stop offset="0" stopColor={shadow} stopOpacity="1" />
+            <Stop offset="0.45" stopColor={shadow} stopOpacity="0.45" />
+            <Stop offset="1" stopColor={shadow} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx="50" cy="16" rx="50" ry="16" fill="url(#sh)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** posición y visibilidad de cada punto, tabuladas cada medio cuadro */
+function spotTable(spot: BottleSpot, k: number, S: number) {
+  const inputs: number[] = [];
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const os: number[] = [];
+  for (let i = 0; i <= FRAMES * 2; i++) {
+    const f = i / 2;
+    const p = project(spot.u, spot.v, f);
+    inputs.push(f);
+    xs.push(p.x * k - S / 2);
+    ys.push(p.y * k - S / 2);
+    // visible solo de frente (se apaga al acercarse al borde)
+    os.push(Math.max(0, Math.min(1, (p.facing - 0.25) / 0.3)));
+  }
+  return { xs, ys, os, inputs };
+}
+const SPOT = 34;
+
+// ---------- web: un solo bucle por cuadro escribe el estilo de los cuadros visibles ----------
+function Bottle360Web({ frames, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, spotColor, reduce, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
+  const k = height / FH;
+  const width = FW * k;
+  const ok = OPEN.k * k;
+  const giroEls = useRef<(HTMLElement | null)[]>([]);
+  const openEls = useRef<(HTMLElement | null)[]>([]);
+  const openBox = useRef<HTMLElement | null>(null);
+  const spotEls = useRef<(HTMLElement | null)[]>([]);
+  const tables = useMemo(() => (spots ?? []).map((s) => spotTable(s, k, SPOT)), [spots, k]);
+  const last = useRef({ g: -1, o: -1, open: -1, m: NaN, vis: NaN });
+  // al cambiar de modo o de tamaño se vuelve a pintar todo
+  useEffect(() => {
+    last.current = { g: -1, o: -1, open: -1, m: NaN, vis: NaN };
+  }, [frames, open, spots, k]);
+  useFrameLoop(() => {
+    const L = last.current;
+    const v = nodeValue(rot as never);
+    const m = ((v % FRAMES) + FRAMES) % FRAMES;
+    const p = openProgress ? nodeValue(openProgress as never) : 0;
+    const opened = p > 0.004 && !!open ? 1 : 0;
+    // giro: se muestra solo el cuadro más cercano
+    const g = opened ? -2 : Math.round(m) % FRAMES;
+    if (g !== L.g) {
+      if (L.g >= 0) setStyle(giroEls.current[L.g], 'opacity', '0');
+      if (g >= 0) setStyle(giroEls.current[g], 'opacity', '1');
+      L.g = g;
+    }
+    // apertura
+    if (open) {
+      if (opened !== L.open) {
+        setStyle(openBox.current, 'opacity', opened ? '1' : '0');
+        L.open = opened;
+      }
+      const o = opened ? Math.round(Math.max(0, Math.min(1, p)) * (open.length - 1)) : 0;
+      if (o !== L.o) {
+        if (L.o >= 0) setStyle(openEls.current[L.o], 'opacity', '0');
+        setStyle(openEls.current[o], 'opacity', '1');
+        L.o = o;
+      }
+    }
+    // puntos
+    const vis = showSpots ? nodeValue(showSpots as never, 1) : 1;
+    if (tables.length && (Math.abs(m - L.m) > 0.002 || vis !== L.vis)) {
+      L.m = m;
+      L.vis = vis;
+      const i = Math.min(FRAMES * 2 - 1, Math.floor(m * 2));
+      const t = m * 2 - i;
+      tables.forEach((tb, n) => {
+        const el = spotEls.current[n];
+        if (!el) return;
+        const x = tb.xs[i] + (tb.xs[i + 1] - tb.xs[i]) * t;
+        const y = tb.ys[i] + (tb.ys[i + 1] - tb.ys[i]) * t;
+        const o = (tb.os[i] + (tb.os[i + 1] - tb.os[i]) * t) * vis;
+        setStyle(el, 'transform', `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`);
+        setStyle(el, 'opacity', o.toFixed(3));
+        setStyle(el, 'visibility', o < 0.05 ? 'hidden' : 'visible');
+      });
+    }
+  });
+  return (
+    <View style={{ width, height }} pointerEvents="box-none">
+      <FloorShadow width={width} k={k} shadow={shadow} />
+      {frames.map((src, i) => (
+        <Image key={i} ref={(r) => void (giroEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: 0 }} />
+      ))}
+      {open ? (
+        <View ref={(r) => void (openBox.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: OPEN.gx * k - OPEN.ax * ok, top: OPEN.gy * k - OPEN.ay * ok, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }}>
+          {open.map((src, i) => (
+            <Image key={i} ref={(r) => void (openEls.current[i] = domEl(r))} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width: OPEN.w * ok, height: OPEN.h * ok, opacity: 0 }} />
+          ))}
+        </View>
+      ) : null}
+      {spots?.map((s, n) => (
+        <View key={s.id} ref={(r) => void (spotEls.current[n] = domEl(r))} style={{ position: 'absolute', left: 0, top: 0, width: SPOT, height: SPOT, opacity: 0 }}>
+          <SpotFace n={n + 1} active={activeSpot === s.id} onPress={() => onSpot?.(s.id)} reduce={!!reduce} color={spotColor} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ---------- nativo: cada cuadro con su opacidad animada (controlador nativo) ----------
+function Bottle360Native({ frames, open, rot, openProgress, height, spots, showSpots, activeSpot, onSpot, reduce, spotColor, shadow = 'rgba(0,0,0,0.45)' }: BottleProps) {
   const k = height / FH;
   const width = FW * k;
   const mod = useMemo(() => Animated.modulo(rot as Animated.Animated as never, FRAMES), [rot]);
@@ -108,19 +222,7 @@ export function Bottle360({
 
   return (
     <View style={{ width, height }} pointerEvents="box-none">
-      {/* sombra en el piso */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: -width * 0.3, right: -width * 0.3, top: 966 * k - width * 0.16, height: width * 0.32 }}>
-        <Svg width="100%" height="100%" viewBox="0 0 100 32" preserveAspectRatio="none">
-          <Defs>
-            <RadialGradient id="sh" cx="50" cy="16" rx="50" ry="16" gradientUnits="userSpaceOnUse">
-              <Stop offset="0" stopColor={shadow} stopOpacity="1" />
-              <Stop offset="0.45" stopColor={shadow} stopOpacity="0.45" />
-              <Stop offset="1" stopColor={shadow} stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Ellipse cx="50" cy="16" rx="50" ry="16" fill="url(#sh)" />
-        </Svg>
-      </View>
+      <FloorShadow width={width} k={k} shadow={shadow} />
       {frames.map((src, i) => (
         <Animated.Image key={i} source={src} fadeDuration={0} style={{ position: 'absolute', left: 0, top: 0, width, height, opacity: opacity(i) }} />
       ))}
@@ -138,7 +240,7 @@ export function Bottle360({
   );
 }
 
-/** Punto interactivo: sigue la etiqueta al girar, late y se apaga cuando queda del lado de atrás */
+/** Punto interactivo (nativo): sigue la etiqueta al girar y se apaga cuando queda del lado de atrás */
 function SpotDot({
   spot,
   n,
@@ -154,36 +256,13 @@ function SpotDot({
   n: number;
   mod: Animated.AnimatedInterpolation<number>;
   k: number;
-  vis?: Animated.AnimatedInterpolation<number> | Animated.Value;
+  vis?: BottleProps['showSpots'];
   active: boolean;
   onPress: () => void;
   reduce: boolean;
   color: string;
 }) {
-  const S = 34;
-  const { xs, ys, os, inputs } = useMemo(() => {
-    const inputs: number[] = [];
-    const xs: number[] = [];
-    const ys: number[] = [];
-    const os: number[] = [];
-    for (let i = 0; i <= FRAMES * 2; i++) {
-      const f = i / 2;
-      const p = project(spot.u, spot.v, f);
-      inputs.push(f);
-      xs.push(p.x * k - S / 2);
-      ys.push(p.y * k - S / 2);
-      // visible solo de frente (se apaga al acercarse al borde)
-      os.push(Math.max(0, Math.min(1, (p.facing - 0.25) / 0.3)));
-    }
-    return { xs, ys, os, inputs };
-  }, [spot.u, spot.v, k]);
-  const pulse = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (reduce) return;
-    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, delay: n * 140, easing: Easing.out(Easing.quad), useNativeDriver: true }));
-    loop.start();
-    return () => loop.stop();
-  }, [pulse, reduce, n]);
+  const { xs, ys, os, inputs } = useMemo(() => spotTable(spot, k, SPOT), [spot, k]);
   const facing = mod.interpolate({ inputRange: inputs, outputRange: os });
   const opacity = vis ? Animated.multiply(facing, vis) : facing;
   return (
@@ -192,13 +271,38 @@ function SpotDot({
         position: 'absolute',
         left: 0,
         top: 0,
-        width: S,
-        height: S,
+        width: SPOT,
+        height: SPOT,
         opacity,
         transform: [{ translateX: mod.interpolate({ inputRange: inputs, outputRange: xs }) }, { translateY: mod.interpolate({ inputRange: inputs, outputRange: ys }) }],
       }}
     >
-      <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Punto ${n} del frasco`} style={{ width: S, height: S, alignItems: 'center', justifyContent: 'center' }}>
+      <SpotFace n={n} active={active} onPress={onPress} reduce={reduce} color={color} />
+    </Animated.View>
+  );
+}
+
+/** número del punto con un anillo que late */
+function SpotFace({ n, active, onPress, reduce, color }: { n: number; active: boolean; onPress: () => void; reduce: boolean; color: string }) {
+  const S = SPOT;
+  const pulse = useRef(new Animated.Value(0)).current;
+  const ring = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (reduce) return;
+    if (isWeb) {
+      // en la web el latido es una animación CSS (no pasa por React)
+      cssAnim(ring.current, `mlPulse 1.6s cubic-bezier(.25,.46,.45,.94) ${n * 0.14}s infinite`);
+      return;
+    }
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, delay: n * 140, easing: Easing.out(Easing.quad), useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduce, n]);
+  return (
+    <Pressable onPress={onPress} hitSlop={10} accessibilityRole="button" accessibilityLabel={`Punto ${n} del frasco`} style={{ width: S, height: S, alignItems: 'center', justifyContent: 'center' }}>
+      {isWeb ? (
+        <View ref={(r) => void (ring.current = domEl(r))} pointerEvents="none" style={{ position: 'absolute', width: S, height: S, borderRadius: S / 2, borderWidth: 2, borderColor: '#FFFFFF', opacity: reduce ? 0.5 : 0 }} />
+      ) : (
         <Animated.View
           pointerEvents="none"
           style={{
@@ -212,27 +316,27 @@ function SpotDot({
             transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.7] }) }],
           }}
         />
-        <View
-          style={{
-            width: active ? 26 : 22,
-            height: active ? 26 : 22,
-            borderRadius: 13,
-            backgroundColor: active ? '#FFFFFF' : color,
-            borderWidth: 2,
-            borderColor: '#FFFFFF',
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: '#000',
-            shadowOpacity: 0.35,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 4,
-          }}
-        >
-          <Text style={{ fontFamily: font.bold, fontSize: 11, color: active ? color : '#FFFFFF' }}>{n}</Text>
-        </View>
-      </Pressable>
-    </Animated.View>
+      )}
+      <View
+        style={{
+          width: active ? 26 : 22,
+          height: active ? 26 : 22,
+          borderRadius: 13,
+          backgroundColor: active ? '#FFFFFF' : color,
+          borderWidth: 2,
+          borderColor: '#FFFFFF',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.35,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 4,
+        }}
+      >
+        <Text style={{ fontFamily: font.bold, fontSize: 11, color: active ? color : '#FFFFFF' }}>{n}</Text>
+      </View>
+    </Pressable>
   );
 }
 

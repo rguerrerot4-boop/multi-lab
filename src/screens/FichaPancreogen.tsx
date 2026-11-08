@@ -16,6 +16,7 @@ import { PANCREOGEN } from '@/data/pancreogen';
 import { panSpots, type PanSpot } from '@/data/pancreogen-info';
 import type { VitrinaMode } from '@/data/vitrina';
 import { arCardUrl, fichaPdfUrl, openAR, type ArResult } from '@/lib/ar';
+import { cssAnim, domEl, isWeb, nodeValue, setStyle, useFrameLoop } from '@/lib/webAnim';
 import { ActionBar, ArNote } from '@/screens/Ficha';
 import { useMine } from '@/store/AppStore';
 import { colors, font, packColors, radius, space } from '@/theme';
@@ -92,7 +93,6 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   const [share, setShare] = useState(false);
   const [full, setFull] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [count, setCount] = useState(0);
   const started = useRef(Date.now());
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   // flota suave en el sitio
   const bob = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || isWeb) return;
     const loop = Animated.loop(Animated.sequence([Animated.timing(bob, { toValue: 1, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }), Animated.timing(bob, { toValue: 0, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true })]));
     loop.start();
     return () => loop.stop();
@@ -151,11 +151,12 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
   // la sección de cápsulas es más alta: el frasco se queda quieto mientras se abre y se cierra
   const openStart = capsL.y - Hs * 0.15;
   const openEnd = capsL.y + capsL.h - Hs * 0.85;
-  // en la tabla nutricional (más alta que la pantalla) el frasco deja de estar fijo y sube con el contenido,
-  // para no quedar encima de la tabla
-  const nutL = layout.nutricional;
+  // en la tabla nutricional y en el cierre el frasco «aterriza» en la página: queda una copia dentro del
+  // contenido (sube con la tabla y no la tapa) y el frasco fijo se oculta. Después de la tabla vuelve a
+  // entrar desde abajo para el modo de empleo.
   const nutA = anchors.nutricional;
-  const nutD = nutL ? Math.max(0, nutL.y + nutL.h - Hs * 0.55 - nutA) : 0;
+  const cierreA = anchors.cierre;
+  const sEnter = Math.min(Math.max(nutA + Hs * 0.42, anchors.modo - Hs * 0.6), anchors.modo - 2);
   const keys = useMemo(() => {
     const list: { s: number; pose: Pose }[] = [];
     SECS.forEach((k) => {
@@ -163,8 +164,10 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
         list.push({ s: openStart - Hs * 0.12, pose: POSES.capsulas });
         list.push({ s: openEnd + Hs * 0.12, pose: POSES.capsulas });
       } else {
+        if (k === 'modo') list.push({ s: sEnter, pose: { ...POSES.modo, y: 1.3 } });
+        // antes del cierre espera al lado de los avisos hasta que la tarjeta del fabricante sale de la pantalla
+        if (k === 'cierre') list.push({ s: Math.max(anchors.avisos + 1, anchors.cierre - Hs * 0.42), pose: POSES.avisos });
         list.push({ s: anchors[k], pose: POSES[k] });
-        if (k === 'nutricional' && nutD > 1) list.push({ s: anchors[k] + nutD, pose: POSES[k] });
       }
     });
     // en orden y sin repetidos (interpolate exige entradas crecientes)
@@ -174,41 +177,54 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
       out.push({ s, pose: k.pose });
     });
     return out;
-  }, [anchors, openStart, openEnd, Hs, nutD]);
-  const inputs = keys.map((k) => k.s);
+  }, [anchors, openStart, openEnd, Hs, sEnter]);
   const ease = Easing.inOut(Easing.cubic);
-  const interp = (f: (p: Pose) => number) => scrollY.interpolate({ inputRange: inputs, outputRange: keys.map((k) => f(k.pose)), extrapolate: 'clamp', easing: ease });
-  const last = keys[keys.length - 1];
-  // posición en el contenido = desplazamiento + posición en pantalla; al final queda fija en el contenido
-  const ty = Animated.add(
-    scrollY.interpolate({ inputRange: [-1000, 0, last.s, last.s + 1], outputRange: [0, 0, last.s, last.s], extrapolate: 'clamp' }),
-    interp((q) => q.y * Hs - base / 2),
+  // nodos de Animated del recorrido (se crean una sola vez por diseño de página, no en cada render)
+  const fly = useMemo(() => {
+    const inputs = keys.map((k) => k.s);
+    const interp = (f: (p: Pose) => number) => scrollY.interpolate({ inputRange: inputs, outputRange: keys.map((k) => f(k.pose)), extrapolate: 'clamp', easing: ease });
+    const e1 = sEnter + Hs * 0.06;
+    const c0 = Math.max(e1 + 1, cierreA - 1);
+    return {
+      tx: interp((q) => side + q.x * W),
+      ty: interp((q) => q.y * Hs - base / 2),
+      scale: interp((q) => q.h / 0.6),
+      rotScroll: interp((q) => q.rot),
+      // visibilidad del frasco fijo y de las copias que aterrizan
+      stickyVis: scrollY.interpolate({ inputRange: [nutA - 1, nutA, sEnter, e1, c0, c0 + 1], outputRange: [1, 0, 0, 1, 1, 0], extrapolate: 'clamp' }),
+      nutVis: scrollY.interpolate({ inputRange: [nutA - 1, nutA, sEnter, e1], outputRange: [0, 1, 1, 0], extrapolate: 'clamp' }),
+      endVis: scrollY.interpolate({ inputRange: [c0, c0 + 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys, scrollY, side, W, Hs, base, nutA, sEnter, cierreA]);
+  const introRot = useMemo(() => intro.interpolate({ inputRange: [0, 1], outputRange: [-FRAMES * 1.25, 0] }), [intro]);
+  const introY = useMemo(() => intro.interpolate({ inputRange: [0, 1], outputRange: [-Hs * 0.9, 0] }), [intro, Hs]);
+  const rot = useMemo(() => Animated.add(Animated.add(fly.rotScroll, drag), introRot), [fly.rotScroll, drag, introRot]);
+  const openProgress = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [openStart, openStart + Hs * 0.4, openEnd - Hs * 0.4, openEnd],
+        outputRange: [0, 1, 1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY, openStart, openEnd, Hs],
   );
-  const attach = scrollY.interpolate({
-    inputRange: nutD > 1 ? [nutA - Hs * 0.12, nutA + nutD, Math.max(anchors.modo, nutA + nutD + 1)] : [0, 1],
-    outputRange: nutD > 1 ? [0, -nutD - Hs * 0.12, 0] : [0, 0],
-    extrapolate: 'clamp',
-  });
-  const tyAll = Animated.add(ty, attach);
-  const scale = interp((q) => q.h / 0.6);
-  const tx = interp((q) => side + q.x * W);
-  const rotScroll = interp((q) => q.rot);
-  const introRot = intro.interpolate({ inputRange: [0, 1], outputRange: [-FRAMES * 1.25, 0] });
-  const rot = useMemo(() => Animated.add(Animated.add(rotScroll, drag), introRot), [rotScroll, drag, introRot]);
-  const openProgress = scrollY.interpolate({
-    inputRange: [openStart, openStart + Hs * 0.4, openEnd - Hs * 0.4, openEnd],
-    outputRange: [0, 1, 1, 0],
-    extrapolate: 'clamp',
-  });
-  // los puntos solo se ven con el frasco cerrado y fuera de la entrada
+  // los puntos solo se ven con el frasco cerrado, fuera de la entrada y mientras el frasco fijo está a la vista
   const spotsVis = useMemo(
     () =>
       Animated.multiply(
-        openProgress.interpolate({ inputRange: [0, 0.02], outputRange: [1, 0], extrapolate: 'clamp' }),
-        intro.interpolate({ inputRange: [0.85, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+        Animated.multiply(
+          openProgress.interpolate({ inputRange: [0, 0.02], outputRange: [1, 0], extrapolate: 'clamp' }),
+          intro.interpolate({ inputRange: [0.85, 1], outputRange: [0, 1], extrapolate: 'clamp' }),
+        ),
+        fly.stickyVis,
       ),
-    [openProgress, intro],
+    [openProgress, intro, fly.stickyVis],
   );
+  // copias que aterrizan: giro fijo de su sección más el que haya dado el usuario
+  const rotNut = useMemo(() => Animated.add(drag, POSES.nutricional.rot), [drag]);
+  const rotEnd = useMemo(() => Animated.add(drag, POSES.cierre.rot), [drag]);
+  const [stickyOff, setStickyOff] = useState(false);
 
   // sección actual, secciones vistas, contador de cápsulas y barra de acciones
   useEffect(() => {
@@ -230,17 +246,14 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
         vis.forEach((k) => (n[k] = true));
         return n;
       });
-      const pr = Math.max(0, Math.min(1, (value - openStart) / (Hs * 0.4)));
-      setCount((c) => {
-        const v = Math.round(PANCREOGEN.capsules * pr);
-        return v > c || pr < 0.01 ? v : c;
-      });
+      const off = (value > nutA && value < sEnter) || value > cierreA;
+      setStickyOff((o) => (o === off ? o : off));
       const outro = layout.cierre?.y ?? 1e9;
       setBar(value > Hs * 0.5 && value + Hs < outro + 140);
       if (Math.abs(value - spotAt.current) > Hs * 0.5) setSpot(null);
     });
     return () => scrollY.removeListener(id);
-  }, [scrollY, layout, Hs, openStart]);
+  }, [scrollY, layout, Hs, nutA, sEnter, cierreA]);
 
   // al abrirse, el frasco vuelve de frente (los cuadros de apertura se renderizaron de frente)
   const frontRef = useRef(false);
@@ -429,13 +442,11 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
           <Sticky scrollY={scrollY} start={capsL.y} end={capsL.y + Hs * 1.0} height={Hs * 0.42}>
             <View style={{ alignItems: 'center', paddingTop: insets.top + 58, paddingHorizontal: space.lg }}>
               <Text style={[s.overline, { color: C.mint }]}>Suplemento dietario</Text>
-              <Text style={{ fontFamily: font.bold, fontSize: Math.min(W * 0.36, 150), lineHeight: Math.min(W * 0.36, 150) * 1.02, color: colors.white, letterSpacing: -5 }} accessibilityLabel="90 cápsulas">
-                {count}
-              </Text>
+              <CapsCounter scrollY={scrollY} start={openStart} span={Hs * 0.4} size={Math.min(W * 0.36, 150)} />
               <Text style={{ fontFamily: font.bold, fontSize: 20, letterSpacing: 6, color: C.mint, marginTop: -6 }}>CÁPSULAS</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: space.md, maxWidth: 460 }}>
                 {['3 al día', '30 porciones', '537,56 mg cada una', '48,3 g netos'].map((f, i) => (
-                  <Reveal key={f} show={count >= 30 || reduce} reduce={reduce} delay={i * 90}>
+                  <Reveal key={f} show={seen.capsulas} reduce={reduce} delay={500 + i * 90}>
                     <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, borderWidth: 1, borderColor: C.veilLine, backgroundColor: C.veil }}>
                       <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.white }}>{f}</Text>
                     </View>
@@ -627,35 +638,37 @@ export default function FichaPancreogen({ product: p, presenting = false, visita
         </View>
 
         {/* ---------- el frasco: baja por el catálogo con el desplazamiento ---------- */}
-        <Animated.View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            transform: [
-              { translateX: tx },
-              { translateY: Animated.add(tyAll, Animated.add(intro.interpolate({ inputRange: [0, 1], outputRange: [-Hs * 0.9, 0] }), bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }))) },
-            ],
-          }}
+        <FlyingBottle
+          scrollY={scrollY}
+          Hs={Hs}
+          base={base}
+          fly={fly}
+          introY={introY}
+          bob={bob}
+          reduce={reduce}
+          hidden={stickyOff}
+          landings={[
+            { key: 'nut', pose: POSES.nutricional, at: nutA, vis: fly.nutVis, rot: rotNut },
+            { key: 'fin', pose: POSES.cierre, at: cierreA, vis: fly.endVis, rot: rotEnd },
+          ].map((l) => ({ ...l, left: side + l.pose.x * W, top: l.at + l.pose.y * Hs - base / 2 }))}
+          frames={frames}
+          panHandlers={pan.panHandlers}
         >
-          <Animated.View style={{ marginLeft: -(base * 0.42) / 2, transform: [{ scale }] }} {...pan.panHandlers}>
-            <Bottle360
-              key={mode}
-              frames={frames}
-              open={openFrames}
-              rot={rot}
-              openProgress={openProgress}
-              height={base}
-              spots={spots}
-              showSpots={spotsVis}
-              activeSpot={spot?.id ?? null}
-              onSpot={focusSpot}
-              reduce={reduce}
-              spotColor={C.teal}
-            />
-          </Animated.View>
-        </Animated.View>
+          <Bottle360
+            key={mode}
+            frames={frames}
+            open={openFrames}
+            rot={rot}
+            openProgress={openProgress}
+            height={base}
+            spots={spots}
+            showSpots={spotsVis}
+            activeSpot={spot?.id ?? null}
+            onSpot={focusSpot}
+            reduce={reduce}
+            spotColor={C.teal}
+          />
+        </FlyingBottle>
       </Animated.ScrollView>
 
       {/* ---------- arriba: volver, cronómetro y nombre real / ficticio ---------- */}
@@ -723,6 +736,17 @@ function Reveal({ show, reduce, delay = 0, children, from = 'bottom' }: { show: 
 
 /** Contenido que se queda fijo en pantalla mientras su contenedor pasa (como position: sticky) */
 function Sticky({ scrollY, start, end, height, children }: { scrollY: Animated.Value; start: number; end: number; height: number; children: ReactNode }) {
+  // en la web, position: sticky (lo mueve el navegador junto con el desplazamiento, sin retraso)
+  if (isWeb)
+    return (
+      <View style={{ height: end - start + height }} pointerEvents="box-none">
+        <View style={{ position: 'sticky' as unknown as 'relative', top: 0, height }}>{children}</View>
+      </View>
+    );
+  return <StickyNative scrollY={scrollY} start={start} end={end} height={height}>{children}</StickyNative>;
+}
+
+function StickyNative({ scrollY, start, end, height, children }: { scrollY: Animated.Value; start: number; end: number; height: number; children: ReactNode }) {
   const y = scrollY.interpolate({ inputRange: [start - 1, start, end, end + 1], outputRange: [0, 0, end - start, end - start], extrapolate: 'clamp' });
   return <Animated.View style={{ height, transform: [{ translateY: y }] }}>{children}</Animated.View>;
 }
@@ -745,17 +769,160 @@ function Glow({ size, color, opacity, style }: { size: number; color: string; op
 
 function ScrollHint({ reduce }: { reduce: boolean }) {
   const a = useRef(new Animated.Value(0)).current;
+  const el = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (reduce) return;
+    if (isWeb) return cssAnim(el.current, 'mlHint 1.8s ease-in-out infinite');
     const loop = Animated.loop(Animated.sequence([Animated.timing(a, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }), Animated.timing(a, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true })]));
     loop.start();
     return () => loop.stop();
   }, [a, reduce]);
   return (
-    <Animated.View style={{ alignItems: 'center', marginTop: space.sm, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }] }}>
+    <Animated.View ref={(r: unknown) => void (el.current = domEl(r))} style={{ alignItems: 'center', marginTop: space.sm, transform: isWeb ? [] : [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }] }}>
       <Text style={{ fontFamily: font.medium, fontSize: 12, color: colors.white, opacity: 0.75 }}>Desliza: el frasco baja contigo</Text>
       <Ionicons name="chevron-down" size={18} color={colors.white} style={{ opacity: 0.75 }} />
     </Animated.View>
+  );
+}
+
+interface Fly {
+  tx: Animated.AnimatedInterpolation<number>;
+  ty: Animated.AnimatedInterpolation<number>;
+  scale: Animated.AnimatedInterpolation<number>;
+  stickyVis: Animated.AnimatedInterpolation<number>;
+}
+interface Landing {
+  key: string;
+  pose: Pose;
+  left: number;
+  top: number;
+  vis: Animated.AnimatedInterpolation<number>;
+  rot: Animated.AnimatedAddition<number>;
+}
+
+/**
+ * El frasco que baja con el desplazamiento. Queda fijo en la pantalla (en la web con position: sticky, que
+ * mueve el navegador sin retraso; en iPhone y Android con el desplazamiento en el controlador nativo) y solo
+ * su pose (lugar, tamaño y giro) depende del desplazamiento. En la tabla nutricional y en el cierre se
+ * cambia por una copia dentro del contenido, que se desplaza con la página.
+ */
+function FlyingBottle({
+  scrollY,
+  Hs,
+  base,
+  fly,
+  introY,
+  bob,
+  reduce,
+  hidden,
+  landings,
+  frames,
+  panHandlers,
+  children,
+}: {
+  scrollY: Animated.Value;
+  Hs: number;
+  base: number;
+  fly: Fly;
+  introY: Animated.AnimatedInterpolation<number>;
+  bob: Animated.Value;
+  reduce: boolean;
+  hidden: boolean;
+  landings: Landing[];
+  frames: Parameters<typeof Bottle360>[0]['frames'];
+  panHandlers: object;
+  children: ReactNode;
+}) {
+  const bw = base * 0.42;
+  const outer = useRef<HTMLElement | null>(null);
+  const scaler = useRef<HTMLElement | null>(null);
+  const bobEls = useRef<(HTMLElement | null)[]>([]);
+  const landEls = useRef<(HTMLElement | null)[]>([]);
+  useEffect(() => {
+    if (!isWeb || reduce) return;
+    // la flotación es CSS y va en fase en el frasco y en sus copias (mismo reloj)
+    bobEls.current.forEach((el) => cssAnim(el, 'mlBob 3.6s ease-in-out infinite', 3600));
+  }, [reduce, landings.length]);
+  useFrameLoop(() => {
+    const vis = nodeValue(fly.stickyVis as never, 1);
+    setStyle(outer.current, 'transform', `translate(${nodeValue(fly.tx as never).toFixed(1)}px, ${(nodeValue(fly.ty as never) + nodeValue(introY as never)).toFixed(1)}px)`);
+    setStyle(outer.current, 'opacity', vis.toFixed(3));
+    setStyle(outer.current, 'visibility', vis < 0.02 ? 'hidden' : 'visible');
+    setStyle(scaler.current, 'transform', `scale(${nodeValue(fly.scale as never, 1).toFixed(4)})`);
+    landings.forEach((l, i) => {
+      const v = nodeValue(l.vis as never);
+      setStyle(landEls.current[i], 'opacity', v.toFixed(3));
+      setStyle(landEls.current[i], 'visibility', v < 0.02 ? 'hidden' : 'visible');
+    });
+  });
+  const follow = useMemo(() => scrollY.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolateLeft: 'clamp' }), [scrollY]);
+  const bobY = useMemo(() => bob.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }), [bob]);
+  const nativeTy = useMemo(() => Animated.add(Animated.add(fly.ty, introY), bobY), [fly.ty, introY, bobY]);
+
+  const copies = landings.map((l, i) =>
+    isWeb ? (
+      <View key={l.key} ref={(r) => void (landEls.current[i] = domEl(r))} pointerEvents="none" style={{ position: 'absolute', left: l.left, top: l.top, opacity: 0 }}>
+        <View ref={(r) => void (bobEls.current[i + 1] = domEl(r))}>
+          <View style={{ marginLeft: -bw / 2, transform: [{ scale: l.pose.h / 0.6 }] }}>
+            <Bottle360 frames={frames} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
+          </View>
+        </View>
+      </View>
+    ) : (
+      <Animated.View key={l.key} pointerEvents="none" style={{ position: 'absolute', left: l.left, top: l.top, opacity: l.vis, transform: [{ translateY: bobY }] }}>
+        <View style={{ marginLeft: -bw / 2, transform: [{ scale: l.pose.h / 0.6 }] }}>
+          <Bottle360 frames={frames} rot={l.rot} height={base} spotColor={C.teal} reduce={reduce} />
+        </View>
+      </Animated.View>
+    ),
+  );
+
+  if (isWeb)
+    return (
+      <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}>
+        <View pointerEvents="box-none" style={{ position: 'sticky' as unknown as 'relative', top: 0, height: Hs }}>
+          <View ref={(r) => void (outer.current = domEl(r))} pointerEvents="box-none" style={{ position: 'absolute', left: 0, top: 0, opacity: 0 }}>
+            <View ref={(r) => void (bobEls.current[0] = domEl(r))} pointerEvents="box-none">
+              <View ref={(r) => void (scaler.current = domEl(r))} style={{ marginLeft: -bw / 2 }} {...panHandlers}>
+                {children}
+              </View>
+            </View>
+          </View>
+        </View>
+        {copies}
+      </View>
+    );
+  return (
+    <>
+      {copies}
+      <Animated.View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: Hs, transform: [{ translateY: follow }] }}>
+        <Animated.View pointerEvents={hidden ? 'none' : 'box-none'} style={{ position: 'absolute', left: 0, top: 0, opacity: fly.stickyVis, transform: [{ translateX: fly.tx }, { translateY: nativeTy }] }}>
+          <Animated.View style={{ marginLeft: -bw / 2, transform: [{ scale: fly.scale }] }} {...panHandlers}>
+            {children}
+          </Animated.View>
+        </Animated.View>
+      </Animated.View>
+    </>
+  );
+}
+
+/** «90 cápsulas»: cuenta al ritmo del desplazamiento (solo este texto se vuelve a dibujar) */
+function CapsCounter({ scrollY, start, span, size }: { scrollY: Animated.Value; start: number; span: number; size: number }) {
+  const [c, setC] = useState(0);
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      const pr = Math.max(0, Math.min(1, (value - start) / span));
+      setC((prev) => {
+        const v = Math.round(PANCREOGEN.capsules * pr);
+        return v > prev || pr < 0.01 ? v : prev;
+      });
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY, start, span]);
+  return (
+    <Text style={{ fontFamily: font.bold, fontSize: size, lineHeight: size * 1.02, color: colors.white, letterSpacing: -5 }} accessibilityLabel={`${c} cápsulas`}>
+      {c}
+    </Text>
   );
 }
 
