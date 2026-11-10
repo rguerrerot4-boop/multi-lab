@@ -72,6 +72,12 @@ export const shadow = {
   },
 };
 
+// Detalles del personaje del asistente «Multi» (el resto de sus colores son los de marca)
+export const mascot = {
+  steth: '#3A4E55', // manguera del estetoscopio (petróleo aclarado)
+  cheek: '#FF8FA3', // mejillas y lengua
+};
+
 // Colores del empaque de cada producto de la vitrina 3D (tomados de las fotos del producto).
 // Solo se usan dentro de su vitrina; el resto de la app sigue con los colores de marca.
 export const packColors = {

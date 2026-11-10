@@ -1,0 +1,257 @@
+[
+ {
+  "key": "1s0jkso",
+  "text": "¿Sí, doctora? Le escucho.",
+  "voz": "¿Sí, doctora? Le escucho."
+ },
+ {
+  "key": "804mit",
+  "text": "Hola, doctora. Soy Multi, su asistente. ¿En qué le puedo ayudar?",
+  "voz": "Hola, doctora. Soy Multi, su asistente. ¿En qué le puedo ayudar?"
+ },
+ {
+  "key": "zuse6m",
+  "text": "Puedo decirle quién le visitó, qué productos le dejaron, cuándo es su próxima visita, cómo van sus solicitudes y sus mensajes, cambiar su estado y contarle lo que dice el empaque de cada producto. Solo pregunte, doctora.",
+  "voz": "Puedo decirle quién le visitó, qué productos le dejaron, cuándo es su próxima visita, cómo van sus solicitudes y sus mensajes, cambiar su estado y contarle lo que dice el empaque de cada producto. Solo pregunte, doctora."
+ },
+ {
+  "key": "1ki6j3",
+  "text": "Soy Multi, su asistente en Multi LAB. Le ayudo a encontrar rápido lo que ya está en la aplicación.",
+  "voz": "Soy Multi, su asistente en Multilab. Le ayudo a encontrar rápido lo que ya está en la aplicación."
+ },
+ {
+  "key": "xz1ssz",
+  "text": "Con gusto, doctora. Aquí estoy si necesita algo más.",
+  "voz": "Con gusto, doctora. Aquí estoy si necesita algo más."
+ },
+ {
+  "key": "vhfl64",
+  "text": "Hasta luego, doctora. Que tenga buena consulta.",
+  "voz": "Hasta luego, doctora. Que tenga buena consulta."
+ },
+ {
+  "key": "13r5mtq",
+  "text": "Ese dato no lo tengo. Puedo contarle de sus visitas, el material que le dejaron, sus solicitudes, sus mensajes o los productos.",
+  "voz": "Ese dato no lo tengo. Puedo contarle de sus visitas, el material que le dejaron, sus solicitudes, sus mensajes o los productos."
+ },
+ {
+  "key": "1l169t9",
+  "text": "La última persona en visitarle fue Juan Carlos Mieles, visitador de Nutrabiotics y Procaps. Vino hace una semana, a las 16:00, y le presentó DEFEROL y CORAESSENS. Le dejó 4 muestras y 2 impresos de DEFEROL y 3 impresos y 1 ficha digital de CORAESSENS.",
+  "voz": "La última persona en visitarle fue Juan Carlos Mieles, visitador de Nutrabiotics y Procaps. Vino hace una semana, a las 4 de la tarde, y le presentó Deferol y Coraesens. Le dejó 4 muestras y 2 impresos de Deferol y 3 impresos y 1 ficha digital de Coraesens."
+ },
+ {
+  "key": "1efm6ob",
+  "text": "En su última visita, hace una semana, le dejaron 4 muestras y 2 impresos de DEFEROL y 3 impresos y 1 ficha digital de CORAESSENS. Sumando sus 2 visitas, ha recibido 4 muestras de DEFEROL y 3 muestras de CORAESSENS.",
+  "voz": "En su última visita, hace una semana, le dejaron 4 muestras y 2 impresos de Deferol y 3 impresos y 1 ficha digital de Coraesens. Sumando sus 2 visitas, ha recibido 4 muestras de Deferol y 3 muestras de Coraesens."
+ },
+ {
+  "key": "tutski",
+  "text": "Su próxima visita es hoy a las 15:30, con Juan Carlos Mieles. Le va a presentar VITYBELL y DEFEROL.",
+  "voz": "Su próxima visita es hoy a las 3 y 30 de la tarde, con Juan Carlos Mieles. Le va a presentar Vitibel y Deferol."
+ },
+ {
+  "key": "12kbafq",
+  "text": "Ha recibido 2 visitas. La más reciente fue hace una semana y la primera, hace 21 días.",
+  "voz": "Ha recibido 2 visitas. La más reciente fue hace una semana y la primera, hace 21 días."
+ },
+ {
+  "key": "1uzi214",
+  "text": "Tiene 1 solicitud activa: la 0142, de material de apoyo de VITYBELL, que está en proceso. Y 1 ya atendida.",
+  "voz": "Tiene 1 solicitud activa, la 142, de material de apoyo de Vitibel, que está en proceso. Y 1 ya atendida."
+ },
+ {
+  "key": "emzmr5",
+  "text": "Tiene 1 mensaje sin leer. El último es de Juan Carlos Mieles: «Claro, le comparto la ficha para que la revise antes.»",
+  "voz": "Tiene 1 mensaje sin leer. El último es de Juan Carlos Mieles, Claro, le comparto la ficha para que la revise antes."
+ },
+ {
+  "key": "sotng3",
+  "text": "Tiene 2 notificaciones sin leer. La más reciente: Nuevo mensaje de Juan Carlos Mieles.",
+  "voz": "Tiene 2 notificaciones sin leer. La más reciente, Nuevo mensaje de Juan Carlos Mieles."
+ },
+ {
+  "key": "1bu4vnd",
+  "text": "Ahora su estado es «Libre para visitas». Los visitadores lo ven antes de pasar por su consultorio.",
+  "voz": "Ahora su estado es Libre para visitas. Los visitadores lo ven antes de pasar por su consultorio."
+ },
+ {
+  "key": "1ghc4ja",
+  "text": "Listo. Le puse «En consulta», para que los visitadores esperen.",
+  "voz": "Listo. Le puse En consulta, para que los visitadores esperen."
+ },
+ {
+  "key": "racs8g",
+  "text": "Listo. Su estado ahora es «Libre para visitas».",
+  "voz": "Listo. Su estado ahora es Libre para visitas."
+ },
+ {
+  "key": "2njosh",
+  "text": "Listo. Su estado ahora es «No disponible».",
+  "voz": "Listo. Su estado ahora es No disponible."
+ },
+ {
+  "key": "19f2mn4",
+  "text": "No ha reportado material en mal estado. Si algo le llegó dañado, puede reportarlo desde la visita.",
+  "voz": "No ha reportado material en mal estado. Si algo le llegó dañado, puede reportarlo desde la visita."
+ },
+ {
+  "key": "1xrmjen",
+  "text": "No ha publicado búsquedas con «Necesito un producto». Dígame qué busca y le digo qué productos coinciden.",
+  "voz": "No ha publicado búsquedas con Necesito un producto. Dígame qué busca y le digo qué productos coinciden."
+ },
+ {
+  "key": "w4wmmu",
+  "text": "Su visitador es Juan Carlos Mieles, de Nutrabiotics y Procaps. Puede escribirle por el chat cuando quiera.",
+  "voz": "Su visitador es Juan Carlos Mieles, de Nutrabiotics y Procaps. Puede escribirle por el chat cuando quiera."
+ },
+ {
+  "key": "11y9ur4",
+  "text": "Hay 5 productos: CORAESSENS y PANCREOGEN, de Nutrabiotics; y TEARSOFT, DEFEROL y VITYBELL, de Procaps. Pregúnteme por cualquiera.",
+  "voz": "Hay 5 productos, Coraesens y Pancreogen, de Nutrabiotics; y Tirsoft, Deferol y Vitibel, de Procaps. Pregúnteme por cualquiera."
+ },
+ {
+  "key": "oop0q3",
+  "text": "VITYBELL es de Procaps. Suplemento alimenticio en cápsula blanda a base de biotina, zinc, selenio y vitaminas del complejo B. Presentación: cápsula blanda · 5 cápsulas.",
+  "voz": "Vitibel es de Procaps. Suplemento alimenticio en cápsula blanda a base de biotina, zinc, selenio y vitaminas del complejo B. Presentación, cápsula blanda, 5 cápsulas."
+ },
+ {
+  "key": "1vd1824",
+  "text": "TEARSOFT es de Procaps. Solución oftálmica · carboximetilcelulosa sódica 5 mg/mL. Presentación: solución oftálmica · frasco de 3 mL.",
+  "voz": "Tirsoft es de Procaps. Solución oftálmica, carboximetilcelulosa sódica 5 miligramos por mililitro. Presentación, solución oftálmica, frasco de 3 mililitros."
+ },
+ {
+  "key": "36t3kr",
+  "text": "Para «vitamina d» coinciden PANCREOGEN y DEFEROL. ¿De cuál le cuento?",
+  "voz": "Para vitamina d coinciden Pancreogen y Deferol. ¿De cuál le cuento?"
+ },
+ {
+  "key": "4849fb",
+  "text": "CORAESSENS es de Nutrabiotics. Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal-5-fosfato y L-5 MTHF. Presentación: cápsulas · caja de 9 (muestra).",
+  "voz": "Coraesens es de Nutrabiotics. Fórmula a base de corazón bovino liofilizado, magnesio, metilcobalamina, piridoxal 5 fosfato y L 5 metiltetrahidrofolato. Presentación, cápsulas, caja de 9, muestra."
+ },
+ {
+  "key": "nir78q",
+  "text": "Para «suplemento» coinciden CORAESSENS, PANCREOGEN y VITYBELL. ¿De cuál le cuento?",
+  "voz": "Para suplemento coinciden Coraesens, Pancreogen y Vitibel. ¿De cuál le cuento?"
+ },
+ {
+  "key": "g2xmyo",
+  "text": "CORAESSENS: Vía oral. Adultos mayores a 18 años: 1 cápsula 3 veces al día. Tomar con cada comida. Es lo que dice su empaque.",
+  "voz": "Coraesens. Vía oral. Adultos mayores a 18 años, 1 cápsula 3 veces al día. Tomar con cada comida. Es lo que dice su empaque."
+ },
+ {
+  "key": "1osnt2",
+  "text": "CORAESSENS: Suplemento dietario. Vía oral · adultos mayores a 18 años. Es lo que dice su empaque.",
+  "voz": "Coraesens. Suplemento dietario. Vía oral, adultos mayores a 18 años. Es lo que dice su empaque."
+ },
+ {
+  "key": "46yb86",
+  "text": "CORAESSENS contiene polvo liofilizado de corazón bovino, 275 mg por cápsula. Presentación: cápsulas · caja de 9 (muestra). Es lo que dice su empaque.",
+  "voz": "Coraesens contiene polvo liofilizado de corazón bovino, 275 miligramos por cápsula. Presentación, cápsulas, caja de 9, muestra. Es lo que dice su empaque."
+ },
+ {
+  "key": "12roeiu",
+  "text": "CORAESSENS: Manténgase fuera del alcance de los niños. No es adecuado para ser consumido como única fuente de alimento. No superar la dosis recomendada. Es lo que dice su empaque.",
+  "voz": "Coraesens. Manténgase fuera del alcance de los niños. No es adecuado para ser consumido como única fuente de alimento. No superar la dosis recomendada. Es lo que dice su empaque."
+ },
+ {
+  "key": "exx956",
+  "text": "PANCREOGEN es de Nutrabiotics. Fórmula a base de menudo (páncreas) bovino liofilizado, vitaminas y minerales esenciales. Presentación: cápsulas · frasco de 90.",
+  "voz": "Pancreogen es de Nutrabiotics. Fórmula a base de menudo, páncreas, bovino liofilizado, vitaminas y minerales esenciales. Presentación, cápsulas, frasco de 90."
+ },
+ {
+  "key": "k7bymz",
+  "text": "PANCREOGEN: Vía oral. Adultos mayores de 18 años: 1 cápsula 3 veces al día. Es lo que dice su empaque.",
+  "voz": "Pancreogen. Vía oral. Adultos mayores de 18 años, 1 cápsula 3 veces al día. Es lo que dice su empaque."
+ },
+ {
+  "key": "1flmomy",
+  "text": "PANCREOGEN: Suplemento dietario. Vía oral · adultos mayores de 18 años. Es lo que dice su empaque.",
+  "voz": "Pancreogen. Suplemento dietario. Vía oral, adultos mayores de 18 años. Es lo que dice su empaque."
+ },
+ {
+  "key": "d6w22l",
+  "text": "PANCREOGEN contiene polvo liofilizado de páncreas bovino, 537,56 mg por cápsula. Presentación: cápsulas · frasco de 90. Es lo que dice su empaque.",
+  "voz": "Pancreogen contiene polvo liofilizado de páncreas bovino, 537,56 miligramos por cápsula. Presentación, cápsulas, frasco de 90. Es lo que dice su empaque."
+ },
+ {
+  "key": "fui70y",
+  "text": "PANCREOGEN: Manténgase fuera del alcance de los niños. No es adecuado para ser consumido como única fuente de alimento. No superar la dosis recomendada. Es lo que dice su empaque.",
+  "voz": "Pancreogen. Manténgase fuera del alcance de los niños. No es adecuado para ser consumido como única fuente de alimento. No superar la dosis recomendada. Es lo que dice su empaque."
+ },
+ {
+  "key": "1b6xz7m",
+  "text": "TEARSOFT: 1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario. 1 mL = 20 gotas. Vía de administración: Colombia: conjuntival. Otros países: oftálmica. Es lo que dice su empaque.",
+  "voz": "Tirsoft. 1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario. 1 mililitro equivale a 20 gotas. Vía de administración, Colombia, conjuntival. Otros países, oftálmica. Es lo que dice su empaque."
+ },
+ {
+  "key": "1axqnlp",
+  "text": "TEARSOFT: Alivio temporal de la irritación, picazón, ardor y molestias que se presentan en el síndrome de resequedad ocular sea éste moderado o severo, de cualquier etiología, incluyendo la irritación ocular causada por el viento y la exposición al sol. Es lo que dice su empaque.",
+  "voz": "Tirsoft. Alivio temporal de la irritación, picazón, ardor y molestias que se presentan en el síndrome de resequedad ocular sea éste moderado o severo, de cualquier etiología, incluyendo la irritación ocular causada por el viento y la exposición al sol. Es lo que dice su empaque."
+ },
+ {
+  "key": "zlamgl",
+  "text": "TEARSOFT contiene carboximetilcelulosa sódica, 5 mg/mL. Presentación: solución oftálmica · frasco de 3 mL. Es lo que dice su empaque.",
+  "voz": "Tirsoft contiene carboximetilcelulosa sódica, 5 miligramos por mililitro. Presentación, solución oftálmica, frasco de 3 mililitros. Es lo que dice su empaque."
+ },
+ {
+  "key": "93mhvr",
+  "text": "TEARSOFT: Contraindicaciones y advertencias: historia de hipersensibilidad a alguno de los componentes de la fórmula. Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada. Si durante la utilización se presenta dolor ocular, cambios en la agudeza visual o continúan los signos de irritación y éstos se presentan o persisten por 72 horas, descontinuar el producto y consultar con el oftalmólogo. Es lo que dice su empaque.",
+  "voz": "Tirsoft. Contraindicaciones y advertencias, historia de hipersensibilidad a alguno de los componentes de la fórmula. Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada. Si durante la utilización se presenta dolor ocular, cambios en la agudeza visual o continúan los signos de irritación y éstos se presentan o persisten por 72 horas, descontinuar el producto y consultar con el oftalmólogo. Es lo que dice su empaque."
+ },
+ {
+  "key": "1dqqs7x",
+  "text": "DEFEROL es de Procaps. Vitamina D3 7000 U.I. · cápsula blanda de gelatina. Presentación: cápsula blanda · 1 cápsula.",
+  "voz": "Deferol es de Procaps. Vitamina D3 7000 unidades internacionales, cápsula blanda de gelatina. Presentación, cápsula blanda, 1 cápsula."
+ },
+ {
+  "key": "6eam03",
+  "text": "DEFEROL: Vía de administración: oral. Dosificación: 1 cápsula semanal. Puede tomarse independientemente de las comidas. Consumo máximo: 2 cápsulas semanales. Es lo que dice su empaque.",
+  "voz": "Deferol. Vía de administración, oral. Dosificación, 1 cápsula semanal. Puede tomarse independientemente de las comidas. Consumo máximo, 2 cápsulas semanales. Es lo que dice su empaque."
+ },
+ {
+  "key": "lutbii",
+  "text": "DEFEROL: Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L). Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo. Como complemento de la terapia específica para la osteoporosis en pacientes con deficiencia de Vitamina D o en riesgo de insuficiencia de Vitamina D. Es lo que dice su empaque.",
+  "voz": "Deferol. Tratamiento de la deficiencia de Vitamina D (suero 25 hidroxi vitamina D menor a 25 nanomoles por litro). Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo. Como complemento de la terapia específica para la osteoporosis en pacientes con deficiencia de Vitamina D o en riesgo de insuficiencia de Vitamina D. Es lo que dice su empaque."
+ },
+ {
+  "key": "sjme9v",
+  "text": "DEFEROL contiene vitamina D3, 7000 U.I. por cápsula. Presentación: cápsula blanda · 1 cápsula. Es lo que dice su empaque.",
+  "voz": "Deferol contiene vitamina D3, 7000 unidades internacionales por cápsula. Presentación, cápsula blanda, 1 cápsula. Es lo que dice su empaque."
+ },
+ {
+  "key": "1aeyvqt",
+  "text": "DEFEROL: Contraindicaciones: está contraindicado en todas las enfermedades asociadas con hipercalcemia, así como en pacientes con hipersensibilidad conocida a la Vitamina D3, a algunos de los excipientes de la fórmula o a otros fármacos de la misma clase, o exista evidencia de antecedentes de toxicidad a la Vitamina D3. Advertencias y precauciones: ver inserto adjunto. Si los síntomas persisten consulte a su médico. Manténgase fuera del alcance de los niños. Es lo que dice su empaque.",
+  "voz": "Deferol. Contraindicaciones, está contraindicado en todas las enfermedades asociadas con hipercalcemia, así como en pacientes con hipersensibilidad conocida a la Vitamina D3, a algunos de los excipientes de la fórmula o a otros fármacos de la misma clase, o exista evidencia de antecedentes de toxicidad a la Vitamina D3. Advertencias y precauciones, ver inserto adjunto. Si los síntomas persisten consulte a su médico. Manténgase fuera del alcance de los niños. Es lo que dice su empaque."
+ },
+ {
+  "key": "luocr2",
+  "text": "VITYBELL: Vía de administración: oral. Tomar una (1) cápsula al día. Consumo máximo diario: 1 cápsula en 24 horas. Población: adultos mayores de 18 años. Es lo que dice su empaque.",
+  "voz": "Vitibel. Vía de administración, oral. Tomar una cápsula al día. Consumo máximo diario, 1 cápsula en 24 horas. Población, adultos mayores de 18 años. Es lo que dice su empaque."
+ },
+ {
+  "key": "i3jrsq",
+  "text": "VITYBELL: El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales. El Zinc contribuye al mantenimiento de las uñas en condiciones normales. Es lo que dice su empaque.",
+  "voz": "Vitibel. El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales. El Zinc contribuye al mantenimiento de las uñas en condiciones normales. Es lo que dice su empaque."
+ },
+ {
+  "key": "p45l6s",
+  "text": "VITYBELL contiene biotina, ácido pantoténico, nicotinamida, zinc, cobre, selenio, riboflavina y piridoxina, 0.810 g por cápsula. Presentación: cápsula blanda · 5 cápsulas. Es lo que dice su empaque.",
+  "voz": "Vitibel contiene biotina, ácido pantoténico, nicotinamida, zinc, cobre, selenio, riboflavina y piridoxina, 0,81 gramos por cápsula. Presentación, cápsula blanda, 5 cápsulas. Es lo que dice su empaque."
+ },
+ {
+  "key": "9ff9ab",
+  "text": "VITYBELL: Advertencia: puede causar hipersensibilidad a sus componentes. Contiene soya. Consumo máximo diario: 1 cápsula en 24 horas. Es lo que dice su empaque.",
+  "voz": "Vitibel. Advertencia, puede causar hipersensibilidad a sus componentes. Contiene soya. Consumo máximo diario, 1 cápsula en 24 horas. Es lo que dice su empaque."
+ },
+ {
+  "key": "1hii3k0",
+  "text": "Ahora su estado es «En consulta». Los visitadores lo ven antes de pasar por su consultorio.",
+  "voz": "Ahora su estado es En consulta. Los visitadores lo ven antes de pasar por su consultorio."
+ },
+ {
+  "key": "1h8vlhm",
+  "text": "Ahora su estado es «No disponible». Los visitadores lo ven antes de pasar por su consultorio.",
+  "voz": "Ahora su estado es No disponible. Los visitadores lo ven antes de pasar por su consultorio."
+ }
+]
