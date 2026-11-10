@@ -412,6 +412,12 @@ def scene(name_text, prefix, animated=True):
         caps = Capsules()
         for i in range(N_CAPS):
             nodes.append({'name': f'Capsula{i + 1}', 'parent': None, 'mesh': 'Capsula', 'anim': (lambda k: lambda t: caps.at(k, t))(i)})
+        # «Limites»: un triángulo sin área (no se ve ni da sombra) con las esquinas de todo lo que ocupa la animación.
+        # AR Quick Look (modo Objeto) y Scene Viewer encuadran la cámara con el primer cuadro, en el que el frasco aún
+        # es diminuto; sin esto la cámara queda pegada y, al crecer, el frasco se sale de la pantalla
+        mn, mx = anim_extent(nodes, meshes)
+        meshes['Limites'] = [([mn, mx, mx], [(0, 1, 0)] * 3, [0, 1, 2], 'aro', None)]
+        nodes.append({'name': 'Limites', 'parent': None, 'mesh': 'Limites'})
         materials.update({
             'nombreFrente': {'color': WHITE, 'rough': 0.35},
             'nombreCanto': {'color': TEAL, 'rough': 0.4},
@@ -613,6 +619,43 @@ def write_usdz(path, scene_, files):
         if not UsdUtils.CreateNewARKitUsdzPackage(Sdf.AssetPath(usdc), path):
             raise SystemExit(f'No se pudo crear {path}')
 
+
+
+def _mat(tr, q, sc):
+    x, y, z, w = q
+    r = np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                  [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                  [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+    m = np.eye(4)
+    m[:3, :3] = r * sc
+    m[:3, 3] = tr
+    return m
+
+
+def anim_extent(nodes, meshes, fps=30):
+    """Caja que encierra todas las mallas visibles en todos los cuadros de la animación."""
+    boxes = {}
+    for k, prims in meshes.items():
+        pts = np.concatenate([np.array(p[0], float) for p in prims])
+        lo, hi = pts.min(axis=0), pts.max(axis=0)
+        boxes[k] = np.array([[a, b, c, 1] for a in (lo[0], hi[0]) for b in (lo[1], hi[1]) for c in (lo[2], hi[2])])
+    mn, mx = np.full(3, np.inf), np.full(3, -np.inf)
+    for i in range(int(T * fps) + 1):
+        t = i / fps
+        world = {}
+        for n in nodes:
+            if n.get('anim'):
+                tr, q, sc = n['anim'](t)
+                m = _mat(tr, q, sc)
+            else:
+                m = _mat(n.get('translation', (0, 0, 0)), (0, 0, 0, 1), 1.0)
+            if n['parent'] is not None:
+                m = world[n['parent']] @ m
+            world[n['name']] = m
+            if n.get('mesh') in boxes and np.linalg.norm(m[:3, 0]) > 0.01:
+                w = (m @ boxes[n['mesh']].T).T[:, :3]
+                mn, mx = np.minimum(mn, w.min(axis=0)), np.maximum(mx, w.max(axis=0))
+    return tuple(map(float, mn)), tuple(map(float, mx))
 
 def cap_top(src):
     """La foto de la cara de arriba de la tapa, aclarada al tono del lado (la foto quedó oscura) y sin el
