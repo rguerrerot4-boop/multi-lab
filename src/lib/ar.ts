@@ -8,7 +8,7 @@ import { Linking, Platform } from 'react-native';
 import type { Product } from '@/data/mock';
 
 /** Commit del repositorio con los modelos. Actualízalo si cambias los archivos de /ar/models. */
-export const AR_COMMIT = '83cdf0351fdbcb91e7b03923117fa6575d5aa9be';
+export const AR_COMMIT = '587f342c175e9ffb93cc049dc822181457a97e25';
 const BASE = `https://cdn.jsdelivr.net/gh/rguerrerot4-boop/multi-lab@${AR_COMMIT}/ar/models`;
 
 /** Medidas de la caja de demostración (cm), las mismas del modelo */
