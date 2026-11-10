@@ -176,7 +176,7 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
     }
   }
   // radio de la órbita: alrededor de la caja (la de DEFEROL es ancha)
-  const orbit = Math.max(0.78, Math.hypot(W, D) / 2 + 0.28);
+  const orbit = Math.max(0.78, Math.hypot(W, D) / 2 + 0.16);
 
   const camera = new THREE.PerspectiveCamera(28, 1, 0.05, 50);
   let vw = 1;
@@ -187,12 +187,22 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
   let foldTarget = 1;
   let yaw = -0.55;
   let pitch = 0.18;
+  // el giro dibujado (yaw, pitch) sigue con suavidad al giro buscado (gYaw, gPitch): el arrastre, la inercia, el
+  // giro solo y el giro hacia una cara solo mueven el buscado, así no hay saltos entre un evento y otro
+  let gYaw = yaw;
+  let gPitch = pitch;
   let vYaw = 0;
   let vPitch = 0;
   let dragging = false;
+  let touch = false;
   let lastX = 0;
   let lastY = 0;
   let lastT = 0;
+  let lastMove = 0;
+  // con el dedo: de lado gira la caja; de arriba abajo desplaza la página (se decide al empezar a mover)
+  let lock: 'h' | 'v' | null = null;
+  let tx0 = 0;
+  let ty0 = 0;
   let idleAt = 0;
   let active = true;
   let dirty = true;
@@ -205,41 +215,90 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
 
   const onDown = (e: PointerEvent) => {
     dragging = true;
+    touch = e.pointerType === 'touch';
     aim = null;
     lastX = e.clientX;
     lastY = e.clientY;
-    lastT = performance.now();
+    lastT = lastMove = performance.now();
     vYaw = vPitch = 0;
-    canvas.setPointerCapture?.(e.pointerId);
+    gYaw = yaw;
+    gPitch = pitch;
+    if (!touch) canvas.setPointerCapture?.(e.pointerId);
+    canvas.style.cursor = 'grabbing';
   };
   const onMove = (e: PointerEvent) => {
     if (!dragging) return;
+    // con el dedo, hasta saber la dirección no se gira; si es vertical, la página se desplaza
+    if (touch && lock !== 'h') {
+      if (lock === 'v') dragging = false;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      return;
+    }
     const now = performance.now();
-    const dt = Math.max(8, now - lastT);
+    const dt = Math.max(6, now - lastT);
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
-    const k = 4.2 / Math.max(240, vw);
-    yaw += dx * k;
-    pitch = Math.max(-0.9, Math.min(0.9, pitch + dy * k * 0.7));
-    vYaw = ((dx * k) / dt) * 1000;
-    vPitch = ((dy * k * 0.7) / dt) * 1000;
+    const k = 4.4 / Math.max(260, vw);
+    gYaw += dx * k;
+    // con el mouse también se inclina; con el dedo solo gira de lado (lo vertical es de la página)
+    if (!touch) gPitch = Math.max(-0.9, Math.min(1.3, gPitch + dy * k * 0.6));
+    // velocidad suavizada: un evento suelto no lanza la caja
+    vYaw = vYaw * 0.55 + (((dx * k) / dt) * 1000) * 0.45;
+    vPitch = touch ? 0 : vPitch * 0.55 + (((dy * k * 0.6) / dt) * 1000) * 0.45;
     lastX = e.clientX;
     lastY = e.clientY;
-    lastT = now;
+    lastT = lastMove = now;
     dirty = true;
   };
   const onUp = () => {
     if (!dragging) return;
     dragging = false;
+    // si el dedo se quedó quieto antes de soltar, no hay inercia
+    if (performance.now() - lastMove > 70) vYaw = vPitch = 0;
+    vYaw = Math.max(-9, Math.min(9, vYaw));
     idleAt = performance.now();
+    canvas.style.cursor = 'grab';
+  };
+  const onTouchStart = (e: TouchEvent) => {
+    lock = null;
+    tx0 = e.touches[0]?.clientX ?? 0;
+    ty0 = e.touches[0]?.clientY ?? 0;
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const t = e.touches[0];
+    if (!t || e.touches.length > 1) return;
+    if (!lock) {
+      const dx = Math.abs(t.clientX - tx0);
+      const dy = Math.abs(t.clientY - ty0);
+      if (dx + dy < 6) return;
+      lock = dx > dy * 0.75 ? 'h' : 'v';
+      if (lock === 'h') {
+        // el giro empieza desde aquí, sin el tramo que se usó para decidir
+        lastX = t.clientX;
+        lastT = performance.now();
+      }
+    }
+    // de lado: la página no se desplaza ni cancela el gesto
+    if (lock === 'h' && e.cancelable) e.preventDefault();
+  };
+  const onTouchEnd = () => {
+    lock = null;
   };
   canvas.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
-  // solo el giro de lado: el desplazamiento vertical de la página sigue funcionando
+  canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd);
+  canvas.addEventListener('touchcancel', onTouchEnd);
+  // el navegador solo se encarga del desplazamiento vertical; lo de lado lo decide onTouchMove
   canvas.style.touchAction = 'pan-y';
   canvas.style.cursor = 'grab';
+  canvas.style.userSelect = 'none';
+  (canvas.style as unknown as Record<string, string>).webkitUserSelect = 'none';
+  (canvas.style as unknown as Record<string, string>).webkitTapHighlightColor = 'transparent';
 
   const ease = (x: number) => x * x * (3 - 2 * x);
 
@@ -256,25 +315,28 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
       dirty = true;
     } else fold = foldTarget;
 
-    // inercia y giro solo
+    // inercia, giro solo y giro hacia una cara: mueven el giro buscado
     if (!dragging) {
       if (aim) {
-        const k = Math.min(1, dt * (opts.reduce ? 60 : 5.5));
-        yaw += (aim.yaw - yaw) * k;
-        pitch += (aim.pitch - pitch) * k;
-        if (Math.abs(aim.yaw - yaw) > 0.001 || Math.abs(aim.pitch - pitch) > 0.001) dirty = true;
-      } else if (Math.abs(vYaw) > 0.002 || Math.abs(vPitch) > 0.002) {
-        yaw += vYaw * dt;
-        pitch = Math.max(-0.9, Math.min(0.9, pitch + vPitch * dt));
-        const damp = Math.exp(-dt * 3.2);
+        gYaw = aim.yaw;
+        gPitch = aim.pitch;
+      } else if (Math.abs(vYaw) > 0.01 || Math.abs(vPitch) > 0.01) {
+        gYaw += vYaw * dt;
+        gPitch = Math.max(-0.9, Math.min(1.3, gPitch + vPitch * dt));
+        const damp = Math.exp(-dt * 3.4);
         vYaw *= damp;
         vPitch *= damp;
-        dirty = true;
-      } else if (!opts.reduce && now - idleAt > 1600 && fold > 0.98) {
-        yaw += dt * 0.32;
-        pitch += (0.18 - pitch) * Math.min(1, dt * 1.5);
-        dirty = true;
+      } else if (!opts.reduce && now - idleAt > 1800 && fold > 0.98) {
+        gYaw += dt * 0.3;
+        gPitch += (0.18 - gPitch) * Math.min(1, dt * 1.2);
       }
+    }
+    // el giro dibujado sigue al buscado (rápido al arrastrar, más suave al ir a una cara)
+    const follow = opts.reduce ? 1 : Math.min(1, dt * (dragging ? 26 : aim ? 5.5 : 14));
+    if (Math.abs(gYaw - yaw) > 0.0004 || Math.abs(gPitch - pitch) > 0.0004) {
+      yaw += (gYaw - yaw) * follow;
+      pitch += (gPitch - pitch) * follow;
+      dirty = true;
     }
 
     const f = ease(fold);
@@ -316,7 +378,8 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
     // encuadre: la caja (alto 1) o el troquel (≈ 2·ancho + 2·fondo)
     const zoom = opts.zoom ?? 1;
     const needH = (1.55 * f + (H + 2 * D) * 1.12 * u) / zoom;
-    const needW = (Math.max(1.25, opts.capsules ? (orbit + 0.12) * 2 : 0, Math.hypot(W, D) * 1.2) * f + (2 * W + 2 * D) * 1.1 * u) / zoom;
+    // la caja entra entera aunque gire (su diagonal); las cápsulas pueden salir por los bordes
+    const needW = (Math.max(1.25, Math.hypot(W, D) * 1.1) * f + (2 * W + 2 * D) * 1.1 * u) / zoom;
     const fov = THREE.MathUtils.degToRad(camera.fov);
     const distH = needH / 2 / Math.tan(fov / 2);
     const distW = needW / 2 / Math.tan(fov / 2) / camera.aspect;
@@ -353,7 +416,9 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
   return {
     setFold(target, instant) {
       // el giro acumulado se lleva a una sola vuelta: al desplegarse no da varias vueltas de golpe
-      yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
+      const n = Math.atan2(Math.sin(yaw), Math.cos(yaw));
+      gYaw = n + (gYaw - yaw);
+      yaw = n;
       vYaw = vPitch = 0;
       foldTarget = Math.max(0, Math.min(1, target));
       if (instant) fold = foldTarget;
@@ -380,8 +445,8 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
       const target = { front: [0, 0.12], right: [-Math.PI / 2, 0.12], back: [Math.PI, 0.12], left: [Math.PI / 2, 0.12], top: [0, 1.25], bottom: [0, -1.25] }[face];
       // el giro más corto desde donde está
       let ty = target[0];
-      while (ty - yaw > Math.PI) ty -= Math.PI * 2;
-      while (ty - yaw < -Math.PI) ty += Math.PI * 2;
+      while (ty - gYaw > Math.PI) ty -= Math.PI * 2;
+      while (ty - gYaw < -Math.PI) ty += Math.PI * 2;
       vYaw = vPitch = 0;
       aim = { yaw: ty, pitch: target[1] };
       dirty = true;
@@ -399,6 +464,10 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+      canvas.removeEventListener('touchcancel', onTouchEnd);
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         m.geometry?.dispose?.();

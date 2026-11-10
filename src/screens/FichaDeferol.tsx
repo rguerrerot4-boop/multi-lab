@@ -179,11 +179,11 @@ export default function FichaDeferol({ product: p, presenting = false, visita, i
                 {wide ? <HeroButtons onFull={() => setFull(true)} onAR={launchAR} fold={fold} onFold={() => { setFace(null); setFold(fold > 0.5 ? 0 : 1); }} /> : null}
               </View>
               <View style={{ flex: wide ? 1.25 : undefined, alignItems: 'center' }}>
-                <View style={{ width: wide ? span(2, 4) * 0.55 : span(2) - space.lg * 2, height: heroBoxH }}>
+                <View style={{ width: wide ? span(2, 4) * 0.55 : span(2), height: heroBoxH, marginHorizontal: wide ? 0 : -space.lg }}>
                   <TearBox
                     textures={tex}
                     dims={I.dims}
-                    width={wide ? span(2, 4) * 0.55 : span(2) - space.lg * 2}
+                    width={wide ? span(2, 4) * 0.55 : span(2)}
                     height={heroBoxH}
                     capsules
                     fold={fold}
@@ -191,7 +191,7 @@ export default function FichaDeferol({ product: p, presenting = false, visita, i
                     edge={C.aqua}
                     active={heroVisible && !full && !zoom}
                     reduce={reduce}
-                    zoom={wide ? 1 : 1.32}
+                    zoom={1}
                   />
                 </View>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: space.sm }}>
