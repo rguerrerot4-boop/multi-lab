@@ -37,6 +37,8 @@ TINY = 0.0001
 # proyectaba muy grande, así que se muestra a la mitad (6,2 cm de alto). La ficha web (bottleGL) y la AR con
 # tarjeta leen `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su propia cámara o `escala`.
 AR_SCALE = 0.5
+# fracción de la caja de toda la animación con que los visores encuadran la cámara (1 = todo, muy lejos)
+LIMITES_ZOOM = 0.8
 
 # medidas (m): diámetro de 4 cm; las proporciones salen de las fotos (cuerpo 2,39 diámetros, tapa 0,7)
 R = 0.020
@@ -416,6 +418,10 @@ def scene(name_text, prefix, animated=True):
         # AR Quick Look (modo Objeto) y Scene Viewer encuadran la cámara con el primer cuadro, en el que el frasco aún
         # es diminuto; sin esto la cámara queda pegada y, al crecer, el frasco se sale de la pantalla
         mn, mx = anim_extent(nodes, meshes)
+        # la caja completa dejaba la cámara muy lejos: se usa una parte, centrada (lo que asoma en el momento más
+        # abierto, la tapa arriba y las cápsulas a los lados, queda en el margen que agrega el visor)
+        c, h = (np.array(mn) + np.array(mx)) / 2, (np.array(mx) - np.array(mn)) / 2 * LIMITES_ZOOM
+        mn, mx = tuple(map(float, c - h)), tuple(map(float, c + h))
         meshes['Limites'] = [([mn, mx, mx], [(0, 1, 0)] * 3, [0, 1, 2], 'aro', None)]
         nodes.append({'name': 'Limites', 'parent': None, 'mesh': 'Limites'})
         materials.update({
