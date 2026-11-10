@@ -33,10 +33,11 @@ OUT = os.path.join(ROOT, 'ar', 'models')
 T, FPS = 12.0, 30
 SHOW = (1.6, 10.8)
 TINY = 0.0001
-# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): el frasco real (4 × 12,4 cm) se
-# proyectaba muy grande, así que se muestra a la mitad (6,2 cm de alto). La ficha web (bottleGL) y la AR con
-# tarjeta leen `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su propia cámara o `escala`.
-AR_SCALE = 0.5
+# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): a la mitad (6,2 cm) el frasco se
+# veía muy pequeño al proyectarlo sobre una mesa; a 1,2 mide unos 15 cm de alto y se aprecian la etiqueta y las
+# cápsulas. El modo Objeto no cambia (la cámara se ajusta a la caja de `Limites`). La ficha web (bottleGL) y
+# la AR con tarjeta leen `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su cámara o `escala`.
+AR_SCALE = 1.2
 # fracción de la caja de toda la animación con que los visores encuadran la cámara (1 = todo, muy lejos)
 LIMITES_ZOOM = 0.8
 
