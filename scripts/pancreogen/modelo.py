@@ -2,7 +2,8 @@
 
 El frasco es un cilindro con la etiqueta reconstruida en limpio (texturas.py → etiqueta_limpia.py) y una
 tapa plateada metalizada con la foto de la tapa. Animación propia, distinta de la de CORAESSENS (ciclo de 12 s):
-  0,0–1,4 s   el frasco sube girando desde el piso y se abre un aro
+  0,0–1,4 s   el frasco sube girando desde el piso, sobre un aro que ya está a tamaño real (así los visores
+              de AR miden bien el modelo: tamaño real del frasco, 4 × 12,4 cm)
   0,8–1,6 s   aparece un anillo con el nombre en 3D alrededor del frasco
   1,6–10,8 s  función (tramo que se repite sin cortes; la AR con tarjeta repite solo este tramo):
               la tapa se desenrosca (1,9 s) y queda flotando de lado; salen 12 cápsulas en espiral
@@ -301,13 +302,10 @@ def ring_at(t):
 
 
 def floor_ring(t):
-    if t < 0.15:
-        return TINY
-    if t < 1.0:
-        return max(TINY, eo((t - 0.15) / 0.85))
-    if t < SHOW[1]:
-        return 1.0
-    return max(TINY, 1 - ei((t - SHOW[1]) / 0.6))
+    # el aro del piso está siempre a tamaño real: así el primer cuadro de la animación ya mide lo que el
+    # frasco (si todo empieza diminuto, Scene Viewer y AR Quick Look calculan el tamaño con ese cuadro y
+    # agrandan el modelo, que al crecer se ve enorme)
+    return 1.0
 
 
 class Capsules:
@@ -470,7 +468,9 @@ def write_glb(path, title, scene_, images, animated=True):
         if n.get('translation'):
             g['translation'] = list(n['translation'])
         if n.get('anim'):
-            tr, q, s = n['anim'](0.0 if animated else SHOW[0])
+            # pose de reposo = frasco completo y cerrado (la animación la reemplaza al reproducirse); los visores
+            # que miden el modelo antes de animarlo ven su tamaño real
+            tr, q, s = n['anim'](SHOW[0])
             g['translation'], g['rotation'], g['scale'] = list(map(float, tr)), list(q), [s] * 3
         gl_nodes.append(g)
     for i, n in enumerate(nodes):
@@ -576,6 +576,11 @@ def write_usdz(path, scene_, files):
             x = UsdGeom.Xform.Define(stage, p)
             if n.get('anim'):
                 t_op, r_op, s_op = x.AddTranslateOp(), x.AddOrientOp(), x.AddScaleOp()
+                # valor sin tiempo = frasco completo (lo usa quien mide el modelo sin animación)
+                tr0, q0, s0 = n['anim'](SHOW[0])
+                t_op.Set(Gf.Vec3f(*map(float, tr0)))
+                r_op.Set(Gf.Quatf(q0[3], q0[0], q0[1], q0[2]))
+                s_op.Set(Gf.Vec3f(s0, s0, s0))
                 vals = [n['anim'](_time(t)) for t in ts]
                 for i, (tr, q, s) in enumerate(zip([v[0] for v in vals], A._continuous([v[1] for v in vals]), [v[2] for v in vals])):
                     t_op.Set(Gf.Vec3f(*map(float, tr)), i)

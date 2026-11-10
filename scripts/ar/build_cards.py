@@ -192,7 +192,7 @@ def card_coraessens():
 
 
 # ---------- tarjeta propia de PANCREOGEN (colores de su etiqueta: teal, blanco y plata) ----------
-PAN = {"id": "pan", "name": "PANCREOGEN", "lab": "Nutrabiotics", "category": "Suplemento dietario", "real": True, "escala": 0.5}  # el frasco es alto: 50 %
+PAN = {"id": "pan", "name": "PANCREOGEN", "lab": "Nutrabiotics", "category": "Suplemento dietario", "real": True, "escala": 0.42}  # el frasco es alto (12,4 cm): 42 %
 P_TEAL, P_DEEP, P_NIGHT, P_MINT, P_SILVER = "#1F6B6E", "#0E3A3C", "#061718", "#8FD3CC", "#C9CED2"
 
 
