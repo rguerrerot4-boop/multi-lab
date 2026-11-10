@@ -141,7 +141,7 @@ export default function FichaDeferol({ product: p, presenting = false, visita, i
     const k = Math.min(cols, wide ? nWide : n);
     return colW * k + GAP * (k - 1);
   };
-  const heroBoxH = wide ? 420 : Math.min(330, Math.max(240, width * 0.72));
+  const heroBoxH = wide ? 440 : Math.min(360, Math.max(260, width * 0.84));
   let order = 0;
   const next = () => order++;
 
@@ -186,6 +186,7 @@ export default function FichaDeferol({ product: p, presenting = false, visita, i
                     width={wide ? span(2, 4) * 0.55 : span(2)}
                     height={heroBoxH}
                     capsules
+                    free
                     fold={fold}
                     face={face?.face ?? null}
                     edge={C.aqua}
@@ -216,7 +217,7 @@ export default function FichaDeferol({ product: p, presenting = false, visita, i
                       </View>
                     </Appear>
                   ) : (
-                    <Hint icon="finger-print-outline" text="Arrastra la caja para girarla o elige una cara" />
+                    <Hint icon="finger-print-outline" text="Gírala en cualquier dirección con el dedo o elige una cara" />
                   )}
                 </View>
                 {!wide ? <HeroButtons onFull={() => setFull(true)} onAR={launchAR} fold={fold} onFold={() => { setFace(null); setFold(fold > 0.5 ? 0 : 1); }} /> : null}
@@ -923,7 +924,7 @@ function FullBox({ textures, faces, dims, title, reduce, onClose, onAR }: { text
     <View style={{ flex: 1, backgroundColor: C.aquaMist }}>
       <LinearGradient colors={[C.aquaSoft, C.aquaMist]} style={StyleSheet.absoluteFill} />
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <TearBox textures={textures} dims={dims} width={width} height={height * 0.64} fold={fold} face={face} capsules edge={C.aqua} reduce={reduce} zoom={1.2} />
+        <TearBox textures={textures} dims={dims} width={width} height={height * 0.64} fold={fold} face={face} capsules free edge={C.aqua} reduce={reduce} />
       </View>
       <View style={{ position: 'absolute', top: insets.top + space.sm, left: space.lg, right: space.lg, flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <RoundButton icon="close" label="Cerrar la vista 3D" onPress={onClose} color={C.deep} />
@@ -939,7 +940,7 @@ function FullBox({ textures, faces, dims, title, reduce, onClose, onAR }: { text
             </Tap>
           ))}
         </View>
-        <Text style={{ fontFamily: font.medium, fontSize: 12, color: C.ink, opacity: 0.8, textAlign: 'center' }}>Arrastra para girarla o elige una cara.</Text>
+        <Text style={{ fontFamily: font.medium, fontSize: 12, color: C.ink, opacity: 0.8, textAlign: 'center' }}>Gírala en cualquier dirección o elige una cara.</Text>
         <View style={{ flexDirection: 'row', gap: space.sm, width: '100%', maxWidth: 460 }}>
           <Pill icon={fold > 0.5 ? 'expand-outline' : 'cube-outline'} label={fold > 0.5 ? 'Desplegar' : 'Armar'} onPress={() => { setFace(null); setFold(fold > 0.5 ? 0 : 1); }} variant="solid" color={C.deep} wide small />
           <Pill icon="scan-outline" label="Ver en AR" onPress={onAR} variant="outlineColor" color={C.deep} wide small />

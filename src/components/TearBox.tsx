@@ -23,6 +23,7 @@ export function TearBox({
   fold = 1,
   drops = false,
   capsules = false,
+  free = false,
   face = null,
   edge = '#E8EEF5',
   highlight = null,
@@ -40,6 +41,8 @@ export function TearBox({
   drops?: boolean;
   /** cápsulas blandas alrededor (DEFEROL) */
   capsules?: boolean;
+  /** giro libre en cualquier dirección (en la web) */
+  free?: boolean;
   /** cara que gira hasta quedar de frente */
   face?: BoxFace | null;
   /** canto de la caja en la versión nativa */
@@ -81,7 +84,7 @@ export function TearBox({
     import('@/lib/boxGL')
       .then((m) => {
         if (dead) return;
-        gl.current = m.createBoxGL(canvas, { urls, dims, drops, capsules, reduce, zoom, onReady: () => ready.current?.() });
+        gl.current = m.createBoxGL(canvas, { urls, dims, drops, capsules, free, reduce, zoom, onReady: () => ready.current?.() });
         gl.current.setFold(fold, true);
         gl.current.resize(width, height);
       })
@@ -121,7 +124,7 @@ export function TearBox({
       </View>
     );
   }
-  return <View ref={host} style={{ width, height }} accessibilityLabel="Caja en 3D: arrástrala de lado para girarla" />;
+  return <View ref={host} style={{ width, height }} accessibilityLabel={free ? 'Caja en 3D: arrástrala en cualquier dirección para girarla' : 'Caja en 3D: arrástrala de lado para girarla'} />;
 }
 
 /** Troquel plano de la caja (las seis fotos en cruz), para la app nativa */
