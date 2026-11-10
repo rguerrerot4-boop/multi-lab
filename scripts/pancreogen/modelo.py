@@ -33,11 +33,11 @@ OUT = os.path.join(ROOT, 'ar', 'models')
 T, FPS = 12.0, 30
 SHOW = (1.6, 10.8)
 TINY = 0.0001
-# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): a la mitad (6,2 cm) el frasco se
-# veía muy pequeño al proyectarlo sobre una mesa; a 1,2 mide unos 15 cm de alto y se aprecian la etiqueta y las
-# cápsulas. El modo Objeto no cambia (la cámara se ajusta a la caja de `Limites`). La ficha web (bottleGL) y
-# la AR con tarjeta leen `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su cámara o `escala`.
-AR_SCALE = 1.2
+# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): a tamaño real y a 1,2 el frasco
+# se veía pequeño al proyectarlo (CORAESSENS se aprecia más grande); a 2 mide unos 25 cm de alto. El modo Objeto
+# no cambia (la cámara se ajusta a la caja de `Limites`). La ficha web (bottleGL) y la AR con tarjeta leen
+# `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su cámara o `escala`.
+AR_SCALE = 2.0
 # fracción de la caja de toda la animación con que los visores encuadran la cámara (1 = todo, muy lejos)
 LIMITES_ZOOM = 0.8
 
@@ -554,7 +554,8 @@ def write_usdz(path, scene_, files):
         stage.SetStartTimeCode(0)
         stage.SetEndTimeCode(int(round(T * FPS)))
         root = UsdGeom.Xform.Define(stage, '/Producto')
-        root.AddScaleOp().Set(Gf.Vec3f(AR_SCALE, AR_SCALE, AR_SCALE))
+        # la escala va en un Xform hijo (no en el prim raíz): AR Quick Look puede ignorar la transformación del prim por defecto
+        UsdGeom.Xform.Define(stage, '/Producto/Escala').AddScaleOp().Set(Gf.Vec3f(AR_SCALE, AR_SCALE, AR_SCALE))
         stage.SetDefaultPrim(root.GetPrim())
         UsdGeom.Scope.Define(stage, '/Producto/Materiales')
         mats = {}
@@ -588,7 +589,7 @@ def write_usdz(path, scene_, files):
         paths = {}
         ts = [i / FPS for i in range(int(round(T * FPS)) + 1)]
         for n in nodes:
-            parent = '/Producto' if n['parent'] is None else paths[n['parent']]
+            parent = '/Producto/Escala' if n['parent'] is None else paths[n['parent']]
             p = f"{parent}/{n['name']}"
             paths[n['name']] = p
             x = UsdGeom.Xform.Define(stage, p)
