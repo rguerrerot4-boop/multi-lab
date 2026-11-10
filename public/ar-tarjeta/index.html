@@ -158,9 +158,13 @@
           base.scale.setScalar(escala(p));
           // modelo animado (CORAESSENS y PANCREOGEN): el producto sale de la tarjeta girando y aparece su nombre en 3D
           const animado = gltf.animations.length > 0;
-          // PANCREOGEN viene reducido para los visores de AR del sistema (`escalaAR`); aquí el tamaño lo da `escala`
+          // PANCREOGEN viene agrandado para los visores de AR del sistema (`escalaAR`); aquí va a tamaño real y lo ajusta `escala`
+          let escalaAR = 1;
           gltf.scene.traverse((o) => {
-            if (typeof o.userData.escalaAR === 'number') o.scale.setScalar(1);
+            if (typeof o.userData.escalaAR === 'number') {
+              escalaAR = o.userData.escalaAR;
+              o.scale.setScalar(1 / escalaAR);
+            }
           });
           const caja = gltf.scene.getObjectByName('Caja') ?? gltf.scene.getObjectByName('Frasco');
           // la sombra se ajusta al tamaño de la caja (sin el nombre en 3D)
@@ -168,7 +172,7 @@
           let tam;
           if (cuerpo?.isMesh) {
             cuerpo.geometry.computeBoundingBox();
-            tam = cuerpo.geometry.boundingBox.getSize(new THREE.Vector3());
+            tam = cuerpo.geometry.boundingBox.getSize(new THREE.Vector3()).divideScalar(escalaAR);
           } else tam = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
           // polygonOffset: la sombra queda siempre detrás del piso interior de la caja (se ve al abrir la tapa)
           const sombra = new THREE.Mesh(

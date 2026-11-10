@@ -33,13 +33,12 @@ OUT = os.path.join(ROOT, 'ar', 'models')
 T, FPS = 12.0, 30
 SHOW = (1.6, 10.8)
 TINY = 0.0001
-# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): a tamaño real y a 1,2 el frasco
-# se veía pequeño al proyectarlo (CORAESSENS se aprecia más grande); a 2 mide unos 25 cm de alto. El modo Objeto
-# no cambia (la cámara se ajusta a la caja de `Limites`). La ficha web (bottleGL) y la AR con tarjeta leen
-# `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su cámara o `escala`.
-AR_SCALE = 2.0
-# fracción de la caja de toda la animación con que los visores encuadran la cámara (1 = todo, muy lejos)
-LIMITES_ZOOM = 0.8
+# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): el frasco se veía pequeño al
+# proyectarlo. Va multiplicada en las coordenadas del modelo animado (`bake_scale`), no como escala de un nodo.
+# La ficha web (bottleGL), la AR con tarjeta y los cuadros leen `escalaAR` del nodo raíz y lo ponen a 1/escalaAR.
+AR_SCALE = 2.5
+# ancho de la caja de encuadre (`Limites`) en radios del frasco
+LIMITES_MARGEN = 1.6
 
 # medidas (m): diámetro de 4 cm; las proporciones salen de las fotos (cuerpo 2,39 diámetros, tapa 0,7)
 R = 0.020
@@ -415,14 +414,12 @@ def scene(name_text, prefix, animated=True):
         caps = Capsules()
         for i in range(N_CAPS):
             nodes.append({'name': f'Capsula{i + 1}', 'parent': None, 'mesh': 'Capsula', 'anim': (lambda k: lambda t: caps.at(k, t))(i)})
-        # «Limites»: un triángulo sin área (no se ve ni da sombra) con las esquinas de todo lo que ocupa la animación.
-        # AR Quick Look (modo Objeto) y Scene Viewer encuadran la cámara con el primer cuadro, en el que el frasco aún
-        # es diminuto; sin esto la cámara queda pegada y, al crecer, el frasco se sale de la pantalla
-        mn, mx = anim_extent(nodes, meshes)
-        # la caja completa dejaba la cámara muy lejos: se usa una parte, centrada (lo que asoma en el momento más
-        # abierto, la tapa arriba y las cápsulas a los lados, queda en el margen que agrega el visor)
-        c, h = (np.array(mn) + np.array(mx)) / 2, (np.array(mx) - np.array(mn)) / 2 * LIMITES_ZOOM
-        mn, mx = tuple(map(float, c - h)), tuple(map(float, c + h))
+        # «Limites»: un triángulo sin área (no se ve ni da sombra) que fija la caja con que AR Quick Look (modo
+        # Objeto) y Scene Viewer encuadran la cámara. Ellos miden el primer cuadro, en el que el frasco aún es
+        # diminuto: sin esto la cámara quedaba pegada. La caja es la del frasco cerrado con un poco de margen, para que
+        # el frasco se vea grande; al abrirse, la tapa y las cápsulas pueden salirse un poco del encuadre.
+        mn = (-R * LIMITES_MARGEN, -0.02, -R * LIMITES_MARGEN)
+        mx = (R * LIMITES_MARGEN, (HB + HC) * 1.08, R * LIMITES_MARGEN)
         meshes['Limites'] = [([mn, mx, mx], [(0, 1, 0)] * 3, [0, 1, 2], 'aro', None)]
         nodes.append({'name': 'Limites', 'parent': None, 'mesh': 'Limites'})
         materials.update({
@@ -434,6 +431,24 @@ def scene(name_text, prefix, animated=True):
         })
     return meshes, nodes, materials
 
+
+
+def bake_scale(sc, k):
+    """Escala el modelo animado multiplicando las coordenadas (mallas y traslaciones), sin transformación de
+    escala en ningún nodo padre: así el tamaño es el mismo en cualquier visor (AR Quick Look puede ignorar la escala
+    de un nodo contenedor y seguía mostrando el frasco pequeño)."""
+    meshes, nodes, materials = sc
+    meshes = {name: [([tuple(np.array(v, float) * k) for v in pos], nor, idx, mat, uv) for pos, nor, idx, mat, uv in prims]
+              for name, prims in meshes.items()}
+    out = []
+    for n in nodes:
+        n = dict(n)
+        if n.get('translation'):
+            n['translation'] = tuple(float(v) * k for v in n['translation'])
+        if n.get('anim'):
+            n['anim'] = (lambda f: lambda t: (lambda tr, q, s_: (tuple(float(v) * k for v in tr), q, s_))(*f(t)))(n['anim'])
+        out.append(n)
+    return meshes, out, materials
 
 def _time(t):
     return t if t < T - 1e-9 else 0.0
@@ -477,7 +492,10 @@ def write_glb(path, title, scene_, images, animated=True):
         gl_meshes.append({'name': k, 'primitives': prims})
     img_views = [b.image(images[k][0]) for k in tex_keys]
     names = [n['name'] for n in nodes]
-    gl_nodes = [{'name': title, 'children': [], 'scale': [AR_SCALE] * 3, 'extras': {'escalaAR': AR_SCALE}}]
+    gl_nodes = [{'name': title, 'children': []}]
+    if animated:
+        # el modelo de AR viene agrandado (`bake_scale`); quien necesite el tamaño real pone este nodo a 1/escalaAR
+        gl_nodes[0]['extras'] = {'escalaAR': AR_SCALE}
     for n in nodes:
         g = {'name': n['name']}
         if n.get('mesh'):
@@ -554,8 +572,7 @@ def write_usdz(path, scene_, files):
         stage.SetStartTimeCode(0)
         stage.SetEndTimeCode(int(round(T * FPS)))
         root = UsdGeom.Xform.Define(stage, '/Producto')
-        # la escala va en un Xform hijo (no en el prim raíz): AR Quick Look puede ignorar la transformación del prim por defecto
-        UsdGeom.Xform.Define(stage, '/Producto/Escala').AddScaleOp().Set(Gf.Vec3f(AR_SCALE, AR_SCALE, AR_SCALE))
+        UsdGeom.Xform.Define(stage, '/Producto/Escala')  # sin transformación: la escala ya va en las coordenadas
         stage.SetDefaultPrim(root.GetPrim())
         UsdGeom.Scope.Define(stage, '/Producto/Materiales')
         mats = {}
@@ -713,7 +730,7 @@ def main(tex, static_dir=None):
     for pid, title, prefix, text in (('pan', 'PANCREOGEN', '', 'PANCREOGEN • 90 CÁPSULAS • '), ('pan-f', 'PANCRIVA (ficticio)', 'ficticio-', 'PANCRIVA • 90 CÁPSULAS • ')):
         files = {f'{prefix}etiqueta': os.path.join(tex, f'{prefix}etiqueta.jpg'), f'{prefix}tapa': cap_top(os.path.join(tex, f'{prefix}tapa.jpg')), 'tapaLado': cap_grain(tex)}
         images = {k: (open(v, 'rb').read(), 'image/jpeg') for k, v in files.items()}
-        sc = scene(text, prefix)
+        sc = bake_scale(scene(text, prefix), AR_SCALE)
         write_glb(os.path.join(OUT, f'{pid}.glb'), title, sc, images)
         write_usdz(os.path.join(OUT, f'{pid}.usdz'), sc, files)
         if static_dir:
