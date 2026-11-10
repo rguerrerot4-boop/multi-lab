@@ -68,6 +68,9 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
   const [full, setFull] = useState(false);
   const [fold, setFold] = useState(1); // caja de la página «El empaque»
   const [spot, setSpot] = useState<TeaSpot | null>(null);
+  const [tour, setTour] = useState(false); // recorrido automático por las caras de la caja
+  const [exc, setExc] = useState<number | null>(null); // excipiente elegido en el arco
+  const [ind, setInd] = useState<string | null>(null); // frase o palabra elegida de la indicación
   const [elapsed, setElapsed] = useState(0);
   const started = useRef(Date.now());
 
@@ -112,7 +115,10 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
   };
   useEffect(() => {
     logEvent('ficha_pagina', `${p.id}:${PAGES[page].key}`);
-    if (PAGES[page].key !== 'caja') setSpot(null);
+    if (PAGES[page].key !== 'caja') {
+      setSpot(null);
+      setTour(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
   // al cambiar el tamaño de la ventana, la página actual se mantiene
@@ -170,8 +176,25 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
 
   const pickSpot = (s: TeaSpot) => {
     logEvent('ficha_punto', `${p.id}:${s.id}`);
+    setTour(false);
     setSpot((cur) => (cur?.id === s.id ? null : s));
     setFold(0);
+  };
+  // recorrido: despliega la caja y pasa por cada punto
+  useEffect(() => {
+    if (!tour || page !== 5) return;
+    setFold(0);
+    let k = 0;
+    setSpot(spots[0]);
+    const t = setInterval(() => {
+      k = (k + 1) % spots.length;
+      setSpot(spots[k]);
+    }, 2600);
+    return () => clearInterval(t);
+  }, [tour, page, spots]);
+  const pick = (key: string, set: (v: string | null) => void, cur: string | null) => {
+    logEvent('ficha_punto', `${p.id}:${key}`);
+    set(cur === key ? null : key);
   };
 
   // ---------- páginas ----------
@@ -196,6 +219,25 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
             <Pill icon="cube-outline" label="Ver en 3D" onPress={() => setFull(true)} variant="solid" color={C.navy} small />
             <Pill icon="scan-outline" label="Ver en AR" onPress={launchAR} variant="outlineColor" color={C.navy} small />
           </View>
+          <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
+            {[
+              { value: `${I.activeQty}`, unit: 'por mL', label: 'Composición', to: 1 },
+              { value: '20', unit: 'gotas', label: '= 1 mL', to: 2 },
+              { value: I.front.volume, unit: '1 frasco', label: 'El empaque', to: 5 },
+            ].map((q) => (
+              <Tap key={q.label} onPress={() => goTo(q.to)} label={`Ir a ${PAGES[q.to].label}`} style={{ flex: 1 }}>
+                <Glass style={{ paddingVertical: space.md, paddingHorizontal: space.sm, gap: 2, alignItems: 'flex-start' }}>
+                  <Text style={{ fontFamily: font.bold, fontSize: 22, lineHeight: 26, color: C.navy, letterSpacing: -0.5 }}>{q.value}</Text>
+                  <Text style={{ fontFamily: font.semibold, fontSize: 11, color: C.ink }}>{q.unit}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 4 }}>
+                    <Text style={{ fontFamily: font.bold, fontSize: 10, letterSpacing: 0.4, color: C.navy }}>{q.label.toUpperCase()}</Text>
+                    <Ionicons name="arrow-forward" size={11} color={C.navy} />
+                  </View>
+                </Glass>
+              </Tap>
+            ))}
+          </View>
+          <Hint icon="finger-print-outline" text="Arrastra la caja para girarla · toca una cifra para ir a su página" />
           <View style={st.sample}>
             <Ionicons name="medkit-outline" size={14} color={C.navy} />
             <Text style={st.sampleText}>Muestra médica · prohibida su venta</Text>
@@ -214,9 +256,30 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
             <Text style={{ fontFamily: font.bold, fontSize: 64, lineHeight: 68, color: C.navy, letterSpacing: -2 }}>{I.activeQty}</Text>
             <Text style={{ fontFamily: font.bold, fontSize: 18, lineHeight: 24, color: C.ink }}>{I.activeName}</Text>
             <Text style={[st.small, { marginTop: 6 }]}>«{I.composition}»</Text>
+            <View style={{ flexDirection: 'row', marginTop: space.sm }}>
+              <Pill icon="cube-outline" label="Verlo en la caja" onPress={() => { goTo(5); const s = spots.find((x) => x.id === 'composicion'); if (s) setTimeout(() => pickSpot(s), reduce ? 0 : 450); }} variant="outlineColor" color={C.navy} small />
+            </View>
           </Glass>
-          <Text style={st.overline}>Excipientes</Text>
-          <Arc items={I.excipients} width={W - space.xl * 2} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={st.overline}>Excipientes · {I.excipients.length}</Text>
+            {exc === null ? <Hint icon="finger-print-outline" text="Toca uno" /> : null}
+          </View>
+          <Arc items={I.excipients} width={W - space.xl * 2} active={exc} onPick={(i) => { logEvent('ficha_punto', `${p.id}:excipiente-${i + 1}`); setExc((c) => (c === i ? null : i)); }} />
+          {exc !== null ? (
+            <Appear key={exc} reduce={reduce}>
+              <Glass style={{ padding: space.lg, gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[st.cardTitle, { flex: 1 }]}>
+                    EXCIPIENTE {num(exc)} DE {String(I.excipients.length).padStart(2, '0')}
+                  </Text>
+                  <MiniNav icon="chevron-back" label="Excipiente anterior" onPress={() => setExc((exc + I.excipients.length - 1) % I.excipients.length)} />
+                  <MiniNav icon="chevron-forward" label="Excipiente siguiente" onPress={() => setExc((exc + 1) % I.excipients.length)} />
+                </View>
+                <Text style={{ fontFamily: font.bold, fontSize: 20, lineHeight: 26, color: C.navy }}>{cap(I.excipients[exc])}</Text>
+                <Text style={st.small}>Impreso en el costado de la caja, en este orden, después del principio activo.</Text>
+              </Glass>
+            </Appear>
+          ) : null}
           <Glass style={{ padding: space.lg, flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
             <IconSquare icon="flask-outline" />
             <View style={{ flex: 1 }}>
@@ -240,16 +303,7 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
             </View>
           </View>
           <Text style={st.lead}>{cap(I.dosage)}</Text>
-          <Glass style={{ padding: space.lg, gap: space.md }}>
-            <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
-              <IconSquare icon="water-outline" />
-              <View style={{ flex: 1 }}>
-                <Text style={st.cardTitle}>GOTAS POR mL</Text>
-                <Text style={[st.body, { fontFamily: font.bold }]}>{I.drops}</Text>
-              </View>
-            </View>
-            <DropGrid count={20} />
-          </Glass>
+          <DropCounter reduce={reduce} active={page === 2} drops={I.drops} onDone={() => logEvent('ficha_punto', `${p.id}:20-gotas`)} />
           <Glass style={{ padding: space.lg, flexDirection: 'row', gap: space.md, alignItems: 'flex-start' }}>
             <IconSquare icon="eye-outline" />
             <View style={{ flex: 1 }}>
@@ -266,18 +320,31 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
         <View style={{ width: W, alignSelf: 'center', paddingHorizontal: space.xl, gap: space.lg }}>
           <Kicker i={3} text="Indicación" />
           <Crosses />
-          <Text style={{ fontFamily: font.semibold, fontSize: 21, lineHeight: 31, color: C.ink }}>
-            {highlightWords(cap(I.indication), ['irritación', 'picazón', 'ardor', 'molestias'])}
-          </Text>
-          <View style={{ gap: 0, marginTop: space.sm }}>
-            {['síndrome de resequedad ocular', 'sea éste moderado o severo', 'de cualquier etiología', 'irritación ocular causada por el viento', 'y la exposición al sol'].map((t, i) => (
-              <View key={t} style={{ flexDirection: 'row', gap: space.md, alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, borderColor: C.line }}>
-                <Text style={{ fontFamily: font.bold, fontSize: 16, color: C.navy, width: 16 }}>+</Text>
-                <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 13, letterSpacing: 0.4, color: C.ink, textTransform: 'uppercase' }}>{t}</Text>
-                <Text style={{ fontFamily: font.medium, fontSize: 11, color: C.navy, opacity: 0.6 }}>{num(i)}</Text>
-              </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {SYMPTOMS.map((w) => (
+              <Tap key={w} onPress={() => pick(w, setInd, ind)} label={cap(w)} selected={ind === w}>
+                <View style={[st.spot, ind === w && { backgroundColor: C.navy, borderColor: C.navy }]}>
+                  <Text style={[st.spotText, ind === w && { color: colors.white }]}>{cap(w)}</Text>
+                </View>
+              </Tap>
             ))}
           </View>
+          <Text style={{ fontFamily: font.semibold, fontSize: 21, lineHeight: 31, color: C.ink }}>{highlightWords(cap(I.indication), SYMPTOMS, ind)}</Text>
+          <View style={{ gap: 0, marginTop: space.sm }}>
+            {PHRASES.map((ph, i) => {
+              const on = ind === ph.text;
+              return (
+                <Tap key={ph.text} onPress={() => pick(ph.text, setInd, ind)} label={ph.text} selected={on}>
+                  <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center', paddingVertical: 12, paddingHorizontal: on ? space.md : 0, borderTopWidth: 1, borderColor: on ? C.navy : C.line, backgroundColor: on ? C.navy : 'transparent', borderRadius: on ? radius.md : 0 }}>
+                    <Ionicons name={ph.icon} size={18} color={on ? colors.white : C.navy} />
+                    <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 13, letterSpacing: 0.4, color: on ? colors.white : C.ink, textTransform: 'uppercase' }}>{ph.text}</Text>
+                    <Text style={{ fontFamily: font.medium, fontSize: 11, color: on ? colors.white : C.navy, opacity: on ? 0.9 : 0.6 }}>{num(i)}</Text>
+                  </View>
+                </Tap>
+              );
+            })}
+          </View>
+          <Hint icon="finger-print-outline" text={ind ? 'Toca de nuevo para quitar el resaltado' : 'Toca una línea o un síntoma para encontrarlo en el texto'} />
           <Text style={st.small}>Texto impreso en el costado de la caja.</Text>
         </View>
       </Page>
@@ -288,29 +355,16 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
         <View style={{ width: W, alignSelf: 'center', paddingHorizontal: space.xl, gap: space.lg }}>
           <Kicker i={4} text="Contraindicaciones y advertencias" />
           <Text style={st.h1}>Antes de usar</Text>
-          <Glass style={{ padding: space.lg, gap: space.sm }}>
-            <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
-              <IconSquare icon="alert-circle-outline" />
-              <Text style={[st.cardTitle, { flex: 1 }]}>CONTRAINDICACIONES Y ADVERTENCIAS</Text>
-            </View>
-            <Text style={st.body}>{cap(I.contraindications)}</Text>
-            <Text style={st.body}>{I.warning}</Text>
-          </Glass>
-          <Glass style={{ padding: space.lg, gap: space.sm }}>
-            <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
-              <IconSquare icon="time-outline" />
-              <Text style={[st.cardTitle, { flex: 1 }]}>PRECAUCIONES</Text>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: font.bold, fontSize: 34, lineHeight: 36, color: C.navy, letterSpacing: -1 }}>72</Text>
-                <Text style={{ fontFamily: font.bold, fontSize: 11, color: C.navy }}>HORAS</Text>
-              </View>
-            </View>
-            <Text style={st.body}>{cap(I.precautions)}</Text>
-          </Glass>
-          <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
-            <Ionicons name="document-text-outline" size={18} color={C.navy} />
-            <Text style={[st.body, { flex: 1 }]}>{I.insert}</Text>
-          </View>
+          <Checklist
+            reduce={reduce}
+            onOpen={(id) => logEvent('ficha_punto', `${p.id}:aviso-${id}`)}
+            items={[
+              { id: 'contra', icon: 'alert-circle-outline', title: 'Contraindicaciones y advertencias', text: cap(I.contraindications) },
+              { id: 'punta', icon: 'hand-left-outline', title: 'Para evitar contaminación', text: I.warning },
+              { id: 'horas', icon: 'time-outline', title: 'Precauciones', text: cap(I.precautions), hours: 72 },
+              { id: 'inserto', icon: 'document-text-outline', title: 'Inserto', text: I.insert },
+            ]}
+          />
         </View>
       </Page>
     ),
@@ -327,22 +381,30 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
         </View>
         <View style={{ width: W, alignSelf: 'center', paddingHorizontal: space.xl, gap: space.md }}>
           <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <Pill icon={fold > 0.5 ? 'expand-outline' : 'cube-outline'} label={fold > 0.5 ? 'Desplegar' : 'Armar la caja'} onPress={() => { setFold(fold > 0.5 ? 0 : 1); setSpot(null); }} variant="solid" color={C.navy} small wide />
+            <Pill icon={fold > 0.5 ? 'expand-outline' : 'cube-outline'} label={fold > 0.5 ? 'Desplegar' : 'Armar la caja'} onPress={() => { setTour(false); setFold(fold > 0.5 ? 0 : 1); setSpot(null); }} variant="solid" color={C.navy} small wide />
+            <Pill icon={tour ? 'pause-outline' : 'play-outline'} label={tour ? 'Pausar' : 'Recorrer las caras'} onPress={() => { logEvent('ficha_punto', `${p.id}:recorrido`); setTour(!tour); if (tour) setSpot(null); }} variant="outlineColor" color={C.navy} small wide />
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            {spots.map((s) => (
-              <Pressable key={s.id} onPress={() => pickSpot(s)} accessibilityRole="button" accessibilityState={{ selected: spot?.id === s.id }} accessibilityLabel={s.title} style={[st.spot, spot?.id === s.id && { backgroundColor: C.navy, borderColor: C.navy }]}>
-                <Text style={[st.spotText, spot?.id === s.id && { color: colors.white }]}>{s.title}</Text>
-              </Pressable>
+            {spots.map((s, i) => (
+              <Tap key={s.id} onPress={() => pickSpot(s)} label={s.title} selected={spot?.id === s.id}>
+                <View style={[st.spot, { flexDirection: 'row', gap: 6, alignItems: 'center' }, spot?.id === s.id && { backgroundColor: C.navy, borderColor: C.navy }]}>
+                  <Text style={[st.spotText, { opacity: 0.55 }, spot?.id === s.id && { color: colors.white, opacity: 0.8 }]}>{num(i)}</Text>
+                  <Text style={[st.spotText, spot?.id === s.id && { color: colors.white }]}>{s.title}</Text>
+                </View>
+              </Tap>
             ))}
           </View>
           {spot ? (
-            <Glass style={{ padding: space.lg, gap: 4 }}>
-              <Text style={st.cardTitle}>{faceLabel(spot.face)}</Text>
-              <Text style={[st.body, { fontFamily: font.bold, color: C.navy }]}>{spot.title}</Text>
-              <Text style={st.body}>{spot.body}</Text>
-            </Glass>
-          ) : null}
+            <Appear key={spot.id} reduce={reduce}>
+              <Glass style={{ padding: space.lg, gap: 4 }}>
+                <Text style={st.cardTitle}>{faceLabel(spot.face)}</Text>
+                <Text style={[st.body, { fontFamily: font.bold, color: C.navy }]}>{spot.title}</Text>
+                <Text style={st.body}>{spot.body}</Text>
+              </Glass>
+            </Appear>
+          ) : (
+            <Hint icon="finger-print-outline" text="Toca un punto para ver su cara en la caja" />
+          )}
           <Text style={st.small}>
             {mode === 'real'
               ? `${I.units}. Medidas aproximadas: ${String(I.sizeCm.w).replace('.', ',')} × ${String(I.sizeCm.h).replace('.', ',')} × ${String(I.sizeCm.d).replace('.', ',')} cm. El reverso y el otro costado se muestran con las fotos del frente y del costado (el reverso real lleva braille en relieve).`
@@ -471,18 +533,37 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const faceLabel = (f: TeaSpot['face']) => ({ front: 'FRENTE', back: 'REVERSO', left: 'COSTADO', right: 'COSTADO', top: 'TAPA', bottom: 'TAPA' })[f];
 
-/** resalta palabras del texto impreso (fondo celeste), sin cambiarlo */
-function highlightWords(text: string, words: string[]) {
-  const re = new RegExp(`(${words.join('|')})`, 'g');
-  return text.split(re).map((part, i) =>
-    words.includes(part) ? (
-      <Text key={i} style={{ backgroundColor: C.skySoft, color: C.navy, fontFamily: font.bold }}>
-        {part}
-      </Text>
-    ) : (
-      <Text key={i}>{part}</Text>
-    ),
-  );
+const SYMPTOMS = ['irritación', 'picazón', 'ardor', 'molestias'];
+// frases tal como están impresas en la indicación (cada una se resalta en el texto al tocarla)
+const PHRASES: { text: string; icon: IconName }[] = [
+  { text: 'síndrome de resequedad ocular', icon: 'water-outline' },
+  { text: 'sea éste moderado o severo', icon: 'pulse-outline' },
+  { text: 'de cualquier etiología', icon: 'help-circle-outline' },
+  { text: 'irritación ocular causada por el viento', icon: 'cloudy-outline' },
+  { text: 'y la exposición al sol', icon: 'sunny-outline' },
+];
+
+/** resalta palabras del texto impreso (fondo celeste) y, más fuerte, la frase o palabra elegida; el texto no cambia */
+function highlightWords(text: string, words: string[], sel: string | null = null) {
+  const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const all = [...(sel ? [sel] : []), ...words.filter((w) => w !== sel)].sort((x, y) => y.length - x.length);
+  const re = new RegExp(`(${all.map(esc).join('|')})`, 'gi');
+  return text.split(re).map((part, i) => {
+    const low = part.toLowerCase();
+    if (sel && low === sel.toLowerCase())
+      return (
+        <Text key={i} style={{ backgroundColor: C.navy, color: colors.white, fontFamily: font.bold }}>
+          {part}
+        </Text>
+      );
+    if (words.includes(low))
+      return (
+        <Text key={i} style={{ backgroundColor: C.skySoft, color: C.navy, fontFamily: font.bold }}>
+          {part}
+        </Text>
+      );
+    return <Text key={i}>{part}</Text>;
+  });
 }
 
 function Page({ i, width, Hs, top, bottom, swoosh, plain, children }: { i: number; width: number; Hs: number; top: number; bottom: number; swoosh: 'low' | 'mid' | 'high' | 'none'; plain?: boolean; children: ReactNode }) {
@@ -615,7 +696,7 @@ function IconSquare({ icon }: { icon: IconName }) {
 }
 
 /** arco de excipientes (referencia: diagramas de ingredientes en arco) */
-function Arc({ items, width }: { items: string[]; width: number }) {
+function Arc({ items, width, active, onPick }: { items: string[]; width: number; active: number | null; onPick: (i: number) => void }) {
   const step = 46;
   const H = items.length * step + 10;
   const R = H / 2 - 4;
@@ -633,29 +714,261 @@ function Arc({ items, width }: { items: string[]; width: number }) {
       <Svg width={width} height={H} style={{ position: 'absolute' }}>
         <Path d={`M ${cx - R * Math.cos(a0)} ${cy + R * Math.sin(a0)} A ${R} ${R} 0 0 0 ${cx - R * Math.cos(a1)} ${cy + R * Math.sin(a1)}`} stroke={C.navy} strokeWidth={1.5} fill="none" opacity={0.5} />
         {pts.map((p, i) => (
-          <Circle key={i} cx={p.x} cy={p.y} r={7} fill={C.navy} />
+          <Circle key={i} cx={p.x} cy={p.y} r={active === i ? 9 : 7} fill={C.navy} opacity={active === null || active === i ? 1 : 0.3} />
         ))}
         {pts.map((p, i) => (
-          <Circle key={`h${i}`} cx={p.x} cy={p.y} r={12} fill="none" stroke={C.sky} strokeWidth={2} opacity={0.7} />
+          <Circle key={`h${i}`} cx={p.x} cy={p.y} r={active === i ? 16 : 12} fill="none" stroke={active === i ? C.navy : C.sky} strokeWidth={2} opacity={active === null ? 0.7 : active === i ? 0.9 : 0.25} />
         ))}
       </Svg>
       {items.map((t, i) => (
-        <View key={t} style={{ position: 'absolute', left: 0, width: Math.max(80, pts[i].x - 22), top: pts[i].y - 20, height: 40, justifyContent: 'center' }}>
-          <Text style={{ fontFamily: font.semibold, fontSize: 13, lineHeight: 17, color: C.ink, textAlign: 'right' }} numberOfLines={2}>
+        <Pressable
+          key={t}
+          onPress={() => onPick(i)}
+          accessibilityRole="button"
+          accessibilityState={{ selected: active === i }}
+          accessibilityLabel={t}
+          style={{ position: 'absolute', left: 0, width: Math.max(80, pts[i].x + 18), top: pts[i].y - 22, height: 44, justifyContent: 'center', paddingRight: 40 }}
+        >
+          <Text
+            style={{ fontFamily: active === i ? font.bold : font.semibold, fontSize: 13, lineHeight: 17, color: active === i ? C.navy : C.ink, opacity: active === null || active === i ? 1 : 0.45, textAlign: 'right' }}
+            numberOfLines={2}
+          >
             {t}
           </Text>
-        </View>
+        </Pressable>
       ))}
     </View>
   );
 }
 
-function DropGrid({ count }: { count: number }) {
+/** botón con un leve hundimiento al tocarlo (resorte, en el hilo nativo) */
+function Tap({ onPress, label, selected, style, children }: { onPress: () => void; label: string; selected?: boolean; style?: StyleProp<ViewStyle>; children: ReactNode }) {
+  const k = useRef(new Animated.Value(1)).current;
+  const to = (v: number) => Animated.spring(k, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 7 }).start();
   return (
-    <View accessibilityLabel={`${count} gotas`} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-      {Array.from({ length: count }, (_, i) => (
-        <Ionicons key={i} name="water" size={18} color={i % 5 === 4 ? C.navy : '#4C9CE0'} />
-      ))}
+    <Pressable onPress={onPress} onPressIn={() => to(0.95)} onPressOut={() => to(1)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} style={style}>
+      <Animated.View style={{ transform: [{ scale: k }] }}>{children}</Animated.View>
+    </Pressable>
+  );
+}
+
+/** aparece subiendo un poco (al cambiar su `key` se repite) */
+function Appear({ reduce, delay = 0, children }: { reduce: boolean; delay?: number; children: ReactNode }) {
+  const a = useRef(new Animated.Value(reduce ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduce) return;
+    Animated.timing(a, { toValue: 1, duration: 280, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [a, reduce, delay]);
+  return <Animated.View style={{ opacity: a, transform: [{ translateY: a.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>{children}</Animated.View>;
+}
+
+function Hint({ icon, text }: { icon: IconName; text: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Ionicons name={icon} size={14} color={C.navy} />
+      <Text style={{ fontFamily: font.semibold, fontSize: 12, color: C.navy, opacity: 0.85 }}>{text}</Text>
+    </View>
+  );
+}
+
+function MiniNav({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => ({ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.navy, marginLeft: 6, opacity: pressed ? 0.6 : 1 })}>
+      <Ionicons name={icon} size={16} color={C.navy} />
+    </Pressable>
+  );
+}
+
+/** cuenta gotas: cada toque deja caer una gota hasta llegar a las 20 de 1 mL (dato de la caja) */
+function DropCounter({ reduce, active, drops, onDone }: { reduce: boolean; active: boolean; drops: string; onDone: () => void }) {
+  const TOTAL = 20;
+  const [n, setN] = useState(0);
+  const fall = useRef(new Animated.Value(1)).current;
+  const prog = useRef(new Animated.Value(0)).current;
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stop = () => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => stop, []);
+  useEffect(() => {
+    if (!active) stop();
+  }, [active]);
+  useEffect(() => {
+    Animated.timing(prog, { toValue: n / TOTAL, duration: reduce ? 0 : 200, easing: Easing.out(Easing.quad), useNativeDriver: false }).start();
+    if (n === TOTAL) onDone();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n]);
+  const drip = () => {
+    if (reduce) return;
+    fall.setValue(0);
+    Animated.timing(fall, { toValue: 1, duration: 380, easing: Easing.in(Easing.quad), useNativeDriver: true }).start();
+  };
+  const add = () => {
+    stop();
+    setN((c) => (c >= TOTAL ? 1 : c + 1));
+    drip();
+  };
+  const fill = () => {
+    stop();
+    if (reduce) return setN(TOTAL);
+    let k = 0;
+    setN(0);
+    timer.current = setInterval(() => {
+      k += 1;
+      setN(k);
+      drip();
+      if (k >= TOTAL) stop();
+    }, 90);
+  };
+  const ml = (n / TOTAL).toFixed(2).replace('.', ',');
+  return (
+    <Glass style={{ padding: space.lg, gap: space.md }}>
+      <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
+        <IconSquare icon="water-outline" />
+        <View style={{ flex: 1 }}>
+          <Text style={st.cardTitle}>GOTAS POR mL</Text>
+          <Text style={[st.body, { fontFamily: font.bold }]}>{drops}</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
+        <View style={{ alignItems: 'center' }}>
+          <Tap onPress={add} label="Dejar caer una gota">
+            <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: C.navy, alignItems: 'center', justifyContent: 'center', shadowColor: C.navyDeep, shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 4 }}>
+              <Ionicons name="eyedrop" size={30} color={colors.white} />
+            </View>
+          </Tap>
+          <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 66, opacity: fall.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 1, 1, 0] }), transform: [{ translateY: fall.interpolate({ inputRange: [0, 1], outputRange: [0, 34] }) }] }}>
+            <Ionicons name="water" size={16} color="#4C9CE0" />
+          </Animated.View>
+        </View>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={{ fontFamily: font.bold, fontSize: 40, lineHeight: 44, color: C.navy, letterSpacing: -1 }}>
+            {n}
+            <Text style={{ fontSize: 16, letterSpacing: 0 }}> / {TOTAL} gotas</Text>
+          </Text>
+          <View style={{ height: 8, borderRadius: 4, backgroundColor: 'rgba(50, 49, 108, 0.12)', overflow: 'hidden' }}>
+            <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: C.navy, width: prog.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+          </View>
+          <Text style={{ fontFamily: font.semibold, fontSize: 12, color: C.ink }}>{n === TOTAL ? '¡1 mL completo! 20 gotas, como indica la caja.' : n === 0 ? 'Toca el gotero para dejar caer una gota.' : `${ml} mL`}</Text>
+        </View>
+      </View>
+      <View accessibilityLabel={`${n} de ${TOTAL} gotas`} style={{ gap: 6 }}>
+        {[0, 1].map((row) => (
+          <View key={row} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {Array.from({ length: TOTAL / 2 }, (_, j) => {
+              const i = row * (TOTAL / 2) + j;
+              return <DropCell key={i} on={i < n} mark={i % 5 === 4} reduce={reduce} />;
+            })}
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
+        <Pill icon="play-outline" label="Llenar 1 mL" onPress={fill} variant="solid" color={C.navy} wide small />
+        <Pill icon="refresh" label="Reiniciar" onPress={() => { stop(); setN(0); }} variant="outlineColor" color={C.navy} wide small />
+      </View>
+    </Glass>
+  );
+}
+
+function DropCell({ on, mark, reduce }: { on: boolean; mark: boolean; reduce: boolean }) {
+  const k = useRef(new Animated.Value(on ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduce) return k.setValue(on ? 1 : 0);
+    if (on) Animated.spring(k, { toValue: 1, useNativeDriver: true, speed: 18, bounciness: 12 }).start();
+    else Animated.timing(k, { toValue: 0, duration: 160, useNativeDriver: true }).start();
+  }, [on, k, reduce]);
+  return (
+    <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name="water-outline" size={18} color="rgba(50, 49, 108, 0.25)" style={{ position: 'absolute' }} />
+      <Animated.View style={{ opacity: k, transform: [{ scale: k.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }] }}>
+        <Ionicons name="water" size={18} color={mark ? C.navy : '#4C9CE0'} />
+      </Animated.View>
+    </View>
+  );
+}
+
+/** advertencias como lista para revisar: se abre cada una y queda marcada como leída */
+function Checklist({ items, reduce, onOpen }: { items: { id: string; icon: IconName; title: string; text: string; hours?: number }[]; reduce: boolean; onOpen: (id: string) => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [read, setRead] = useState<string[]>([]);
+  const prog = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(prog, { toValue: read.length / items.length, duration: reduce ? 0 : 300, easing: Easing.out(Easing.quad), useNativeDriver: false }).start();
+  }, [read.length, items.length, prog, reduce]);
+  const toggle = (id: string) => {
+    if (open !== id) onOpen(id);
+    setOpen(open === id ? null : id);
+    setRead((r) => (r.includes(id) ? r : [...r, id]));
+  };
+  const done = read.length === items.length;
+  return (
+    <View style={{ gap: space.md }}>
+      <View style={{ gap: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={st.overline}>Revisadas</Text>
+          <Text style={st.overline}>
+            {read.length} de {items.length}
+          </Text>
+        </View>
+        <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(50, 49, 108, 0.12)', overflow: 'hidden' }}>
+          <Animated.View style={{ height: '100%', backgroundColor: C.navy, width: prog.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+        </View>
+      </View>
+      {items.map((it) => {
+        const isOpen = open === it.id;
+        const isRead = read.includes(it.id);
+        return (
+          <Glass key={it.id} style={{ overflow: 'hidden' }}>
+            <Pressable onPress={() => toggle(it.id)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }} accessibilityLabel={it.title} style={({ pressed }) => ({ flexDirection: 'row', gap: space.md, alignItems: 'center', padding: space.lg, opacity: pressed ? 0.75 : 1 })}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: isRead ? C.navy : colors.white, borderWidth: 1.5, borderColor: C.navy, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={isRead ? 'checkmark' : it.icon} size={20} color={isRead ? colors.white : C.navy} />
+              </View>
+              <Text style={[st.cardTitle, { flex: 1 }]}>{it.title.toUpperCase()}</Text>
+              {it.hours ? <HoursBadge hours={it.hours} run={isOpen} reduce={reduce} /> : null}
+              <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={C.navy} />
+            </Pressable>
+            {isOpen ? (
+              <Appear reduce={reduce}>
+                <Text style={[st.body, { paddingHorizontal: space.lg, paddingBottom: space.lg, marginTop: -4 }]}>{it.text}</Text>
+              </Appear>
+            ) : null}
+          </Glass>
+        );
+      })}
+      {done ? (
+        <Appear reduce={reduce}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: C.navy, borderRadius: radius.lg, padding: space.md }}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.white} />
+            <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 13, color: colors.white }}>Revisaste todas las advertencias impresas en la caja.</Text>
+          </View>
+        </Appear>
+      ) : (
+        <Hint icon="finger-print-outline" text="Toca cada advertencia para abrirla" />
+      )}
+    </View>
+  );
+}
+
+/** las 72 horas de la caja: cuenta hasta 72 al abrir la precaución */
+function HoursBadge({ hours, run, reduce }: { hours: number; run: boolean; reduce: boolean }) {
+  const [v, setV] = useState(hours);
+  useEffect(() => {
+    if (!run || reduce) return setV(hours);
+    let raf = 0;
+    const t0 = Date.now();
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - t0) / 900);
+      setV(Math.round(hours * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [run, hours, reduce]);
+  return (
+    <View style={{ alignItems: 'flex-end', marginRight: 2 }}>
+      <Text style={{ fontFamily: font.bold, fontSize: 26, lineHeight: 28, color: C.navy, letterSpacing: -1 }}>{v}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: 9, color: C.navy }}>HORAS</Text>
     </View>
   );
 }
