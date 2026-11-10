@@ -45,3 +45,6 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # GitHub Pages a veces se queda en «syncing_files» más de 10 min (problema del lado de GitHub): se le da más tiempo
+          timeout: 1800000
