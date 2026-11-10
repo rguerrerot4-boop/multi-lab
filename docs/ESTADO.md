@@ -41,6 +41,7 @@ Todas respetan "reducir movimiento" del sistema.
 - AR en web: `openAR` en `src/lib/ar.ts` detecta el celular por el navegador. iPhone: enlace `rel="ar"` (AR Quick Look de Safari). Android: enlace `intent://` a Scene Viewer. En la computadora solo hay vista previa.
 - La sesión vive en memoria: si se recarga la página, hay que volver a iniciar sesión.
 - Pendiente comprobar en un iPhone real que AR Quick Look abre desde la app agregada a la pantalla de inicio.
+- Actualización automática: `scripts/web/pwa.mjs` deja `version.json` (el commit de la publicación) y agrega a `index.html` un script que lo consulta sin caché al abrir la app, al volver a primer plano y cada 2 minutos. Si la versión cambió, descarga la página nueva sin caché y recarga una sola vez por versión (`sessionStorage`), así no entra en bucle si GitHub Pages aún entrega la página vieja.
 
 ## AR con tarjeta impresa
 
