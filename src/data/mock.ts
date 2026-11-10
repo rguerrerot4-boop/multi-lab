@@ -1,6 +1,8 @@
 // Datos simulados para el prototipo académico Multi LAB.
-// Todas las personas, laboratorios y productos son FICTICIOS.
-// No representan medicamentos reales ni indicaciones médicas aprobadas.
+// Las personas, consultorios y ubicaciones son FICTICIOS.
+// Los 5 productos del catálogo son reales y se muestran con permiso de su laboratorio:
+// CORAESSENS y PANCREOGEN (Nutrabiotics) y TEARSOFT, DEFEROL y VITYBELL (Procaps).
+// Su texto está tomado del empaque; no se agregan indicaciones que no estén impresas.
 
 import type { ComponentProps } from 'react';
 import type { Ionicons } from '@expo/vector-icons';
@@ -82,7 +84,7 @@ export interface Product {
   isNew?: boolean;
   hotspots?: Hotspot[];
   keywords?: string[]; // palabras con las que el médico puede encontrarlo (descriptivas, no indicaciones)
-  areas: Area[]; // especialidades a las que se dirige la información (ficticio)
+  areas: Area[]; // especialidades a las que el visitador lleva la información (demostración)
   /** producto real mostrado con permiso del laboratorio (texto tomado del empaque) */
   real?: { note: string };
   /** caja 3D con las fotos del empaque (vitrina 3D) */
@@ -102,9 +104,9 @@ export const labLabel = (p: Pick<Product, 'lab' | 'real'>) => (p.real ? p.lab : 
 /** Aviso corto para el producto */
 export const productNote = (p: Pick<Product, 'real'>) => (p.real ? 'Producto real · con permiso del laboratorio' : 'Producto ficticio');
 
-export type Area = 'Dermatología' | 'Pediatría' | 'Medicina general';
+export type Area = 'Dermatología' | 'Oftalmología' | 'Medicina general';
 
-// ---------- Laboratorios (ficticios) ----------
+// ---------- Laboratorios (reales, con permiso) ----------
 export interface Lab {
   id: string;
   name: string; // nombre corto, igual a Product.lab
@@ -115,8 +117,7 @@ export interface Lab {
   hue: string;
 }
 export const labs: Lab[] = [
-  { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
-  // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
+  // laboratorios reales: sus productos se muestran con permiso (en la demo los atiende el visitador Juan Carlos Mieles)
   { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
   { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología, vitamina D3 y suplementos · productos reales con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
 ];
@@ -129,16 +130,7 @@ export const repProducts = (repId: string) => products.filter((p) => labs.some((
 
 /** Área del médico según su especialidad */
 export const areaOf = (title: string): Area =>
-  /pediatr/i.test(title) ? 'Pediatría' : /dermat/i.test(title) ? 'Dermatología' : 'Medicina general';
-
-// Puntos interactivos del visor 3D (textos de demostración)
-const spots = (p: Omit<Product, 'hotspots'>): Hotspot[] => [
-  { face: 'front', u: 0.9, v: 0.42, title: p.name, text: `${p.tagline}. ${p.description.split('.')[0]}.` },
-  { face: 'front', u: 0.82, v: 0.8, title: 'Presentación', text: `${p.form}. Componente principal: ${p.component}.` },
-  { face: 'right', u: 0.5, v: 0.55, title: 'Usos descritos', text: `${p.uses.join(' · ')}. Texto de ejemplo, no son indicaciones aprobadas.` },
-  { face: 'back', u: 0.3, v: 0.3, title: 'Modo de uso', text: p.howTo.map((h, i) => `${i + 1}. ${h}`).join('  ') },
-  { face: 'left', u: 0.5, v: 0.7, title: 'Precauciones', text: p.precautions.join(' · ') },
-];
+  /oftalm/i.test(title) ? 'Oftalmología' : /dermat/i.test(title) ? 'Dermatología' : 'Medicina general';
 
 // Puntos del visor 3D de CORAESSENS, con el texto impreso en cada cara
 const realSpots: Hotspot[] = [
@@ -247,20 +239,19 @@ export const deliveredTotal = (r?: VisitReport, kind?: DeliveryKind) =>
 
 // Datos de contexto de cada profesional (ficticios) para la vista de visita
 export const DOCTOR_INFO: Record<string, { hours: string; prefers: string; patients: string; tip: string }> = {
-  m1: { hours: 'Lun a vie · 14:00 a 19:00', prefers: 'Visitas cortas, máximo 10 min', patients: 'Adultos con piel sensible', tip: 'Le interesa el material para la sala de espera.' },
-  m2: { hours: 'Lun a sáb · 08:00 a 13:00', prefers: 'Material visual y digital', patients: 'Niños de 0 a 12 años', tip: 'Prefiere recibir fichas por chat antes de la visita.' },
-  m3: { hours: 'Mar y jue · 09:00 a 16:00', prefers: 'Visitas con cita previa', patients: 'Medicina familiar', tip: 'Pidió reprogramar visitas con un día de aviso.' },
-  m4: { hours: 'Lun a vie · 15:00 a 20:00', prefers: 'Información técnica detallada', patients: 'Dermatología clínica', tip: 'Tiene una solicitud de información técnica abierta.' },
+  m1: { hours: 'Lun a vie · 14:00 a 19:00', prefers: 'Visitas cortas, máximo 10 min', patients: 'Consulta de cabello, uñas y piel', tip: 'Le interesa el material de VITYBELL para la sala de espera.' },
+  m2: { hours: 'Lun a sáb · 08:00 a 13:00', prefers: 'Material visual y digital', patients: 'Consulta de oftalmología', tip: 'Prefiere recibir la ficha de TEARSOFT por chat antes de la visita.' },
+  m3: { hours: 'Mar y jue · 09:00 a 16:00', prefers: 'Visitas con cita previa', patients: 'Medicina familiar', tip: 'Pidió reprogramar visitas con un día de aviso. Le interesan los suplementos.' },
+  m4: { hours: 'Lun a vie · 15:00 a 20:00', prefers: 'Información técnica detallada', patients: 'Dermatología clínica', tip: 'Tiene una solicitud de información técnica de VITYBELL abierta.' },
 };
 
 // Kit de material de demostración del visitador (cantidades iniciales ficticias)
 export const INITIAL_KIT: Record<string, Record<DeliveryKind, number>> = {
-  p1: { muestra: 18, impreso: 30, digital: 99 },
-  p2: { muestra: 12, impreso: 25, digital: 99 },
-  p3: { muestra: 5, impreso: 20, digital: 99 },
-  p4: { muestra: 20, impreso: 40, digital: 99 },
   cor: { muestra: 10, impreso: 15, digital: 99 },
   pan: { muestra: 6, impreso: 15, digital: 99 },
+  tea: { muestra: 14, impreso: 25, digital: 99 },
+  def: { muestra: 16, impreso: 30, digital: 99 },
+  vit: { muestra: 12, impreso: 25, digital: 99 },
 };
 
 export interface RequestItem {
@@ -321,8 +312,8 @@ export const people: Person[] = [
     name: 'Juan Carlos Mieles',
     initials: 'JM',
     role: 'visitador',
-    title: 'Visitador médico · Línea dermatológica',
-    org: 'Laboratorios Celvia (ficticio)',
+    title: 'Visitador médico · Nutrabiotics y Procaps',
+    org: 'Nutrabiotics · Procaps',
     email: 'juancarlos.mieles@demo-multilab.ec',
     phone: '+593 98 000 0202',
     city: 'Guayaquil',
@@ -332,8 +323,8 @@ export const people: Person[] = [
     name: 'Dr. Andrés Villacís',
     initials: 'AV',
     role: 'medico',
-    title: 'Pediatra',
-    org: 'Centro Médico Los Ceibos (ficticio)',
+    title: 'Oftalmólogo',
+    org: 'Centro Oftalmológico Los Ceibos (ficticio)',
     email: 'andres.villacis@demo-multilab.ec',
     phone: '+593 99 000 0303',
     city: 'Guayaquil',
@@ -360,206 +351,14 @@ export const people: Person[] = [
     phone: '+593 99 000 0505',
     city: 'Durán',
   },
-  {
-    id: 'v2',
-    name: 'Andrea Morales',
-    initials: 'AM',
-    role: 'visitador',
-    title: 'Visitadora médica · Línea pediátrica',
-    org: 'Laboratorio Andina Pharma (ficticio)',
-    email: 'andrea.morales@demo-multilab.ec',
-    phone: '+593 98 000 0606',
-    city: 'Guayaquil',
-  },
-  {
-    id: 'v3',
-    name: 'Gabriela Rosales',
-    initials: 'GR',
-    role: 'visitador',
-    title: 'Visitadora médica · Cuidado diario',
-    org: 'Bioandes Salud (ficticio)',
-    email: 'gabriela.rosales@demo-multilab.ec',
-    phone: '+593 98 000 0707',
-    city: 'Milagro',
-  },
 ];
 
 export const DEMO_USER: Record<Role, string> = { medico: 'm1', visitador: 'v1' };
 
-// ---------- Productos (ficticios) ----------
-export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos', 'Oftalmología', 'Vitaminas'];
+// ---------- Productos (reales, con permiso del laboratorio) ----------
+export const categories = ['Todos', 'Suplementos', 'Vitaminas', 'Oftalmología'];
 
 export const products: Product[] = [
-  {
-    id: 'p1',
-    name: 'DermaCleanse Gel',
-    lab: 'Celvia',
-    category: 'Limpieza',
-    form: 'Gel limpiador · frasco 200 ml',
-    component: 'Agentes limpiadores suaves (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Limpieza suave de uso diario',
-    description:
-      'Gel de limpieza facial de textura ligera. Producto ficticio creado para demostrar cómo se presenta una ficha dentro de Multi LAB.',
-    uses: ['Limpieza facial diaria', 'Piel mixta a grasa (descripción de ejemplo)'],
-    howTo: ['Aplicar sobre la piel húmeda', 'Masajear suavemente durante 30 segundos', 'Enjuagar con abundante agua'],
-    precautions: ['Uso externo', 'Evitar el contacto con los ojos', 'Suspender el uso si aparece irritación'],
-    docs: ['Ficha técnica (demo).pdf', 'Guía de presentación (demo).pdf'],
-    slides: [
-      { title: 'Limpieza sin resecar', body: 'Mensaje clave de la línea: limpiar respetando la barrera de la piel.', icon: 'water-outline' },
-      { title: 'Rutina en 3 pasos', body: 'Humedecer, masajear y enjuagar. Pensado para uso mañana y noche.', icon: 'repeat-outline' },
-      { title: 'Presentación', body: 'Frasco de 200 ml con dosificador. Material de apoyo disponible a solicitud.', icon: 'cube-outline' },
-    ],
-    icon: 'water-outline',
-    hue: '#63C9D6',
-    keywords: ['limpiador', 'limpieza', 'gel', 'rostro', 'piel grasa', 'piel mixta', 'uso diario'],
-    areas: ['Dermatología', 'Medicina general'],
-  },
-  {
-    id: 'p2',
-    name: 'BioBarrier Emulsión',
-    lab: 'Celvia',
-    category: 'Hidratación',
-    form: 'Emulsión · tubo 50 ml',
-    component: 'Complejo hidratante (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Hidratación ligera de rápida absorción',
-    description:
-      'Emulsión hidratante de textura no grasa. Producto ficticio para el prototipo; la información es solo de demostración.',
-    uses: ['Hidratación diaria', 'Complemento de rutinas de cuidado (ejemplo)'],
-    howTo: ['Aplicar sobre la piel limpia', 'Extender hasta su absorción', 'Usar mañana y noche'],
-    precautions: ['Uso externo', 'Mantener fuera del alcance de los niños'],
-    docs: ['Ficha técnica (demo).pdf'],
-    slides: [
-      { title: 'Textura ligera', body: 'Se absorbe rápido y no deja sensación grasa.', icon: 'sparkles-outline' },
-      { title: 'Uso diario', body: 'Se integra después de la limpieza, mañana y noche.', icon: 'sunny-outline' },
-      { title: 'Presentación', body: 'Tubo de 50 ml.', icon: 'cube-outline' },
-    ],
-    icon: 'leaf-outline',
-    hue: '#1E7F8C',
-    keywords: ['hidratante', 'hidratación', 'emulsión', 'piel seca', 'textura ligera', 'uso diario'],
-    areas: ['Dermatología', 'Medicina general'],
-    isNew: true,
-  },
-  {
-    id: 'p3',
-    name: 'CeraRepair Bálsamo',
-    lab: 'Celvia',
-    category: 'Reparación',
-    form: 'Bálsamo · tubo 40 g',
-    component: 'Complejo de ceramidas (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Bálsamo de textura densa para zonas secas',
-    description:
-      'Bálsamo de cuidado para zonas resecas. Producto ficticio; los textos no constituyen indicaciones médicas.',
-    uses: ['Zonas secas o ásperas (descripción de ejemplo)', 'Manos, codos y talones'],
-    howTo: ['Aplicar una capa fina', 'Masajear hasta integrar', 'Repetir según necesidad'],
-    precautions: ['Uso externo', 'No aplicar sobre heridas abiertas'],
-    docs: ['Ficha técnica (demo).pdf', 'Infografía (demo).png'],
-    slides: [
-      { title: 'Zonas secas', body: 'Pensado para áreas que necesitan una textura más densa.', icon: 'hand-left-outline' },
-      { title: 'Cómo se usa', body: 'Capa fina, masaje suave y repetir según necesidad.', icon: 'finger-print-outline' },
-      { title: 'Presentación', body: 'Tubo de 40 g.', icon: 'cube-outline' },
-    ],
-    icon: 'bandage-outline',
-    hue: '#20343A',
-    keywords: ['ceramidas', 'bálsamo', 'reparador', 'resequedad', 'piel seca', 'zonas secas', 'barrera'],
-    areas: ['Dermatología'],
-  },
-  {
-    id: 'p4',
-    name: 'PhotoBlock SPF 50+',
-    lab: 'Celvia',
-    category: 'Fotoprotección',
-    form: 'Fluido · frasco 50 ml',
-    component: 'Filtros solares (ilustrativo)',
-    concentration: 'FPS 50+ (dato de ejemplo)',
-    tagline: 'Fluido de protección solar de toque seco',
-    description:
-      'Fotoprotector en fluido de toque seco. Producto ficticio: los valores mostrados son de ejemplo y no provienen de estudios reales.',
-    uses: ['Protección solar diaria (ejemplo)', 'Actividades al aire libre'],
-    howTo: ['Aplicar 20 minutos antes de la exposición', 'Reaplicar cada 2 horas', 'Reaplicar después de nadar o sudar'],
-    precautions: ['Uso externo', 'Evitar el contacto con los ojos', 'No sustituye otras medidas de protección'],
-    docs: ['Ficha técnica (demo).pdf', 'Guía de reaplicación (demo).pdf'],
-    slides: [
-      { title: 'Toque seco', body: 'Textura fluida que no deja residuo blanco (mensaje de ejemplo).', icon: 'sunny-outline' },
-      { title: 'Reaplicación', body: 'Cada 2 horas y después de nadar o sudar.', icon: 'time-outline' },
-      { title: 'Presentación', body: 'Frasco de 50 ml.', icon: 'cube-outline' },
-    ],
-    icon: 'sunny-outline',
-    hue: '#63C9D6',
-    keywords: ['protector solar', 'sol', 'spf', 'fotoprotección', 'bloqueador', 'fluido'],
-    areas: ['Dermatología', 'Medicina general', 'Pediatría'],
-    isNew: true,
-  },
-  {
-    id: 'p5',
-    name: 'PediaCalm Crema',
-    lab: 'Celvia',
-    category: 'Pediatría',
-    form: 'Crema · tubo 60 g',
-    component: 'Base emoliente (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Crema emoliente de uso familiar',
-    description: 'Crema emoliente de textura suave. Producto ficticio de la línea pediátrica de Celvia para el prototipo.',
-    uses: ['Cuidado de piel seca (descripción de ejemplo)'],
-    howTo: ['Aplicar sobre la piel limpia y seca', 'Extender suavemente'],
-    precautions: ['Uso externo', 'Consultar con el profesional de salud antes de usar en bebés'],
-    docs: ['Ficha técnica (demo).pdf'],
-    slides: [
-      { title: 'Textura suave', body: 'Crema de fácil aplicación para uso familiar.', icon: 'heart-outline' },
-      { title: 'Presentación', body: 'Tubo de 60 g.', icon: 'cube-outline' },
-    ],
-    icon: 'happy-outline',
-    hue: '#1E7F8C',
-    keywords: ['niños', 'bebé', 'pediátrico', 'pediatría', 'crema', 'piel sensible'],
-    areas: ['Pediatría'],
-  },  {
-    id: 'p6',
-    name: 'AloeFresh Gel',
-    lab: 'Celvia',
-    category: 'Hidratación',
-    form: 'Gel · frasco 150 ml',
-    component: 'Extracto de aloe (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Gel refrescante de aloe para uso diario',
-    description: 'Gel cosmético de textura fresca. Producto ficticio de la línea de uso diario de Celvia para el prototipo.',
-    uses: ['Sensación de frescura en la piel', 'Uso cosmético diario (descripción de ejemplo)'],
-    howTo: ['Aplicar una capa fina', 'Dejar absorber sin enjuagar'],
-    precautions: ['Uso externo', 'Evitar el contacto con los ojos'],
-    docs: ['Ficha técnica (demo).pdf'],
-    slides: [
-      { title: 'Frescura inmediata', body: 'Textura en gel que se absorbe rápido.', icon: 'leaf-outline' },
-      { title: 'Presentación', body: 'Frasco de 150 ml.', icon: 'cube-outline' },
-    ],
-    icon: 'leaf-outline',
-    hue: '#1E7F8C',
-    keywords: ['aloe', 'gel', 'refrescante', 'frescura', 'después del sol', 'piel sensible'],
-    areas: ['Medicina general', 'Dermatología'],
-  },
-  {
-    id: 'p7',
-    name: 'ManoProtect Crema',
-    lab: 'Celvia',
-    category: 'Reparación',
-    form: 'Crema de manos · tubo 75 ml',
-    component: 'Base emoliente (ilustrativo)',
-    concentration: 'No aplica',
-    tagline: 'Crema de manos para lavados frecuentes',
-    description: 'Crema de manos de absorción rápida. Producto ficticio pensado para mostrar material de uso diario en consultorio.',
-    uses: ['Cuidado de manos con lavado frecuente (ejemplo)'],
-    howTo: ['Aplicar sobre las manos secas', 'Masajear hasta absorber'],
-    precautions: ['Uso externo', 'Suspender el uso si aparece irritación'],
-    docs: ['Ficha técnica (demo).pdf'],
-    slides: [
-      { title: 'Manos cuidadas', body: 'Pensada para el uso diario del personal de salud.', icon: 'hand-left-outline' },
-      { title: 'Presentación', body: 'Tubo de 75 ml.', icon: 'cube-outline' },
-    ],
-    icon: 'hand-left-outline',
-    hue: '#20343A',
-    keywords: ['manos', 'crema de manos', 'resequedad', 'lavado frecuente', 'piel seca'],
-    areas: ['Medicina general'],
-  },
   {
     // PRODUCTO REAL (con permiso de Nutrabiotics). Todo el texto está tomado del empaque de la muestra.
     id: 'cor',
@@ -590,8 +389,8 @@ export const products: Product[] = [
     icon: 'nutrition-outline',
     hue: '#C9262F', // rojo del empaque (packColors.coraessens.red)
     isNew: true,
-    keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'magnesio', 'vitamina b12', 'metilcobalamina', 'vitamina b6', 'folato', 'corazón bovino', 'oral'],
-    areas: ['Medicina general'], // el empaque no la dirige a ninguna especialidad
+    keywords: ['coraessens', 'nutrabiotics', 'suplemento', 'suplemento dietario', 'suplemento alimenticio', 'cápsulas', 'corazón', 'corazón bovino', 'liofilizado', 'magnesio', 'calcio', 'vitamina b12', 'b12', 'cobalamina', 'metilcobalamina', 'glóbulos rojos', 'vitamina b6', 'b6', 'piridoxal', 'folato', 'folacina', 'metilfolato', 'l-5 mthf', 'vitamina c', 'oral', 'adultos', 'muestra médica'],
+    areas: ['Medicina general'], // especialidad a la que el visitador lleva la información (demostración; el empaque no la dirige a ninguna)
     real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del empaque de la muestra.' },
     specs: [
       { value: '9', label: 'Cápsulas por caja', note: 'Muestra · prohibida su venta' },
@@ -639,8 +438,8 @@ export const products: Product[] = [
     icon: 'nutrition-outline',
     hue: '#1F6B6E', // teal de la etiqueta (packColors.pancreogen.teal)
     isNew: true,
-    keywords: ['suplemento', 'suplemento dietario', 'cápsulas', 'páncreas bovino', 'canela', 'vitamina d', 'vitamina c', 'biotina', 'zinc', 'cromo', 'manganeso', 'vanadio', 'oral'],
-    areas: ['Medicina general'], // el frasco no lo dirige a ninguna especialidad
+    keywords: ['pancreogen', 'nutrabiotics', 'suplemento', 'suplemento dietario', 'suplemento alimenticio', 'cápsulas', 'frasco', 'páncreas', 'páncreas bovino', 'menudo', 'liofilizado', 'canela', 'vitaminas', 'minerales', 'vitamina d', 'vitamina d3', 'calcio', 'fósforo', 'vitamina c', 'biotina', 'zinc', 'cromo', 'manganeso', 'vanadio', 'oral', 'adultos'],
+    areas: ['Medicina general'], // especialidad a la que el visitador lleva la información (demostración; el frasco no lo dirige a ninguna)
     real: { note: 'Producto real de Nutrabiotics, mostrado con permiso del laboratorio. Información tomada del frasco.' },
     specs: [
       { value: '90', label: 'Cápsulas por frasco', note: 'Suplemento dietario' },
@@ -689,8 +488,8 @@ export const products: Product[] = [
     icon: 'eye-outline',
     hue: '#32316C', // azul del texto de la caja (packColors.tearsoft.navy)
     isNew: true,
-    keywords: ['solución oftálmica', 'gotas', 'ojo', 'ojos', 'oftálmica', 'carboximetilcelulosa', 'resequedad ocular', 'irritación ocular', 'lágrima'],
-    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    keywords: ['tearsoft', 'procaps', 'solución oftálmica', 'gotas', 'gotas para los ojos', 'colirio', 'ojo', 'ojos', 'ojo seco', 'oftálmica', 'oftalmología', 'carboximetilcelulosa', 'carboximetilcelulosa sódica', 'resequedad ocular', 'irritación ocular', 'picazón', 'ardor', 'viento', 'sol', 'lágrima', 'frasco', 'muestra médica'],
+    areas: ['Oftalmología', 'Medicina general'], // especialidades a las que el visitador lleva la información (demostración)
     real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
     specs: [
       { value: '3 mL', label: 'Solución oftálmica', note: '1 frasco · muestra médica' },
@@ -737,8 +536,8 @@ export const products: Product[] = [
     icon: 'sunny-outline',
     hue: '#0E6A66', // turquesa oscuro de la caja (packColors.deferol.deep)
     isNew: true,
-    keywords: ['vitamina d', 'vitamina d3', 'colecalciferol', '7000', 'cápsula blanda', 'deficiencia de vitamina d', 'osteoporosis', 'semanal', 'oral'],
-    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    keywords: ['deferol', 'procaps', 'vitamina', 'vitaminas', 'vitamina d', 'vitamina d3', 'colecalciferol', '7000', '7000 u.i.', 'cápsula', 'cápsula blanda', 'gelatina', 'deficiencia de vitamina d', 'prevención', 'osteoporosis', 'semanal', 'una vez por semana', 'oral', 'muestra médica'],
+    areas: ['Medicina general'], // especialidad a la que el visitador lleva la información (demostración; la caja no lo dirige a ninguna)
     real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
     specs: [
       { value: '7000', label: 'U.I. por cápsula', note: 'Vitamina D3' },
@@ -780,8 +579,8 @@ export const products: Product[] = [
     icon: 'flower-outline',
     hue: '#C2223F', // rojo del logotipo (packColors.vitybell.rose)
     isNew: true,
-    keywords: ['suplemento', 'cabello', 'uñas', 'biotina', 'zinc', 'selenio', 'nicotinamida', 'riboflavina', 'piridoxina', 'ácido pantoténico', 'cobre', 'cápsula blanda'],
-    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    keywords: ['vitybell', 'procaps', 'suplemento', 'suplemento alimenticio', 'cabello', 'pelo', 'uñas', 'cabello y uñas', 'biotina', 'zinc', 'selenio', 'cobre', 'minerales', 'vitaminas', 'complejo b', 'nicotinamida', 'riboflavina', 'piridoxina', 'ácido pantoténico', 'cápsula blanda', 'una al día', 'muestra gratuita', 'adultos'],
+    areas: ['Dermatología', 'Medicina general'], // especialidades a las que el visitador lleva la información (demostración)
     real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
     specs: [
       { value: '8', label: 'Componentes', note: 'Vitaminas y minerales del frente' },
@@ -801,7 +600,7 @@ export const products: Product[] = [
 
 products.forEach((p) => {
   // cada producto real tiene los suyos (PANCREOGEN usa los puntos de su frasco, en su propio catálogo)
-  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.id === 'def' ? defSpots : p.id === 'vit' ? vitSpots : p.real ? [] : spots(p);
+  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.id === 'def' ? defSpots : p.id === 'vit' ? vitSpots : [];
 });
 
 // ---------- Visitas ----------
@@ -814,8 +613,8 @@ export const visits: Visit[] = [
     place: 'Consultorio Dermatológico Toscano',
     address: 'Av. Ejemplo 123, Guayaquil (dirección ficticia)',
     status: 'Programada',
-    productIds: ['p4', 'p2'],
-    notes: 'Presentar el nuevo fotoprotector y dejar material de apoyo.',
+    productIds: ['vit', 'def'],
+    notes: 'Presentar VITYBELL y dejar material de apoyo de DEFEROL.',
     lat: -2.161,
     lon: -79.901,
   },
@@ -827,8 +626,8 @@ export const visits: Visit[] = [
     place: 'Clínica Dermasur',
     address: 'Calle Demo 45, Durán (dirección ficticia)',
     status: 'Programada',
-    productIds: ['p3'],
-    notes: 'Seguimiento de la solicitud de información técnica.',
+    productIds: ['vit'],
+    notes: 'Seguimiento de la solicitud de información técnica de VITYBELL.',
     lat: -2.172,
     lon: -79.838,
   },
@@ -840,8 +639,8 @@ export const visits: Visit[] = [
     place: 'Centro Médico Los Ceibos',
     address: 'Av. Muestra 900, Guayaquil (dirección ficticia)',
     status: 'Programada',
-    productIds: ['p4', 'p2'],
-    notes: '',
+    productIds: ['tea', 'def'],
+    notes: 'Llevar la ficha y muestras de TEARSOFT.',
     lat: -2.159,
     lon: -79.953,
   },
@@ -853,7 +652,7 @@ export const visits: Visit[] = [
     place: 'Consultorio Benítez',
     address: 'Calle Ficticia 12, Milagro (dirección ficticia)',
     status: 'Reprogramada',
-    productIds: ['p1'],
+    productIds: ['cor', 'pan'],
     notes: 'La doctora pidió mover la visita al jueves.',
     lat: -2.134,
     lon: -79.59,
@@ -866,11 +665,11 @@ export const visits: Visit[] = [
     place: 'Consultorio Dermatológico Toscano',
     address: 'Av. Ejemplo 123, Guayaquil (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p1', 'p3'],
-    notes: 'Se presentó la línea de limpieza. Interés en material de apoyo.',
+    productIds: ['def', 'cor'],
+    notes: 'Se presentaron DEFEROL y CORAESSENS. Interés en material de apoyo.',
     lat: -2.161,
     lon: -79.901,
-    report: pastReport(-7, '16:00', 12, ['p1', 'p3'], { p1: { muestra: 4, impreso: 2 }, p3: { impreso: 3, digital: 1 } }, 'Alto', ['Dejar más material'], 'Se presentó la línea de limpieza. Interés en material de apoyo.', 'Dra. Pamela Toscano'),
+    report: pastReport(-7, '16:00', 12, ['def', 'cor'], { def: { muestra: 4, impreso: 2 }, cor: { impreso: 3, digital: 1 } }, 'Alto', ['Dejar más material'], 'Se presentaron DEFEROL y CORAESSENS. Interés en material de apoyo.', 'Dra. Pamela Toscano'),
   },
   {
     id: 'vs6',
@@ -880,11 +679,11 @@ export const visits: Visit[] = [
     place: 'Centro Médico Los Ceibos',
     address: 'Av. Muestra 900, Guayaquil (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p4'],
+    productIds: ['tea'],
     notes: 'Pidió la ficha digital antes de la próxima visita.',
     lat: -2.159,
     lon: -79.953,
-    report: pastReport(-3, '10:30', 9, ['p4'], { p4: { muestra: 2, digital: 1 } }, 'Medio', ['Enviar información técnica'], 'Pidió la ficha digital antes de la próxima visita.', 'Dr. Andrés Villacís', 15),
+    report: pastReport(-3, '10:30', 9, ['tea'], { tea: { muestra: 2, digital: 1 } }, 'Medio', ['Enviar información técnica'], 'Pidió la ficha digital antes de la próxima visita.', 'Dr. Andrés Villacís', 15),
   },
   {
     id: 'vs7',
@@ -894,11 +693,11 @@ export const visits: Visit[] = [
     place: 'Clínica Dermasur',
     address: 'Calle Demo 45, Durán (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p3', 'p2'],
-    notes: 'Quiere comparar texturas en la próxima visita.',
+    productIds: ['vit', 'def'],
+    notes: 'Quiere ver la información nutricional de VITYBELL en la próxima visita.',
     lat: -2.172,
     lon: -79.838,
-    report: pastReport(-5, '17:15', 18, ['p3', 'p2'], { p3: { muestra: 2, impreso: 1 }, p2: { muestra: 3 } }, 'Alto', ['Agendar seguimiento'], 'Quiere comparar texturas en la próxima visita.', 'Dr. Luis Ortega', 7),
+    report: pastReport(-5, '17:15', 18, ['vit', 'def'], { vit: { muestra: 2, impreso: 1 }, def: { muestra: 3 } }, 'Alto', ['Agendar seguimiento'], 'Quiere ver la información nutricional de VITYBELL en la próxima visita.', 'Dr. Luis Ortega', 7),
   },
   {
     id: 'vs8',
@@ -908,11 +707,11 @@ export const visits: Visit[] = [
     place: 'Consultorio Benítez',
     address: 'Calle Ficticia 12, Milagro (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p1'],
+    productIds: ['pan'],
     notes: '',
     lat: -2.134,
     lon: -79.59,
-    report: pastReport(-12, '09:20', 7, ['p1'], { p1: { impreso: 2 } }, 'Bajo', ['Sin acciones'], '', 'Dra. Carla Benítez'),
+    report: pastReport(-12, '09:20', 7, ['pan'], { pan: { impreso: 2 } }, 'Bajo', ['Sin acciones'], '', 'Dra. Carla Benítez'),
   },
   {
     id: 'vs9',
@@ -922,11 +721,11 @@ export const visits: Visit[] = [
     place: 'Consultorio Dermatológico Toscano',
     address: 'Av. Ejemplo 123, Guayaquil (dirección ficticia)',
     status: 'Realizada',
-    productIds: ['p4'],
-    notes: 'Primera visita. Presentación general del laboratorio.',
+    productIds: ['cor'],
+    notes: 'Primera visita. Presentación general de los productos.',
     lat: -2.161,
     lon: -79.901,
-    report: pastReport(-21, '15:45', 15, ['p4'], { p4: { muestra: 3, impreso: 2, digital: 1 } }, 'Medio', ['Agendar seguimiento'], 'Primera visita. Presentación general del laboratorio.', 'Dra. Pamela Toscano', 15),
+    report: pastReport(-21, '15:45', 15, ['cor'], { cor: { muestra: 3, impreso: 2, digital: 1 } }, 'Medio', ['Agendar seguimiento'], 'Primera visita. Presentación general de los productos.', 'Dra. Pamela Toscano', 15),
   },
 ];
 
@@ -976,7 +775,7 @@ export const requests: RequestItem[] = [
   {
     id: 'r1',
     code: 'SOL-0142',
-    productId: 'p3',
+    productId: 'vit',
     type: 'Material de apoyo',
     urgency: 'Sin prisa',
     notes: 'Material impreso para la sala de espera.',
@@ -994,7 +793,7 @@ export const requests: RequestItem[] = [
   {
     id: 'r2',
     code: 'SOL-0138',
-    productId: 'p1',
+    productId: 'def',
     type: 'Información técnica',
     notes: 'Ficha técnica completa en PDF.',
     doctorId: 'm1',
@@ -1012,10 +811,10 @@ export const requests: RequestItem[] = [
   {
     id: 'r3',
     code: 'SOL-0145',
-    productId: 'p3',
+    productId: 'vit',
     type: 'Información técnica',
     urgency: 'Esta semana',
-    notes: '¿Tienen material comparativo de la línea?',
+    notes: '¿Tienen la ficha con la información nutricional completa?',
     doctorId: 'm4',
     repId: 'v1',
     status: 'Pendiente',
@@ -1032,8 +831,8 @@ export const chats: Chat[] = [
     unreadFor: { m1: 1, v1: 0 },
     messages: [
       { id: 'c1m1', from: 'v1', text: 'Buenas tardes, doctora. Le confirmo la visita de hoy a las 15:30.', at: '10:02' },
-      { id: 'c1m2', from: 'm1', text: 'Perfecto, Juan. ¿Puede traer información del nuevo fotoprotector?', at: '10:15' },
-      { id: 'c1m3', from: 'v1', text: 'Claro, le comparto la ficha para que la revise antes.', at: '10:16', productId: 'p4' },
+      { id: 'c1m2', from: 'm1', text: 'Perfecto, Juan. ¿Puede traer información de VITYBELL?', at: '10:15' },
+      { id: 'c1m3', from: 'v1', text: 'Claro, le comparto la ficha para que la revise antes.', at: '10:16', productId: 'vit' },
     ],
   },
   {
@@ -1041,24 +840,18 @@ export const chats: Chat[] = [
     members: ['m4', 'v1'],
     unreadFor: { m4: 0, v1: 2 },
     messages: [
-      { id: 'c2m1', from: 'm4', text: 'Juan, envié una solicitud de información del bálsamo.', at: 'Ayer' },
+      { id: 'c2m1', from: 'm4', text: 'Juan, envié una solicitud de información de VITYBELL.', at: 'Ayer' },
       { id: 'c2m2', from: 'm4', text: '¿Me la puede traer en la próxima visita?', at: 'Ayer' },
     ],
-  },
-  {
-    id: 'c3',
-    members: ['m1', 'v2'],
-    unreadFor: { m1: 0, v2: 0 },
-    messages: [{ id: 'c3m1', from: 'v2', text: 'Doctora, le dejé el material de PediaCalm en recepción.', at: 'Lun' }],
   },
 ];
 
 // ---------- Notificaciones ----------
 export const notices: Notice[] = [
-  { id: 'n1', forRole: 'medico', kind: 'mensaje', title: 'Nuevo mensaje de Juan Carlos Mieles', body: 'Le compartió la ficha de PhotoBlock SPF 50+.', at: 'Hace 1 h', read: false, href: '/chat/c1' },
+  { id: 'n1', forRole: 'medico', kind: 'mensaje', title: 'Nuevo mensaje de Juan Carlos Mieles', body: 'Le compartió la ficha de VITYBELL.', at: 'Hace 1 h', read: false, href: '/chat/c1' },
   { id: 'n2', forRole: 'medico', kind: 'solicitud', title: 'Solicitud SOL-0142 en proceso', body: 'Su solicitud de material de apoyo avanzó de estado.', at: 'Hace 2 días', read: false, href: '/solicitud/r1' },
   { id: 'n3', forRole: 'medico', kind: 'visita', title: 'Visita confirmada', body: 'Juan Carlos Mieles pasará hoy a las 15:30 por su consultorio.', at: 'Hace 3 h', read: true, href: '/visita/vs1' },
-  { id: 'n4', forRole: 'visitador', kind: 'solicitud', title: 'Nueva solicitud de Dr. Luis Ortega', body: 'Información técnica de CeraRepair Bálsamo.', at: 'Hace 3 h', read: false, href: '/solicitud/r3' },
+  { id: 'n4', forRole: 'visitador', kind: 'solicitud', title: 'Nueva solicitud de Dr. Luis Ortega', body: 'Información técnica de VITYBELL.', at: 'Hace 3 h', read: false, href: '/solicitud/r3' },
   { id: 'n5', forRole: 'visitador', kind: 'visita', title: 'Recordatorio de visita', body: 'Hoy 15:30 con Dra. Pamela Toscano.', at: 'Hace 4 h', read: false, href: '/visita/vs1' },
   { id: 'n6', forRole: 'visitador', kind: 'mensaje', title: '2 mensajes de Dr. Luis Ortega', body: '¿Me la puede traer en la próxima visita?', at: 'Ayer', read: true, href: '/chat/c2' },
 ];
@@ -1099,14 +892,14 @@ export interface ProductNeed {
   response?: string;
   respondedAt?: number;
 }
-export const NEED_SUGGESTIONS = ['piel seca', 'protector solar', 'hidratante', 'niños', 'limpieza', 'ceramidas', 'piel sensible', 'textura ligera'];
+export const NEED_SUGGESTIONS = ['vitamina d', 'cabello', 'uñas', 'ojo seco', 'gotas', 'suplemento', 'biotina', 'magnesio', 'vitamina b12', 'zinc'];
 
 export const initialNeeds: ProductNeed[] = [
   {
     id: 'nd1',
     doctorId: 'm4',
-    keywords: ['ceramidas', 'zonas secas'],
-    note: 'Busco algo de textura densa para mostrar en consulta.',
+    keywords: ['cabello', 'uñas'],
+    note: 'Busco información de algún suplemento para cabello y uñas para mostrar en consulta.',
     urgency: 'Esta semana',
     status: 'Enviada',
     createdAt: Date.now() - 2 * 3600000,
@@ -1135,7 +928,7 @@ export function matchProducts(keywords: string[], lab?: string | string[]): Prod
     .filter((p) => !lab || (Array.isArray(lab) ? lab.includes(p.lab) : p.lab === lab))
     .map((p) => {
       const tags = (p.keywords ?? []).map(normalize);
-      const text = normalize([p.name, p.category, p.tagline, p.description, p.form, p.component, ...p.uses].join(' '));
+      const text = normalize([p.name, p.lab, p.category, p.tagline, p.description, p.form, p.component, ...p.uses].join(' '));
       let score = 0;
       const hits: string[] = [];
       keywords.forEach((k, i) => {
@@ -1205,7 +998,7 @@ export const initialReturns: ReturnItem[] = [
     doctorId: 'm4',
     repId: 'v1',
     source: { kind: 'visita', id: 'vs7', label: 'Visita del ' + new Date(Date.now() - 5 * 864e5).toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }) },
-    productId: 'p2',
+    productId: 'vit',
     material: 'Muestras de demostración',
     qty: 1,
     reason: 'Empaque abierto',

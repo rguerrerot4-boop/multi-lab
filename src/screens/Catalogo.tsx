@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlipCard } from '@/components/FlipCard';
 import { Destacados } from '@/components/VitrinaBanner';
 import { BrandHeader, Chip, EmptyState, styles } from '@/components/ui';
-import { categories, labOfRep, products, repLabNames } from '@/data/mock';
+import { categories, normalize, products, repLabNames } from '@/data/mock';
 import { useMine } from '@/store/AppStore';
 import { colors, space, type } from '@/theme';
 
@@ -22,13 +22,15 @@ export default function Catalogo() {
   const cols = grid ? (width >= 700 ? 3 : 2) : 1;
 
   const list = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return products.filter(
-      (p) =>
-        (cat === 'Todos' || p.category === cat) &&
-        mine.includes(p.lab) &&
-        (!term || `${p.name} ${p.tagline} ${p.category} ${p.lab}`.toLowerCase().includes(term)),
-    ).sort((a, b) => Number(!!(b.photo || b.bottle)) - Number(!!(a.photo || a.bottle))); // los productos con fotos 3D van primero
+    // busca por nombre, laboratorio, categoría, componentes y palabras clave (sin tildes ni mayúsculas); todas las palabras deben coincidir
+    const words = normalize(q).split(/\s+/).filter(Boolean);
+    return products.filter((p) => {
+      if ((cat !== 'Todos' && p.category !== cat) || !mine.includes(p.lab)) return false;
+      if (!words.length) return true;
+      const text = normalize([p.name, p.lab, p.category, p.tagline, p.form, p.component, p.description, ...p.uses, ...(p.keywords ?? [])].join(' '));
+      // las palabras cortas («d», «b6»…) cuentan solo como palabra completa, así «vitamina d» no trae cualquier vitamina
+      return words.every((w) => (w.length > 2 ? text.includes(w) : ` ${text.replace(/[^a-z0-9]+/g, ' ')} `.includes(` ${w} `)));
+    }).sort((a, b) => Number(!!(b.photo || b.bottle)) - Number(!!(a.photo || a.bottle))); // los productos con fotos 3D van primero
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, cat]);
 
@@ -62,7 +64,7 @@ export default function Catalogo() {
               <TextInput
                 value={q}
                 onChangeText={setQ}
-                placeholder="Buscar por nombre o categoría"
+                placeholder="Buscar: nombre, componente o palabra clave"
                 placeholderTextColor={colors.inkSubtle}
                 style={styles.inputText}
                 accessibilityLabel="Buscar productos"
@@ -79,10 +81,10 @@ export default function Catalogo() {
                 <Chip key={c} label={c} selected={cat === c} onPress={() => setCat(c)} />
               ))}
             </ScrollView>
-            {/* solo los productos del laboratorio del visitador (Celvia) y CORAESSENS, que se muestra con permiso */}
+            {/* solo los 5 productos reales, mostrados con permiso de Nutrabiotics y Procaps */}
             <View style={[styles.row, { justifyContent: 'space-between' }]}>
               <Text style={[type.caption, { flex: 1 }]}>
-                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio); CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL (reales, con permiso)
+                {list.length} {list.length === 1 ? 'producto' : 'productos'} · Nutrabiotics y Procaps · productos reales, con permiso del laboratorio
               </Text>
               <Pressable
                 onPress={() => setGrid((g) => !g)}

@@ -1,8 +1,8 @@
 """Genera las tarjetas impresas de realidad aumentada (una por producto).
 
-Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL
-(productos reales, con permiso) tienen su propia tarjeta con los colores de su empaque y la foto del
-producto en el panel.
+Solo los 5 productos reales (con permiso): CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL. Cada uno
+tiene su propia tarjeta con los colores de su empaque y la foto del producto en el panel. (La función
+card() del patrón de cápsulas era para los productos ficticios de prueba, ya retirados.)
 
 Cada tarjeta lleva un panel con un patrón de cápsulas distinto por producto y un código QR que abre
 la ficha del producto en PDF (public/fichas, scripts/fichas/build_fichas.py); desde la ficha se abre la
@@ -11,7 +11,6 @@ entre tarjetas), así que después de cambiarlo hay que volver a compilar los ob
 (scripts/ar/compile_cards.cjs).
 
 Uso:
-  node --experimental-strip-types scripts/ar/export-products.mts
   pip install pillow qrcode
   python3 scripts/ar/build_cards.py
 
@@ -554,17 +553,10 @@ def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (proto
 
 
 def main():
-    with open(os.path.join(ROOT, "scripts", "ar", "products.json"), encoding="utf-8") as f:
-        products = json.load(f)
     os.makedirs(os.path.join(OUT, "tarjetas"), exist_ok=True)
     os.makedirs(os.path.join(OUT, "objetivos"), exist_ok=True)
     cards = []
-    for p in products:
-        c, panel = card(p)
-        c.save(os.path.join(OUT, "tarjetas", f"{p['id']}.png"), optimize=True)
-        panel.save(os.path.join(OUT, "objetivos", f"{p['id']}.png"), optimize=True)
-        cards.append(c)
-    # la de CORAESSENS va al final: su objetivo es el último de tarjetas.mind
+    # el orden es el de los objetivos de tarjetas.mind: CORAESSENS primero
     c, panel = card_coraessens()
     c.save(os.path.join(OUT, "tarjetas", "cor.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "cor.png"), optimize=True)
@@ -591,9 +583,9 @@ def main():
     cards.append(c)
     sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
     # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
-    for p, c in zip(products + [COR, PAN, TEA, DEF, VIT], cards):
+    for p, c in zip([COR, PAN, TEA, DEF, VIT], cards):
         sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
-    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA, DEF, VIT]
+    data = [COR, PAN, TEA, DEF, VIT]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))

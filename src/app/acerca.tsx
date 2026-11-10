@@ -15,8 +15,10 @@ export default function Acerca() {
       <Card>
         <Text style={type.h3}>Sobre este prototipo</Text>
         <Text style={type.body}>
-          Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. Todas las personas, laboratorios, productos y
-          ubicaciones son ficticios y se usan solo para demostrar los recorridos de la aplicación.
+          Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. Las personas, consultorios y
+          ubicaciones son ficticios y se usan solo para demostrar los recorridos de la aplicación. Los cinco productos del catálogo
+          (CORAESSENS y PANCREOGEN de Nutrabiotics; TEARSOFT, DEFEROL y VITYBELL de Procaps) son reales y se muestran con permiso
+          de su laboratorio, con la información tomada de su empaque.
         </Text>
         <Text style={type.body}>
           Funciona sin servidor: los datos viven en el dispositivo durante la sesión. Mensajería en tiempo real, documentos autorizados,

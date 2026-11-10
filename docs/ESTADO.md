@@ -30,7 +30,7 @@ Todas respetan "reducir movimiento" del sistema.
 
 ## Realidad aumentada
 
-- Modelos en `ar/models`, generados con `scripts/ar/build_models.py`.
+- Modelos en `ar/models`, uno por producto real (y su versión ficticia `-f`), generados con `scripts/<producto>/modelo.py` sobre la geometría de `scripts/ar/build_models.py`. Los productos ficticios de prueba (p1…p7, Laboratorios Celvia) se retiraron de la app, de las tarjetas, de las fichas y de los modelos.
 - Se sirven por jsDelivr desde este repositorio público, fijados al commit `AR_COMMIT` de `src/lib/ar.ts`.
 - **Si el repositorio pasa a privado, el AR deja de funcionar.** Antes de hacerlo: crear un repositorio público aparte solo con los modelos (sin código) y cambiar `BASE` en `src/lib/ar.ts` para apuntar ahí.
 

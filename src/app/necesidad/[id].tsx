@@ -191,7 +191,7 @@ export default function Necesidad() {
           <Field label="Mensaje adicional (opcional)" value={extra} onChangeText={setExtra} placeholder="Ej.: paso el jueves por la tarde" multiline />
         </>
       ) : null}
-      <Text style={[type.caption, { textAlign: 'center' }]}>Solicitud informativa con productos ficticios. No es un pedido ni una compra.</Text>
+      <Text style={[type.caption, { textAlign: 'center' }]}>Solicitud informativa. No es un pedido ni una compra.</Text>
       <SuccessOverlay visible={celebrate} title="¡Respuesta enviada!" body={`${doc.name} recibirá tu respuesta.`} onClose={() => setCelebrate(false)} />
     </Screen>
   );

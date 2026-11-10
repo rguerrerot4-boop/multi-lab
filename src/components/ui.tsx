@@ -464,7 +464,7 @@ export function Tag({ label, tone = 'soft' }: { label: string; tone?: 'soft' | '
   );
 }
 
-export function DemoNotice({ text = 'Producto y datos ficticios · Prototipo académico' }: { text?: string }) {
+export function DemoNotice({ text = 'Datos de demostración · Prototipo académico' }: { text?: string }) {
   return (
     <View style={styles.demo}>
       <Ionicons name="flask-outline" size={14} color={colors.warning} />

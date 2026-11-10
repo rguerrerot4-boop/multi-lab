@@ -1,12 +1,8 @@
-"""Genera los modelos 3D de AR (GLB para Android y USDZ para iPhone) de los productos ficticios.
+"""Geometría de caja y escritura de GLB (Android) y USDZ (iPhone) para los modelos de AR.
 
-Cada producto es una caja con textura (frente, reverso, laterales, tapa y base), con la misma
-gráfica del visor 3D de la app. La base del modelo queda en y = 0 para apoyarse sobre superficies.
-
-Uso:
-  node --experimental-strip-types scripts/ar/export-products.mts
-  pip install usd-core pillow
-  python3 scripts/ar/build_models.py
+Lo usan como biblioteca los scripts de cada producto real (scripts/coraessens/modelo.py, scripts/tearsoft/modelo.py…)
+y scripts/fichas/build_fichas.py. Los productos ficticios de prueba (p1…p7), que este script generaba con su
+main(), se retiraron de la app: ya no hay modelos que generar desde aquí.
 """
 
 import json
@@ -279,16 +275,7 @@ def write_usdz(path, p, jpg_path):
 
 
 def main():
-    products = json.load(open(os.path.join(os.path.dirname(__file__), "products.json"), encoding="utf-8"))
-    os.makedirs(OUT, exist_ok=True)
-    for p in products:
-        jpg = os.path.join(OUT, f"{p['id']}.jpg")
-        atlas_for(p).save(jpg, "JPEG", quality=86, optimize=True)
-        with open(jpg, "rb") as f:
-            data = f.read()
-        write_glb(os.path.join(OUT, f"{p['id']}.glb"), p, data)
-        write_usdz(os.path.join(OUT, f"{p['id']}.usdz"), p, jpg)
-        print(p["id"], p["name"], "listo")
+    sys.exit("Ya no hay productos ficticios: cada producto real genera su modelo con scripts/<producto>/modelo.py")
 
 
 if __name__ == "__main__":

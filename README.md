@@ -2,7 +2,7 @@
 
 Prototipo funcional de la aplicación móvil **Multi LAB**: una experiencia multimedia interactiva para la presentación digital de productos farmacéuticos, dirigida a visitadores médicos y profesionales de la salud.
 
-Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. **Todas las personas, laboratorios, productos y ubicaciones son ficticios**, salvo CORAESSENS® y PANCREOGEN® de Nutrabiotics, que se muestran con permiso del laboratorio y también tienen una versión con nombre ficticio.
+Proyecto de titulación de la carrera de Multimedia y Producción Audiovisual. **Las personas, consultorios y ubicaciones son ficticios.** El catálogo tiene solo 5 productos reales, mostrados con permiso de su laboratorio y con una versión de nombre ficticio cada uno: CORAESSENS® y PANCREOGEN® (Nutrabiotics) y TEARSOFT®, DEFEROL® y VITYBELL® (Procaps).
 
 ## Cómo ejecutarla
 
@@ -42,7 +42,7 @@ En la pantalla de inicio de sesión, elige el perfil y pulsa **“Completar con 
 | Perfil | Usuario |
 |---|---|
 | Profesional de salud | Dra. Pamela Toscano |
-| Visitador médico | Juan Carlos Mieles (Laboratorios Celvia) |
+| Visitador médico | Juan Carlos Mieles (Nutrabiotics y Procaps) |
 
 En la recuperación de contraseña, el código de verificación de demostración es **123456**.
 
@@ -56,11 +56,11 @@ En la recuperación de contraseña, el código de verificación de demostración
 | Devoluciones | El médico reporta muestras o material de apoyo recibido en mal estado (material, motivo, cantidad, fotos y si prefiere reposición o retiro). El visitador lo sigue: Reportada → Recibida → En revisión → Retiro agendado → Resuelta, con notas para el médico. No es una devolución de compra |
 | Visita en curso | Cronómetro, datos del profesional (horario, preferencias, última visita, solicitudes abiertas), productos presentados, **contador de material entregado** (muestras, impresos, ficha digital) con el kit disponible, resultado de la visita, **firma con el dedo** como acuse de recibo y resumen final |
 | Registro de visitas | Cada visita finalizada se guarda automáticamente: totales del periodo, buscador, filtros por fecha y por profesional, y detalle con material entregado, resultado y firma |
-| Catálogo multimedia | Solo los productos de Laboratorios Celvia (el laboratorio de Juan Carlos Mieles), CORAESSENS y PANCREOGEN; carrusel de destacados con los dos productos reales; buscador, filtros por categoría, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
+| Catálogo multimedia | Solo los 5 productos reales: CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL; carrusel de destacados; buscador por nombre, componente o palabra clave, filtros por categoría, vista en cuadrícula o lista, ficha interactiva con galería, pestañas y secciones desplegables |
 | Ficha 3D | La ficha de cada producto se recorre en secciones: portada con nombre gigante y caja 3D flotando, ficha técnica con cifras, **cara por cara** (tarjetas que giran la caja, se voltean y amplían la foto), componentes en manchas de tinta, modo de uso, avisos, pedestal y cierre. CORAESSENS® hecho con la sesión de fotos: caja 3D con las 6 caras fotografiadas y enderezadas (gira con el dedo, inercia, flota con sombra, pantalla completa con zoom), texto gigante animado detrás, carrusel de tarjetas por cara con su texto impreso, pedestal con los datos de la caja, cierre con letras grandes y AR con el modelo real. Cambia entre **nombre real** y **ficticio** (KARDENSA · Bioandes). Colores del empaque. Se abre desde el catálogo y el inicio del médico (`/producto/cor`); al presentarlo se usa esta misma ficha. PANCREOGEN® (`/producto/pan`) tiene un catálogo distinto: el frasco 3D baja por la página mientras se desplaza, gira hacia cada sección, se destapa y deja salir sus cápsulas; 8 puntos interactivos animados sobre la etiqueta, giro con el dedo y riel de secciones. Nombre real o ficticio (PANCRIVA · Bioandes) |
 | Realidad aumentada | Botón **Ver en AR** en la ficha, el visor 3D y la presentación: explica el uso y abre el visor AR del teléfono para colocar el envase en una superficie plana a tamaño real (Scene Viewer en Android con ARCore, AR Quick Look en iPhone). Modelos en `ar/models` |
 | Presentación | Revista editorial con scroll: portada con envase 3D, capítulos con parallax y apariciones, ficha rápida, modo de uso, avisos y cierre de visita |
-| Solicitudes | Flujo de 4 pasos: el médico elige el **laboratorio** (Celvia, Andina Pharma o Bioandes, cada uno con su visitador), luego un **producto de su área** (Dermatología, Pediatría o Medicina general; las otras áreas quedan ocultas), el tipo (información técnica, material de apoyo, **muestra original** o agendar visita), el **nivel de necesidad** (Urgente, Esta semana, Sin prisa) y confirma. Al visitador le aparecen primero las urgentes. Seguimiento y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
+| Solicitudes | Flujo de 4 pasos: el médico elige el **laboratorio** (Nutrabiotics o Procaps), luego un **producto de su área** (Dermatología, Oftalmología o Medicina general; las otras áreas se pueden abrir), el tipo (información técnica, material de apoyo, **muestra original** o agendar visita), el **nivel de necesidad** (Urgente, Esta semana, Sin prisa) y confirma. Al visitador le aparecen primero las urgentes. Seguimiento y seguimiento por estados: Pendiente → Recibida → En revisión → En proceso → Atendida / Cancelada |
 | Comunicación | Bandeja de mensajes, chat individual y fichas compartidas como tarjeta |
 | Agenda y mapa | Agenda semanal, detalle de visita con registro de estado y notas, y mapa interactivo con tu ubicación (GPS), buscador, tus visitas, consultorios, clínicas y hospitales cercanos de OpenStreetMap, rutas dentro de la app (OSRM) con tiempo en auto y a pie, y Google Maps integrado para buscar consultorios y médicos |
 | Otros | Centro de notificaciones, perfil, contactos, historial de visitas y métricas de la prueba |
@@ -94,7 +94,7 @@ src/
     visitador/  Pestañas del visitador médico
   screens/      Pantallas compartidas por ambos roles
   components/   Componentes reutilizables (botones, campos, tarjetas…)
-  data/         Datos ficticios
+  data/         Datos de demostración y textos de los empaques
   store/        Estado de la app (sesión, solicitudes, chats, visitas)
   theme.ts      Colores, tipografía y espaciados
 assets/         Logotipo oficial e íconos

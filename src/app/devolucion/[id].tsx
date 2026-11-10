@@ -160,7 +160,7 @@ export default function Devolucion() {
           </Text>
         </View>
       ) : null}
-      <Text style={[type.caption, { textAlign: 'center' }]}>Material de demostración de productos ficticios. No es una devolución de compra.</Text>
+      <Text style={[type.caption, { textAlign: 'center' }]}>Material de demostración (muestras médicas, prohibida su venta). No es una devolución de compra.</Text>
       <SuccessOverlay visible={celebrate} title="¡Reporte enviado!" body={`Tu visitador revisará la devolución ${r.code}.`} onClose={() => setCelebrate(false)} />
     </Screen>
   );

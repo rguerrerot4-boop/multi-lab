@@ -221,7 +221,7 @@ export function NeedSheet({ visible, onClose }: { visible: boolean; onClose: () 
                   onSubmitEditing={() => add(text)}
                   blurOnSubmit={false}
                   returnKeyType="done"
-                  placeholder={keys.length ? 'Otra palabra…' : 'Ej.: piel seca, ceramidas'}
+                  placeholder={keys.length ? 'Otra palabra…' : 'Ej.: vitamina D, cabello, ojo seco'}
                   placeholderTextColor={colors.inkSubtle}
                   style={[styles.inputText, { minWidth: 140 }]}
                   accessibilityLabel="Escribe una palabra clave"
