@@ -71,6 +71,10 @@ export async function createBottleGL(canvas: HTMLCanvasElement, url: string, cam
   // cada instancia usa su copia de la escena (las geometrías y texturas se comparten en el mismo contexto)
   const root = gltf.scene.clone(true);
   scene.add(root);
+  // el modelo viene reducido para los visores de AR del sistema (`escalaAR`); aquí manda la cámara de los cuadros
+  root.traverse((o) => {
+    if (typeof o.userData.escalaAR === 'number') o.scale.setScalar(1);
+  });
   ['Nombre', 'Aro'].forEach((n) => {
     const o = root.getObjectByName(n);
     if (o) o.visible = false;

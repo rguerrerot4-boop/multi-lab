@@ -20,6 +20,8 @@ sc.add(new THREE.AmbientLight(0xffffff, 0.15));
 window.frame = null;
 new GLTFLoader().load('/glb/' + (q.get('f') || 'pan-estatico') + '.glb', (g) => {
   const root = g.scene; sc.add(root);
+  // el modelo viene reducido para la AR del sistema (`escalaAR`); los cuadros usan el tamaño real
+  root.traverse((o) => { if (typeof o.userData.escalaAR === 'number') o.scale.setScalar(1); });
   (q.get('hide') || '').split(',').filter(Boolean).forEach((n) => { const o = root.getObjectByName(n); if (o) o.visible = false; });
   const fix = q.get('fix') ? root.getObjectByName(q.get('fix')) : null;
   const mixer = g.animations.length ? new THREE.AnimationMixer(root) : null;

@@ -33,6 +33,10 @@ OUT = os.path.join(ROOT, 'ar', 'models')
 T, FPS = 12.0, 30
 SHOW = (1.6, 10.8)
 TINY = 0.0001
+# escala para los visores de AR del sistema (Scene Viewer y AR Quick Look): el frasco real (4 × 12,4 cm) se
+# proyectaba muy grande, así que se muestra a la mitad (6,2 cm de alto). La ficha web (bottleGL) y la AR con
+# tarjeta leen `escalaAR` del nodo raíz y la deshacen: allí el tamaño lo fija su propia cámara o `escala`.
+AR_SCALE = 0.5
 
 # medidas (m): diámetro de 4 cm; las proporciones salen de las fotos (cuerpo 2,39 diámetros, tapa 0,7)
 R = 0.020
@@ -460,7 +464,7 @@ def write_glb(path, title, scene_, images, animated=True):
         gl_meshes.append({'name': k, 'primitives': prims})
     img_views = [b.image(images[k][0]) for k in tex_keys]
     names = [n['name'] for n in nodes]
-    gl_nodes = [{'name': title, 'children': []}]
+    gl_nodes = [{'name': title, 'children': [], 'scale': [AR_SCALE] * 3, 'extras': {'escalaAR': AR_SCALE}}]
     for n in nodes:
         g = {'name': n['name']}
         if n.get('mesh'):
@@ -537,6 +541,7 @@ def write_usdz(path, scene_, files):
         stage.SetStartTimeCode(0)
         stage.SetEndTimeCode(int(round(T * FPS)))
         root = UsdGeom.Xform.Define(stage, '/Producto')
+        root.AddScaleOp().Set(Gf.Vec3f(AR_SCALE, AR_SCALE, AR_SCALE))
         stage.SetDefaultPrim(root.GetPrim())
         UsdGeom.Scope.Define(stage, '/Producto/Materiales')
         mats = {}
