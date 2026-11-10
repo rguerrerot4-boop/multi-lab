@@ -1,11 +1,12 @@
 // Exporta los datos de los productos a JSON para los scripts de Python.
 // - scripts/ar/products.json: productos ficticios (modelos de AR y tarjetas impresas)
-// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS, PANCREOGEN y TEARSOFT)
+// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS, PANCREOGEN, TEARSOFT y DEFEROL)
 // Uso: node --experimental-strip-types scripts/ar/export-products.mts
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CORAESSENS_INFO, vitrinaCards } from '../../src/data/coraessens-info.ts';
 import { labs, products } from '../../src/data/mock.ts';
 import { PANCREOGEN_INFO, panCards } from '../../src/data/pancreogen-info.ts';
+import { DEFEROL_INFO, defCards } from '../../src/data/deferol-info.ts';
 import { TEARSOFT_INFO, teaCards } from '../../src/data/tearsoft-info.ts';
 
 // los productos reales (con fotos) tienen su propio modelo: scripts/coraessens/modelo.py y scripts/pancreogen/modelo.py
@@ -35,6 +36,9 @@ const fichas = products.map((p) => ({
   ...(p.id === 'pan' ? { info: { ...PANCREOGEN_INFO.names.real, formula: PANCREOGEN_INFO.formula, badges: PANCREOGEN_INFO.badges.slice(0, 2), sample: 'Producto de venta libre', cards: panCards() } } : {}),
   ...(p.id === 'tea'
     ? { info: { ...TEARSOFT_INFO.names.real, formula: `Solución oftálmica · ${TEARSOFT_INFO.activeName.toLowerCase()} 5 mg/mL`, badges: ['Solución oftálmica', '1 frasco · 3 mL'], sample: 'Muestra médica · prohibida su venta', tables: ['composicion', 'indicacion'], cards: teaCards() } }
+    : {}),
+  ...(p.id === 'def'
+    ? { info: { ...DEFEROL_INFO.names.real, formula: `Vitamina D3 7000 U.I. · cápsula blanda de gelatina`, badges: ['Vitamina D3', '1 cápsula blanda'], sample: 'Muestra médica · prohibida su venta', tables: ['composicion', 'indicacion'], cards: defCards() } }
     : {}),
 }));
 mkdirSync(new URL('../fichas/', import.meta.url), { recursive: true });

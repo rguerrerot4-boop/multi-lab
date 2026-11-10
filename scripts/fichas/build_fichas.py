@@ -47,6 +47,8 @@ for name, folder in (("R", "400Regular"), ("M", "500Medium"), ("S", "600SemiBold
 def palette(p):
     if p["id"] == "pan":  # teal de la etiqueta de PANCREOGEN
         return dict(main="#1F6B6E", mainDeep="#0E3A3C", bg="#0E3A3C", bgDeep="#061718", paper="#EEF3F3", line="#CFDCDC", ink="#0B2526", giant="#8FD3CC", muted="#4F6467")
+    if p["id"] == "def":  # turquesa de la caja de DEFEROL (el turquesa claro solo como fondo y decoración)
+        return dict(main="#0E6A66", mainDeep="#0B3332", bg="#0E6A66", bgDeep="#0B3332", paper="#EEFAF9", line="#C5E9E5", ink="#0B3332", giant="#66D9CF", muted="#43605E")
     if p["id"] == "tea":  # azul marino de la caja de TEARSOFT (el celeste solo como fondo)
         return dict(main="#32316C", mainDeep="#1E1D4A", bg="#32316C", bgDeep="#1E1D4A", paper="#F3F8FD", line="#D3E3F2", ink="#1C1B3F", giant="#2C77AC", muted="#55607A")
     if p["id"] == "cor":
@@ -126,6 +128,10 @@ def render_box(faces, w, h, d, size=900, yaw=-0.62, tilt=0.36):
 
 
 def faces_for(p):
+    if p["id"] == "def":  # fotos rectificadas de la caja (scripts/deferol/texturas.py)
+        tex = os.path.join(ROOT, "assets", "deferol")
+        names = {"front": "frente", "right": "derecha", "top": "arriba"}
+        return {f: Image.open(os.path.join(tex, f"{n}.jpg")) for f, n in names.items()}, (1.636, 1, 0.335)
     if p["id"] == "tea":  # fotos rectificadas de la caja (scripts/tearsoft/texturas.py)
         tex = os.path.join(ROOT, "assets", "tearsoft")
         names = {"front": "frente", "right": "costado", "top": "tapa"}
@@ -230,7 +236,7 @@ def footer(c, p, pal, page):
 # ---------- páginas ----------
 def page_cover(c, p, pal):
     info = p.get("info") or {}
-    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT)
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL)
     name = info.get("name", p["name"])
     hero_h = 470
     top = PH - hero_h
@@ -340,7 +346,7 @@ def page_cover(c, p, pal):
 
 def page_detail(c, p, pal):
     info = p.get("info") or {}
-    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT)
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL)
     c.setFillColor(white)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
     # cabecera
@@ -469,14 +475,17 @@ def page_detail(c, p, pal):
     c.roundRect(M, by, PW - 2 * M, bh, 18, fill=1, stroke=0)
     c.setFillColor(white)
     c.setFont("Mont-B", 8)
-    c.drawString(M + 22, by + bh - 28, "REALIDAD AUMENTADA")
+    compact = bh < 150
+    c.drawString(M + 22, by + bh - (22 if compact else 28), "REALIDAD AUMENTADA")
     c.setFont("Mont-X", 20)
-    c.drawString(M + 22, by + bh - 54, "Míralo sobre tu tarjeta")
-    para(c, M + 22, by + bh - 74, "Toca el botón, permite la cámara y apunta al panel de color de la tarjeta impresa de este producto: solo responde a su propia tarjeta.", "Mont-M", 8.5, PW - 2 * M - 190, "#FFFFFF", 12)
+    c.drawString(M + 22, by + bh - (45 if compact else 54), "Míralo sobre tu tarjeta")
+    # con poco espacio el recuadro es más bajo: el texto va en una línea para no chocar con el botón
+    tip = "Toca el botón, permite la cámara y apunta al panel de color de la tarjeta impresa de este producto: solo responde a su propia tarjeta." if bh >= 150 else "Toca el botón y apunta la cámara al panel de color de su tarjeta."
+    para(c, M + 22, by + bh - (62 if compact else 74), tip, "Mont-M", 8.5, PW - 2 * M - 190, "#FFFFFF", 12)
     # botón con enlace
     btn = "Ver en AR · realidad aumentada"
     bw = c.stringWidth(btn, "Mont-B", 10) + 36
-    bx, byy = M + 22, by + 20
+    bx, byy = M + 22, by + (14 if compact else 20)
     c.setFillColor(white)
     c.roundRect(bx, byy, bw, 30, 15, fill=1, stroke=0)
     c.setFillColor(HexColor(pal["main"]))

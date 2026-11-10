@@ -1,9 +1,10 @@
-// Caja de TEARSOFT en 3D. En la web se dibuja con three.js (src/lib/boxGL.ts): se gira con el dedo, flota
-// con gotas alrededor y se despliega en su troquel. En la app nativa (o si WebGL falla) se usa la caja con
-// fotos de CORAESSENS (PhotoBox3D), que también se gira con el dedo; el troquel se muestra plano (BoxNet).
+// Caja fotografiada en 3D (TEARSOFT y DEFEROL). En la web se dibuja con three.js (src/lib/boxGL.ts): se gira con el
+// dedo, flota con gotas o cápsulas alrededor, gira sola hasta una cara y se despliega en su troquel. En la app nativa
+// (o si WebGL falla) se usa la caja con fotos de CORAESSENS (PhotoBox3D), que también se gira con el dedo y muestra
+// una cara; el troquel se muestra plano (BoxNet).
 import { useEffect, useRef, useState } from 'react';
 import { Image, Platform, View, type ImageSourcePropType } from 'react-native';
-import { PhotoBox3D, type BoxFace, type BoxTextures } from '@/components/PhotoBox3D';
+import { PhotoBox3D, type BoxFace, type BoxTextures, type PhotoBox3DHandle } from '@/components/PhotoBox3D';
 import type { BoxGL } from '@/lib/boxGL';
 import { domEl } from '@/lib/webAnim';
 
@@ -21,6 +22,9 @@ export function TearBox({
   height,
   fold = 1,
   drops = false,
+  capsules = false,
+  face = null,
+  edge = '#E8EEF5',
   highlight = null,
   active = true,
   reduce = false,
@@ -34,6 +38,12 @@ export function TearBox({
   /** 1 = armada, 0 = desplegada */
   fold?: number;
   drops?: boolean;
+  /** cápsulas blandas alrededor (DEFEROL) */
+  capsules?: boolean;
+  /** cara que gira hasta quedar de frente */
+  face?: BoxFace | null;
+  /** canto de la caja en la versión nativa */
+  edge?: string;
   highlight?: BoxFace | null;
   /** se pausa el dibujo cuando no está a la vista */
   active?: boolean;
@@ -43,6 +53,7 @@ export function TearBox({
 }) {
   const host = useRef<View>(null);
   const gl = useRef<BoxGL | null>(null);
+  const photo = useRef<PhotoBox3DHandle>(null);
   const [failed, setFailed] = useState(Platform.OS !== 'web');
   const ready = useRef(onReady);
   ready.current = onReady;
@@ -70,7 +81,7 @@ export function TearBox({
     import('@/lib/boxGL')
       .then((m) => {
         if (dead) return;
-        gl.current = m.createBoxGL(canvas, { urls, dims, drops, reduce, zoom, onReady: () => ready.current?.() });
+        gl.current = m.createBoxGL(canvas, { urls, dims, drops, capsules, reduce, zoom, onReady: () => ready.current?.() });
         gl.current.setFold(fold, true);
         gl.current.resize(width, height);
       })
@@ -93,6 +104,11 @@ export function TearBox({
   useEffect(() => gl.current?.setActive(active), [active]);
   useEffect(() => gl.current?.setHighlight(highlight), [highlight]);
   useEffect(() => {
+    gl.current?.faceTo(face);
+    if (face) photo.current?.show(face);
+    else photo.current?.reset();
+  }, [face]);
+  useEffect(() => {
     gl.current?.setTextures(urls);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlKey]);
@@ -101,7 +117,7 @@ export function TearBox({
     if (fold < 0.5) return <BoxNet textures={textures} dims={dims} width={width} height={height} highlight={highlight} />;
     return (
       <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
-        <PhotoBox3D textures={textures} dims={dims} width={width} height={height} fill={0.72} float={!reduce} reduceMotion={reduce} paused={!active} edge="#E8EEF5" />
+        <PhotoBox3D ref={photo} textures={textures} dims={dims} width={width} height={height} fill={0.72} float={!reduce} reduceMotion={reduce} paused={!active} edge={edge} />
       </View>
     );
   }

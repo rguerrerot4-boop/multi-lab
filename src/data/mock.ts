@@ -118,7 +118,7 @@ export const labs: Lab[] = [
   { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
   // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
   { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
-  { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología · producto real con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
+  { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología y vitamina D3 · productos reales con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
 ];
 export const labByName = (name: string) => labs.find((l) => l.name === name);
 export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
@@ -158,6 +158,16 @@ const teaSpots: Hotspot[] = [
   { face: 'left', u: 0.5, v: 0.12, title: 'Composición', text: 'Cada mL de solución oftálmica contiene: carboximetilcelulosa sódica 5 mg.' },
   { face: 'left', u: 0.5, v: 0.3, title: 'Dosificación', text: '1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario. 1 mL = 20 gotas.' },
   { face: 'left', u: 0.5, v: 0.62, title: 'Advertencias', text: 'Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada.' },
+];
+
+// puntos de la caja de DEFEROL (texto tomado de la caja)
+const defSpots: Hotspot[] = [
+  { face: 'front', u: 0.26, v: 0.17, title: 'Muestra médica', text: 'Muestra médica prohibida su venta.' },
+  { face: 'front', u: 0.68, v: 0.6, title: 'DEFEROL®', text: 'Vitamina D3 7000 U.I. · 1 cápsula blanda de gelatina.' },
+  { face: 'back', u: 0.25, v: 0.12, title: 'Composición', text: 'Cada cápsula blanda contiene: Vitamina D3 7000 U.I.; Excipientes: c.s.' },
+  { face: 'back', u: 0.25, v: 0.24, title: 'Dosificación', text: '1 cápsula semanal. Consumo máximo: 2 cápsulas semanales.' },
+  { face: 'back', u: 0.5, v: 0.33, title: 'Indicaciones', text: 'Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L). Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo.' },
+  { face: 'back', u: 0.25, v: 0.9, title: 'Conservación', text: 'Consérvese a temperatura no mayor a 30 °C en su envase y empaque original.' },
 ];
 
 export interface Visit {
@@ -368,7 +378,7 @@ export const people: Person[] = [
 export const DEMO_USER: Record<Role, string> = { medico: 'm1', visitador: 'v1' };
 
 // ---------- Productos (ficticios) ----------
-export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos', 'Oftalmología'];
+export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos', 'Oftalmología', 'Vitaminas'];
 
 export const products: Product[] = [
   {
@@ -686,11 +696,59 @@ export const products: Product[] = [
     arTitle: 'TEARSOFT · Procaps',
     sizeCm: { w: 2.7, h: 5.3, d: 2.2 },
   },
+  {
+    // PRODUCTO REAL (con permiso de Procaps). Todo el texto está tomado de la caja (src/data/deferol-info.ts).
+    id: 'def',
+    name: 'DEFEROL',
+    lab: 'Procaps',
+    category: 'Vitaminas',
+    form: 'Cápsula blanda · 1 cápsula',
+    component: 'Vitamina D3',
+    concentration: '7000 U.I. por cápsula',
+    tagline: 'Vitamina D3 7000 U.I. · cápsula blanda de gelatina',
+    description: 'Cada cápsula blanda contiene: Vitamina D3 7000 U.I.; Excipientes: c.s. Muestra médica de 1 cápsula blanda de gelatina, prohibida su venta.',
+    uses: [
+      'Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L)',
+      'Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo',
+      'Como complemento de la terapia específica para la osteoporosis en pacientes con deficiencia de Vitamina D o en riesgo de insuficiencia de Vitamina D',
+    ],
+    howTo: ['Vía de administración: oral', 'Dosificación: 1 cápsula semanal', 'Puede tomarse independientemente de las comidas', 'Consumo máximo: 2 cápsulas semanales'],
+    precautions: [
+      'Contraindicaciones: está contraindicado en todas las enfermedades asociadas con hipercalcemia, así como en pacientes con hipersensibilidad conocida a la Vitamina D3, a algunos de los excipientes de la fórmula o a otros fármacos de la misma clase, o exista evidencia de antecedentes de toxicidad a la Vitamina D3',
+      'Advertencias y precauciones: ver inserto adjunto. Si los síntomas persisten consulte a su médico',
+      'Manténgase fuera del alcance de los niños',
+      'Consérvese a temperatura no mayor a 30 °C en su envase y empaque original',
+    ],
+    docs: ['Fotos de la caja (6 caras).png'],
+    slides: [
+      { title: 'Composición', body: 'Cada cápsula blanda contiene: Vitamina D3 7000 U.I.; Excipientes: c.s.', icon: 'flask-outline' },
+      { title: 'Dosificación', body: '1 cápsula semanal, vía oral. Puede tomarse independientemente de las comidas. Consumo máximo: 2 cápsulas semanales.', icon: 'calendar-outline' },
+      { title: 'Presentación', body: 'Muestra médica: 1 cápsula blanda de gelatina. Prohibida su venta.', icon: 'cube-outline' },
+    ],
+    icon: 'sunny-outline',
+    hue: '#0E6A66', // turquesa oscuro de la caja (packColors.deferol.deep)
+    isNew: true,
+    keywords: ['vitamina d', 'vitamina d3', 'colecalciferol', '7000', 'cápsula blanda', 'deficiencia de vitamina d', 'osteoporosis', 'semanal', 'oral'],
+    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
+    specs: [
+      { value: '7000', label: 'U.I. por cápsula', note: 'Vitamina D3' },
+      { value: '1', label: 'Cápsula semanal', note: 'Vía oral' },
+      { value: '2', label: 'Consumo máximo', note: 'Cápsulas semanales' },
+    ],
+    notes: [
+      { title: 'Vitamina D3', text: '7000 U.I. en cada cápsula blanda.' },
+      { title: 'Dosificación', text: '1 cápsula semanal. Puede tomarse independientemente de las comidas.' },
+    ],
+    // la caja con sus fotos (photo) se agrega en src/data/deferol.ts, que se carga en src/app/_layout.tsx
+    arTitle: 'DEFEROL · Procaps',
+    sizeCm: { w: 7, h: 4.3, d: 1.45 },
+  },
 ];
 
 products.forEach((p) => {
   // cada producto real tiene los suyos (PANCREOGEN usa los puntos de su frasco, en su propio catálogo)
-  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.real ? [] : spots(p);
+  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.id === 'def' ? defSpots : p.real ? [] : spots(p);
 });
 
 // ---------- Visitas ----------

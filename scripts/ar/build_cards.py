@@ -1,6 +1,6 @@
 """Genera las tarjetas impresas de realidad aumentada (una por producto).
 
-Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN y TEARSOFT
+Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN, TEARSOFT y DEFEROL
 (productos reales, con permiso) tienen su propia tarjeta con los colores de su empaque y la foto del
 producto en el panel.
 
@@ -346,6 +346,95 @@ def card_tearsoft():
     return im, panel
 
 
+# ---------- tarjeta propia de DEFEROL (colores de su caja: turquesa, plateado y coral) ----------
+DEF = {"id": "def", "name": "DEFEROL", "lab": "Procaps", "category": "Vitamina D3", "real": True, "escala": 0.65}  # la caja mide 7 cm de ancho y gira: 65 %
+D_AQUA, D_DEEP, D_INK, D_SILVER, D_CORAL, D_SOFT = "#66D9CF", "#0E6A66", "#0B3332", "#9AA3A8", "#D23B43", "#D6F4F1"
+
+
+def softgel(w, rot):
+    """Cápsula blanda ilustrativa (ámbar con brillo)."""
+    h = round(w * 0.56)
+    im = Image.new("RGBA", (w * 3, h * 3), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((0, 0, w * 3 - 1, h * 3 - 1), fill="#8A5A12")
+    d.ellipse((9, 9, w * 3 - 10, h * 3 - 10), fill="#E9A531")
+    d.ellipse((w * 0.25, h * 0.25, w * 2.75, h * 2.2), fill="#F6C55A")
+    d.ellipse((w * 0.7, h * 0.45, w * 1.8, h * 0.95), fill="#FFF1C8")
+    im = im.resize((w, h), Image.LANCZOS)
+    return im.rotate(rot, expand=True, resample=Image.BICUBIC)
+
+
+def card_deferol():
+    import math
+    from PIL import ImageFilter
+
+    im = Image.new("RGB", (CW, CH), WHITE)
+    d = ImageDraw.Draw(im)
+    # panel que reconoce la cámara: turquesa oscuro (contraste para el seguimiento), espirales turquesa, blancas y
+    # plateadas, cápsulas con borde y la foto del frente de la caja
+    panel = Image.new("RGB", (PANEL, CH), D_INK)
+    pd = ImageDraw.Draw(panel)
+    for k in range(0, PANEL + CH, 52):  # líneas diagonales finas
+        pd.line((k, 0, k - CH, CH), fill=D_DEEP, width=12)
+    rnd = random.Random("multilab-def")
+    for _ in range(12):  # espirales como las del cartón
+        cx, cy, r0 = rnd.randint(-40, PANEL + 40), rnd.randint(-40, CH + 40), rnd.randint(60, 150)
+        pts = [(cx + math.cos(t / 18) * r0 * (1 - t / 140), cy + math.sin(t / 18) * r0 * (1 - t / 140)) for t in range(0, 125)]
+        pd.line(pts, fill=rnd.choice([D_AQUA, WHITE, D_SILVER, D_SOFT]), width=rnd.choice([7, 10, 14]), joint="curve")
+    for k in range(3):  # arcos plateados como el estampado
+        pd.arc((-500 + k * 30, 120 + k * 22, PANEL + 520, CH * 2), 200, 330, fill=[D_SILVER, WHITE, D_AQUA][k], width=[16, 6, 8][k])
+    for _ in range(30):
+        g = softgel(rnd.randint(50, 110), rnd.randint(0, 179))
+        panel.paste(g, (rnd.randint(-30, PANEL - 30), rnd.randint(-30, CH - 30)), g)
+    box = Image.open(os.path.join(ROOT, "assets", "deferol", "frente.jpg")).convert("RGB")
+    bw = 440
+    box = box.resize((bw, round(box.height * bw / box.width)), Image.LANCZOS)
+    framed = Image.new("RGBA", (box.width + 22, box.height + 22), WHITE)
+    framed.paste(box, (11, 11))
+    framed = framed.rotate(-9, expand=True, resample=Image.BICUBIC)
+    shadow = Image.new("RGBA", framed.size, (0, 0, 0, 0))
+    shadow.paste((5, 40, 40, 130), (0, 0), framed.split()[3])
+    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
+    cx, cy = (PANEL - framed.width) // 2, (CH - framed.height) // 2
+    panel.paste(shadow, (cx + 10, cy + 18), shadow)
+    panel.paste(framed, (cx, cy), framed)
+    im.paste(panel, (0, 0))
+
+    logo = Image.open(os.path.join(ROOT, "assets", "logo-full.png")).convert("RGBA")
+    lh = 84
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    x0 = PANEL + 60
+    im.paste(logo, (x0, 60), logo)
+    y = 200
+    d.text((x0, y), "VITAMINA D3 · 7000 U.I.", font=font("bold", 30), fill=D_DEEP)
+    y += 52
+    d.text((x0, y), "DEFEROL®", font=font("bold", 72), fill=D_INK)
+    y += 96
+    d.text((x0, y), "Procaps · 1 cápsula blanda", font=font("medium", 30), fill=INK_MUTED)
+    y += 60
+    badge = "Muestra médica · prohibida su venta"
+    bwid = d.textlength(badge, font=font("semibold", 26)) + 44
+    d.rounded_rectangle((x0, y, x0 + bwid, y + 52), 26, fill=D_CORAL)
+    d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
+
+    qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(f"{SITE}/fichas/def.pdf")  # abre la ficha del producto en PDF
+    qr.make(fit=True)
+    qimg = qr.make_image(fill_color=D_INK, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
+    qx, qy = CW - 60 - 270, CH - 60 - 270
+    im.paste(qimg, (qx, qy))
+    ty = qy + 6
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=D_INK)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a la foto de la caja."]:
+        ty += 50
+        d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
+    d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)
+    d.rectangle((0, CH - 14, CW, CH), fill=D_AQUA)
+    d.rectangle((CW * 0.72, CH - 14, CW, CH), fill=D_SILVER)
+    d.rectangle((0, 0, CW - 1, CH - 1), outline="#DCE5E7", width=3)
+    return im, panel
+
+
 def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (prototipo académico)"):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
@@ -394,11 +483,16 @@ def main():
     c.save(os.path.join(OUT, "tarjetas", "tea.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "tea.png"), optimize=True)
     cards.append(c)
+    # y la de DEFEROL al final (objetivo siguiente)
+    c, panel = card_deferol()
+    c.save(os.path.join(OUT, "tarjetas", "def.png"), optimize=True)
+    panel.save(os.path.join(OUT, "objetivos", "def.png"), optimize=True)
+    cards.append(c)
     sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
     # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
-    for p, c in zip(products + [COR, PAN, TEA], cards):
+    for p, c in zip(products + [COR, PAN, TEA, DEF], cards):
         sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
-    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA]
+    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA, DEF]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))

@@ -7,6 +7,7 @@ import { PressableScale } from '@/components/ui';
 import { PANCREOGEN } from '@/data/pancreogen';
 import { arModelUrls } from '@/lib/ar';
 import { CORAESSENS } from '@/data/vitrina';
+import { DEFEROL } from '@/data/deferol';
 import { TEARSOFT } from '@/data/tearsoft';
 import { colors, font, packColors, radius, space } from '@/theme';
 
@@ -98,6 +99,32 @@ export function TearsoftBanner() {
   );
 }
 
+const D = packColors.deferol;
+
+/** Acceso al catálogo en mosaicos de DEFEROL, con los colores de su caja */
+export function DeferolBanner() {
+  return (
+    <PressableScale onPress={() => router.push('/producto/def')} accessibilityLabel="Abrir el catálogo de DEFEROL">
+      <View style={{ borderRadius: radius.xl, overflow: 'hidden', minHeight: 132 }}>
+        <LinearGradient colors={[D.aqua, D.aquaSoft]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: space.lg, paddingRight: 128, gap: 4, minHeight: 132 }}>
+          <View style={{ alignSelf: 'flex-start', backgroundColor: D.ink, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
+            <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.white }}>NUEVO · MOSAICOS 3D</Text>
+          </View>
+          <Text style={{ fontFamily: font.bold, fontSize: 22, color: D.ink, letterSpacing: -0.3 }}>DEFEROL®</Text>
+          <Text style={{ fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: D.ink }}>
+            Vitamina D3 7000 U.I.: una caja que gira a cada cara y mosaicos para tocar.
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Text style={{ fontFamily: font.bold, fontSize: 13, color: D.deep }}>Explorar</Text>
+            <Ionicons name="arrow-forward" size={16} color={D.deep} />
+          </View>
+        </LinearGradient>
+        <Image source={DEFEROL.thumb.real} style={{ position: 'absolute', right: 14, top: 30, width: 112, height: 112 / 1.636, borderRadius: 3, transform: [{ rotate: '-8deg' }] }} accessibilityIgnoresInvertColors />
+      </View>
+    </PressableScale>
+  );
+}
+
 /** Los productos reales con catálogo 3D, uno al lado del otro (se deslizan de lado en pantallas angostas) */
 export function Destacados() {
   const { width } = useWindowDimensions();
@@ -105,6 +132,9 @@ export function Destacados() {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={w + space.md} decelerationRate="fast" contentContainerStyle={{ gap: space.md, paddingRight: space.lg }} style={{ marginHorizontal: -space.lg }}>
       <View style={{ width: space.lg - space.md }} />
+      <View style={{ width: w }}>
+        <DeferolBanner />
+      </View>
       <View style={{ width: w }}>
         <TearsoftBanner />
       </View>

@@ -807,5 +807,147 @@
         }
       ]
     }
+  },
+  {
+    "id": "def",
+    "name": "DEFEROL",
+    "lab": "Procaps",
+    "labFull": "Procaps",
+    "category": "Vitaminas",
+    "form": "Cápsula blanda · 1 cápsula",
+    "component": "Vitamina D3",
+    "concentration": "7000 U.I. por cápsula",
+    "tagline": "Vitamina D3 7000 U.I. · cápsula blanda de gelatina",
+    "description": "Cada cápsula blanda contiene: Vitamina D3 7000 U.I.; Excipientes: c.s. Muestra médica de 1 cápsula blanda de gelatina, prohibida su venta.",
+    "uses": [
+      "Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L)",
+      "Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo",
+      "Como complemento de la terapia específica para la osteoporosis en pacientes con deficiencia de Vitamina D o en riesgo de insuficiencia de Vitamina D"
+    ],
+    "howTo": [
+      "Vía de administración: oral",
+      "Dosificación: 1 cápsula semanal",
+      "Puede tomarse independientemente de las comidas",
+      "Consumo máximo: 2 cápsulas semanales"
+    ],
+    "precautions": [
+      "Contraindicaciones: está contraindicado en todas las enfermedades asociadas con hipercalcemia, así como en pacientes con hipersensibilidad conocida a la Vitamina D3, a algunos de los excipientes de la fórmula o a otros fármacos de la misma clase, o exista evidencia de antecedentes de toxicidad a la Vitamina D3",
+      "Advertencias y precauciones: ver inserto adjunto. Si los síntomas persisten consulte a su médico",
+      "Manténgase fuera del alcance de los niños",
+      "Consérvese a temperatura no mayor a 30 °C en su envase y empaque original"
+    ],
+    "hue": "#0E6A66",
+    "specs": [
+      {
+        "value": "7000",
+        "label": "U.I. por cápsula",
+        "note": "Vitamina D3"
+      },
+      {
+        "value": "1",
+        "label": "Cápsula semanal",
+        "note": "Vía oral"
+      },
+      {
+        "value": "2",
+        "label": "Consumo máximo",
+        "note": "Cápsulas semanales"
+      }
+    ],
+    "notes": [
+      {
+        "title": "Vitamina D3",
+        "text": "7000 U.I. en cada cápsula blanda."
+      },
+      {
+        "title": "Dosificación",
+        "text": "1 cápsula semanal. Puede tomarse independientemente de las comidas."
+      }
+    ],
+    "real": {
+      "note": "Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja."
+    },
+    "sizeCm": {
+      "w": 7,
+      "h": 4.3,
+      "d": 1.45
+    },
+    "info": {
+      "name": "DEFEROL",
+      "mark": "Deferol®",
+      "lab": "Procaps",
+      "labLine": "Procaps · vitamina D3",
+      "disclaimer": "Producto real de Procaps, mostrado con permiso del laboratorio. La información está tomada de la caja de la muestra médica y no reemplaza su inserto.",
+      "arTitle": "DEFEROL · Procaps",
+      "arId": "def",
+      "formula": "Vitamina D3 7000 U.I. · cápsula blanda de gelatina",
+      "badges": [
+        "Vitamina D3",
+        "1 cápsula blanda"
+      ],
+      "sample": "Muestra médica · prohibida su venta",
+      "tables": [
+        "composicion",
+        "indicacion"
+      ],
+      "cards": [
+        {
+          "id": "composicion",
+          "title": "Composición",
+          "rowsHead": [
+            "Cada cápsula blanda contiene",
+            "Cantidad"
+          ],
+          "rows": [
+            {
+              "label": "Vitamina D3",
+              "value": "7000 U.I."
+            },
+            {
+              "label": "Excipientes",
+              "value": "c.s."
+            },
+            {
+              "label": "Forma farmacéutica: Cápsula blanda.",
+              "value": ""
+            },
+            {
+              "label": "Vía de administración: Oral.",
+              "value": ""
+            },
+            {
+              "label": "Consumo máximo: 2 cápsulas semanales.",
+              "value": ""
+            }
+          ],
+          "foot": "Texto impreso en el reverso de la caja."
+        },
+        {
+          "id": "indicacion",
+          "title": "Indicaciones",
+          "rows": [
+            {
+              "label": "Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L).",
+              "value": ""
+            },
+            {
+              "label": "Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo.",
+              "value": ""
+            },
+            {
+              "label": "Como complemento de la terapia específica para la osteoporosis en pacientes con deficiencia de Vitamina D o en riesgo de insuficiencia de Vitamina D.",
+              "value": ""
+            }
+          ],
+          "foot": "Texto impreso en el reverso de la caja (las contraindicaciones están en «Avisos»)."
+        },
+        {
+          "id": "fabricante",
+          "title": "Fabricante",
+          "body": "Elaborado por PROCAPS S.A. Barranquilla – Colombia. Registro Sanitario No. INVIMA 2016 M-0017090 Colombia. Importado y Distribuido por RODDOME PHARMACEUTICAL S.A. (Quito- Ecuador). Registro Sanitario No. 5725-MEE-1220 Ecuador.",
+          "foot": "VENTA LIBRE. MANTÉNGASE FUERA DEL ALCANCE DE LOS NIÑOS. CONSÉRVESE A TEMPERATURA NO MAYOR A 30°C. EN SU ENVASE Y EMPAQUE ORIGINAL."
+        }
+      ]
+    }
   }
 ]

@@ -64,5 +64,13 @@
   "category": "Solución oftálmica",
   "real": true,
   "escala": 0.65
+ },
+ {
+  "id": "def",
+  "name": "DEFEROL",
+  "lab": "Procaps",
+  "category": "Vitamina D3",
+  "real": true,
+  "escala": 0.65
  }
 ]

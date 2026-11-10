@@ -114,4 +114,21 @@ export const packColors = {
     // franja arcoíris de la caja (de abajo a arriba): solo decoración
     rainbow: ['#2C77AC', '#24B96D', '#F5DC34', '#F68C2B', '#F7592C'],
   },
+  // DEFEROL (Procaps): turquesa de la caja, plateado del estampado y rojo coral de «Muestra médica»
+  deferol: {
+    aqua: '#66D9CF', // turquesa de la caja (solo fondos y decoración, nunca texto)
+    aquaSoft: '#D6F4F1',
+    aquaMist: '#EEFAF9', // fondo de la página
+    deep: '#0E6A66', // turquesa oscuro para títulos, cifras y acciones (AA sobre blanco y aquaSoft)
+    ink: '#0B3332', // texto sobre fondo claro
+    muted: '#43605E',
+    line: '#C5E9E5',
+    silver: '#9AA3A8', // plateado del estampado (decoración)
+    silverLight: '#E4E9EB',
+    silverDeep: '#5B656B',
+    coral: '#D23B43', // «Muestra médica» (texto: AA sobre blanco)
+    coralSoft: '#FCE3E4',
+    capsule: '#F2B33D', // cápsula blanda ilustrativa (solo decoración)
+    tile: '#FFFFFF',
+  },
 };

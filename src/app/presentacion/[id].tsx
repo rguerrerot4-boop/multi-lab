@@ -10,6 +10,7 @@ import { Button, goBack } from '@/components/ui';
 import { labLabel, personById, productById, type IconName } from '@/data/mock';
 import Ficha from '@/screens/Ficha';
 import FichaPancreogen from '@/screens/FichaPancreogen';
+import FichaDeferol from '@/screens/FichaDeferol';
 import FichaTearsoft from '@/screens/FichaTearsoft';
 import { useMine } from '@/store/AppStore';
 import { colors, font, radius, space } from '@/theme';
@@ -75,6 +76,7 @@ export default function Presentacion() {
   const prod = productById(id);
   // los productos fotografiados se presentan con su ficha 3D; ?modo=diapositivas abre la revista de siempre
   if (prod?.id === 'tea' && modo !== 'diapositivas') return <FichaTearsoft product={prod} presenting visita={visita} />;
+  if (prod?.id === 'def' && modo !== 'diapositivas') return <FichaDeferol product={prod} presenting visita={visita} />;
   if (prod?.bottle && modo !== 'diapositivas') return <FichaPancreogen product={prod} presenting visita={visita} />;
   if (prod?.photo && modo !== 'diapositivas') return <Ficha product={prod} presenting visita={visita} />;
   return <Revista id={id} visita={visita} />;
