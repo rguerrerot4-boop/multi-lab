@@ -47,6 +47,8 @@ for name, folder in (("R", "400Regular"), ("M", "500Medium"), ("S", "600SemiBold
 def palette(p):
     if p["id"] == "pan":  # teal de la etiqueta de PANCREOGEN
         return dict(main="#1F6B6E", mainDeep="#0E3A3C", bg="#0E3A3C", bgDeep="#061718", paper="#EEF3F3", line="#CFDCDC", ink="#0B2526", giant="#8FD3CC", muted="#4F6467")
+    if p["id"] == "tea":  # azul marino de la caja de TEARSOFT (el celeste solo como fondo)
+        return dict(main="#32316C", mainDeep="#1E1D4A", bg="#32316C", bgDeep="#1E1D4A", paper="#F3F8FD", line="#D3E3F2", ink="#1C1B3F", giant="#2C77AC", muted="#55607A")
     if p["id"] == "cor":
         return dict(main="#C9262F", mainDeep="#99161F", bg="#5C2C78", bgDeep="#341447", paper="#FBEDEE", line="#E9C9CD", ink="#2B1236", giant="#C9262F", muted="#6E5A72")
     main = "#1E7F8C" if p["hue"] == "#63C9D6" else p["hue"]
@@ -124,6 +126,10 @@ def render_box(faces, w, h, d, size=900, yaw=-0.62, tilt=0.36):
 
 
 def faces_for(p):
+    if p["id"] == "tea":  # fotos rectificadas de la caja (scripts/tearsoft/texturas.py)
+        tex = os.path.join(ROOT, "assets", "tearsoft")
+        names = {"front": "frente", "right": "costado", "top": "tapa"}
+        return {f: Image.open(os.path.join(tex, f"{n}.jpg")) for f, n in names.items()}, (1, 1.963, 0.79)
     if p["id"] == "cor":
         tex = os.path.join(ROOT, "assets", "coraessens")
         return {f: Image.open(os.path.join(tex, f"{f}.jpg")) for f in ("front", "right", "top")}, (1, 1.444, 1)
@@ -224,7 +230,7 @@ def footer(c, p, pal, page):
 # ---------- páginas ----------
 def page_cover(c, p, pal):
     info = p.get("info") or {}
-    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN)
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT)
     name = info.get("name", p["name"])
     hero_h = 470
     top = PH - hero_h
@@ -334,7 +340,7 @@ def page_cover(c, p, pal):
 
 def page_detail(c, p, pal):
     info = p.get("info") or {}
-    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN)
+    real = bool(p.get("info"))  # productos reales con permiso (CORAESSENS, PANCREOGEN, TEARSOFT)
     c.setFillColor(white)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
     # cabecera
@@ -381,7 +387,7 @@ def page_detail(c, p, pal):
     # tablas del empaque (CORAESSENS) o datos y usos (ficticios)
     if real:
         cards = {cd["id"]: cd for cd in info["cards"]}
-        tables = [cards["composicion"], cards["nutricional"]]
+        tables = [cards[k] for k in info.get("tables", ["composicion", "nutricional"])]
     else:
         tables = [
             {"title": "Datos del producto", "rows": [
@@ -445,8 +451,8 @@ def page_detail(c, p, pal):
         tb["_end"] = ty
     y = min(tb["_end"] for tb in tables) - 26
 
-    if real:
-        fab = {cd["id"]: cd for cd in info["cards"]}["fabricante"]
+    fab = {cd["id"]: cd for cd in info.get("cards", [])}.get("fabricante")
+    if real and fab:
         c.setFont("Mont-B", 12)
         c.setFillColor(HexColor(pal["ink"]))
         c.drawString(M, y, "Fabricante")

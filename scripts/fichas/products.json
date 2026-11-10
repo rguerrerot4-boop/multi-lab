@@ -658,5 +658,154 @@
         }
       ]
     }
+  },
+  {
+    "id": "tea",
+    "name": "TEARSOFT",
+    "lab": "Procaps",
+    "labFull": "Procaps",
+    "category": "Oftalmología",
+    "form": "Solución oftálmica · frasco de 3 mL",
+    "component": "Carboximetilcelulosa sódica",
+    "concentration": "5 mg/mL",
+    "tagline": "Solución oftálmica · carboximetilcelulosa sódica 5 mg/mL",
+    "description": "Solución oftálmica: cada mL contiene carboximetilcelulosa sódica 5 mg. Muestra médica de 3 mL (1 frasco), prohibida su venta.",
+    "uses": [
+      "Alivio temporal de la irritación, picazón, ardor y molestias que se presentan en el síndrome de resequedad ocular sea éste moderado o severo, de cualquier etiología, incluyendo la irritación ocular causada por el viento y la exposición al sol"
+    ],
+    "howTo": [
+      "1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario",
+      "1 mL = 20 gotas",
+      "Vía de administración: Colombia: conjuntival. Otros países: oftálmica"
+    ],
+    "precautions": [
+      "Contraindicaciones y advertencias: historia de hipersensibilidad a alguno de los componentes de la fórmula",
+      "Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada",
+      "Si durante la utilización se presenta dolor ocular, cambios en la agudeza visual o continúan los signos de irritación y éstos se presentan o persisten por 72 horas, descontinuar el producto y consultar con el oftalmólogo",
+      "Bolivia, Ecuador: para mayor información ver inserto adjunto"
+    ],
+    "hue": "#32316C",
+    "specs": [
+      {
+        "value": "3 mL",
+        "label": "Solución oftálmica",
+        "note": "1 frasco · muestra médica"
+      },
+      {
+        "value": "5 mg",
+        "label": "Por mL",
+        "note": "Carboximetilcelulosa sódica"
+      },
+      {
+        "value": "20",
+        "label": "Gotas por mL",
+        "note": "1 mL = 20 gotas"
+      }
+    ],
+    "notes": [
+      {
+        "title": "Carboximetilcelulosa sódica",
+        "text": "5 mg en cada mL de solución oftálmica."
+      },
+      {
+        "title": "Dosificación",
+        "text": "1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario."
+      }
+    ],
+    "real": {
+      "note": "Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja."
+    },
+    "sizeCm": {
+      "w": 2.7,
+      "h": 5.3,
+      "d": 2.2
+    },
+    "info": {
+      "name": "TEARSOFT",
+      "mark": "Tearsoft®",
+      "lab": "Procaps",
+      "labLine": "Procaps · solución oftálmica",
+      "disclaimer": "Producto real de Procaps, mostrado con permiso del laboratorio. La información está tomada de la caja de la muestra médica y no reemplaza su inserto.",
+      "arTitle": "TEARSOFT · Procaps",
+      "arId": "tea",
+      "formula": "Solución oftálmica · carboximetilcelulosa sódica 5 mg/mL",
+      "badges": [
+        "Solución oftálmica",
+        "1 frasco · 3 mL"
+      ],
+      "sample": "Muestra médica · prohibida su venta",
+      "tables": [
+        "composicion",
+        "indicacion"
+      ],
+      "cards": [
+        {
+          "id": "composicion",
+          "title": "Composición",
+          "rowsHead": [
+            "Cada mL contiene",
+            "Cantidad"
+          ],
+          "rows": [
+            {
+              "label": "Carboximetilcelulosa sódica",
+              "value": "5 mg"
+            },
+            {
+              "label": "Cloruro de potasio",
+              "value": ""
+            },
+            {
+              "label": "Ácido bórico",
+              "value": ""
+            },
+            {
+              "label": "Borato de sodio decahidrato",
+              "value": ""
+            },
+            {
+              "label": "Cloruro de sodio",
+              "value": ""
+            },
+            {
+              "label": "Perborato de sodio tetrahidrato",
+              "value": ""
+            },
+            {
+              "label": "Ácido fosfonico (DTPMPA) al 25%",
+              "value": ""
+            },
+            {
+              "label": "Ácido clorhídrico",
+              "value": ""
+            },
+            {
+              "label": "Agua para inyección c.s.p.",
+              "value": ""
+            }
+          ],
+          "foot": "Excipientes en el orden impreso en la caja."
+        },
+        {
+          "id": "indicacion",
+          "title": "Indicación y presentación",
+          "rows": [
+            {
+              "label": "Indicación: alivio temporal de la irritación, picazón, ardor y molestias que se presentan en el síndrome de resequedad ocular sea éste moderado o severo, de cualquier etiología, incluyendo la irritación ocular causada por el viento y la exposición al sol.",
+              "value": ""
+            },
+            {
+              "label": "Forma farmacéutica: solución oftalmica.",
+              "value": ""
+            },
+            {
+              "label": "Presentación: 1 frasco de 3 mL · muestra médica prohibida su venta.",
+              "value": ""
+            }
+          ],
+          "foot": "Texto impreso en la caja."
+        }
+      ]
+    }
   }
 ]

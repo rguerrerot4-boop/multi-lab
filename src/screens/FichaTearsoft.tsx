@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { BoxTextures } from '@/components/PhotoBox3D';
@@ -16,7 +16,7 @@ import { labByName, products, type Product } from '@/data/mock';
 import { TEARSOFT } from '@/data/tearsoft';
 import { teaSpots, type TeaSpot } from '@/data/tearsoft-info';
 import type { VitrinaMode } from '@/data/vitrina';
-import { openAR, type ArResult } from '@/lib/ar';
+import { arCardUrl, fichaPdfUrl, openAR, type ArResult } from '@/lib/ar';
 import { cssAnim, domEl, isWeb } from '@/lib/webAnim';
 import { ArNote } from '@/screens/Ficha';
 import { useMine } from '@/store/AppStore';
@@ -153,6 +153,15 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
           { icon: 'play-circle-outline', label: 'Presentar', onPress: () => router.push(`/presentacion/${p.id}`) },
           { icon: 'send-outline', label: 'Compartir', onPress: () => setShare(true) },
         ];
+  // tarjeta impresa (AR en el navegador) y ficha en PDF: solo con el nombre real
+  const openCard = () => {
+    logEvent('ar_tarjeta', p.id);
+    Linking.openURL(arCardUrl(p.id)).catch(() => {});
+  };
+  const openPdf = () => {
+    logEvent('ficha_pdf', p.id);
+    Linking.openURL(fichaPdfUrl(p.id)).catch(() => {});
+  };
   const related = products.filter((x) => x.id !== p.id && x.real).slice(0, 4);
   const mm = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
   const top = insets.top + 108; // debajo de la cabecera y la barra de progreso
@@ -356,7 +365,9 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
             <View style={{ flexDirection: 'row', gap: space.sm }}>
               <Pill icon="cube-outline" label="3D" onPress={() => setFull(true)} variant="outlineColor" color={C.navy} wide small />
               <Pill icon="scan-outline" label="AR" onPress={launchAR} variant="outlineColor" color={C.navy} wide small />
+              {mode === 'real' ? <Pill icon="card-outline" label="Tarjeta" onPress={openCard} variant="outlineColor" color={C.navy} wide small /> : null}
             </View>
+            {mode === 'real' ? <Pill icon="document-text-outline" label="Ficha del producto (PDF)" onPress={openPdf} variant="outlineColor" color={C.navy} wide small /> : null}
             {!presenting ? <Pill icon="albums-outline" label="Diapositivas del producto" onPress={() => router.push({ pathname: '/presentacion/[id]', params: { id: p.id, modo: 'diapositivas' } })} variant="outlineColor" color={C.navy} wide small /> : null}
           </View>
           {mode === 'real' ? <Text style={st.small}>Logotipos impresos en la caja: {I.logos.join(' · ')}.</Text> : null}
@@ -445,7 +456,7 @@ export default function FichaTearsoft({ product: p, presenting = false, visita, 
         </View>
       </View>
 
-      {ar ? <ArNote key={arTick} result={ar} pal={PAL} hasCard={false} top={insets.top + 110} reduce={reduce} onDone={() => setAr(null)} /> : null}
+      {ar ? <ArNote key={arTick} result={ar} pal={PAL} hasCard={mode === 'real'} top={insets.top + 110} reduce={reduce} onDone={() => setAr(null)} /> : null}
 
       <Modal visible={full} animationType={reduce ? 'none' : 'fade'} onRequestClose={() => setFull(false)}>
         <FullBox textures={tex} dims={I.dims} title={N.mark} reduce={reduce} onClose={() => setFull(false)} onAR={launchAR} />

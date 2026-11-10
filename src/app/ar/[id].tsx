@@ -40,8 +40,6 @@ export default function ArScreen() {
   const stageH = 300;
   // en la computadora no hay cámara para la AR: solo vista previa
   const device = arDevice();
-  // TEARSOFT aún no tiene tarjeta impresa ni ficha en PDF
-  const hasCard = p.id !== 'tea';
   // PANCREOGEN y TEARSOFT se proyectan más grandes que el producto real (para leer el empaque)
   const bigger = p.id === 'pan' || p.id === 'tea';
 
@@ -196,12 +194,11 @@ export default function ArScreen() {
         ) : null}
         {result === 'abierto' ? <Notice icon="checkmark-circle-outline" text="Se abrió el visor de AR de tu teléfono. Al cerrarlo vuelves aquí." ok /> : null}
         {!device ? (
-          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono.${hasCard ? ' Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.' : ''}`} />
+          <Notice icon="information-circle-outline" text={`El visor de AR del sistema necesita el celular: abre Multi LAB en tu teléfono. Con la tarjeta impresa también puedes probarla aquí con la cámara de la computadora.`} />
         ) : null}
 
         <View style={{ gap: space.sm }}>
           <Button label={busy ? 'Abriendo…' : 'Abrir en AR'} icon="scan-outline" loading={busy} disabled={!device} onPress={launch} />
-          {hasCard ? (
           <Pressable
             onPress={() => {
               logEvent('ar_tarjeta', p.id);
@@ -213,7 +210,6 @@ export default function ArScreen() {
             <Ionicons name="card-outline" size={18} color={colors.white} />
             <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.white }}>Usar tarjeta impresa</Text>
           </Pressable>
-          ) : null}
           <Pressable
             onPress={() => router.replace(`/visor/${p.id}`)}
             accessibilityRole="button"
@@ -227,16 +223,12 @@ export default function ArScreen() {
               ? `Modelo hecho con las fotos del empaque (tamaño aproximado).${bigger ? ' En AR se muestra más grande que el real, para que se lea el empaque.' : ''} Se descarga la primera vez y necesita internet.`
               : 'Modelo ilustrativo de un producto ficticio. Se descarga la primera vez (unos 150 KB) y necesita internet.'}
           </Text>
-          {hasCard ? (
-            <>
-              <Pressable onPress={() => Linking.openURL(arCardPdf(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
-                <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar la tarjeta para imprimir (PDF)</Text>
-              </Pressable>
-              <Pressable onPress={() => Linking.openURL(fichaPdfUrl(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
-                <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Ver la ficha del producto (PDF)</Text>
-              </Pressable>
-            </>
-          ) : null}
+          <Pressable onPress={() => Linking.openURL(arCardPdf(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Descargar la tarjeta para imprimir (PDF)</Text>
+          </Pressable>
+          <Pressable onPress={() => Linking.openURL(fichaPdfUrl(p.id)).catch(() => {})} accessibilityRole="link" hitSlop={6} style={{ alignSelf: 'center' }}>
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.white, textDecorationLine: 'underline' }}>Ver la ficha del producto (PDF)</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>

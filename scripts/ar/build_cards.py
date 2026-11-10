@@ -1,6 +1,6 @@
 """Genera las tarjetas impresas de realidad aumentada (una por producto).
 
-Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS y PANCREOGEN
+Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN y TEARSOFT
 (productos reales, con permiso) tienen su propia tarjeta con los colores de su empaque y la foto del
 producto en el panel.
 
@@ -263,6 +263,89 @@ def card_pancreogen():
     return im, panel
 
 
+# ---------- tarjeta propia de TEARSOFT (colores de su caja: azul marino, celeste y la franja de colores) ----------
+TEA = {"id": "tea", "name": "TEARSOFT", "lab": "Procaps", "category": "Solución oftálmica", "real": True, "escala": 0.65}  # la caja flota 1,4 cm sobre el piso: unos 4,4 cm de alto, como PANCREOGEN
+T_NAVY, T_DEEP, T_SKY, T_SOFT = "#32316C", "#1E1D4A", "#8AD1FD", "#C3E4FC"
+T_RAINBOW = ["#2C77AC", "#24B96D", "#F5DC34", "#F68C2B", "#F7592C"]
+
+
+def drop(size, color):
+    """Gota (punta arriba) en una imagen RGBA: círculo abajo y triángulo arriba."""
+    w, h = size, round(size * 1.4)
+    im = Image.new("RGBA", (w * 4, h * 4), (0, 0, 0, 0))
+    r = w * 2
+    cx, cy = w * 2, h * 4 - r
+    d = ImageDraw.Draw(im)
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
+    d.polygon([(cx - r * 0.86, cy - r * 0.5), (cx, 0), (cx + r * 0.86, cy - r * 0.5)], fill=color)
+    return im.resize((w, h), Image.LANCZOS)
+
+
+def card_tearsoft():
+    from PIL import ImageFilter
+
+    im = Image.new("RGB", (CW, CH), WHITE)
+    d = ImageDraw.Draw(im)
+    # panel que reconoce la cámara: azul noche, ondas de gota celestes, gotas de colores y la foto del frente de la caja
+    panel = Image.new("RGB", (PANEL, CH), T_DEEP)
+    pd = ImageDraw.Draw(panel)
+    for k, rr in enumerate(range(40, 1000, 46)):  # ondas que se abren desde abajo (detalle para el seguimiento)
+        pd.ellipse((PANEL * 0.3 - rr * 1.2, CH * 0.82 - rr * 0.7, PANEL * 0.3 + rr * 1.2, CH * 0.82 + rr * 0.7), outline=T_NAVY if k % 2 else "#2A3F86", width=10)
+    rnd = random.Random("multilab-tea")
+    for _ in range(58):
+        g = drop(rnd.randint(30, 92), rnd.choice([T_SKY, T_SOFT, WHITE, T_SKY] + T_RAINBOW))
+        g = g.rotate(rnd.choice([0, 0, 20, -20, 35, -35, 180]), expand=True, resample=Image.BICUBIC)
+        panel.paste(g, (rnd.randint(-30, PANEL - 20), rnd.randint(-30, CH - 20)), g)
+    box = Image.open(os.path.join(ROOT, "assets", "tearsoft", "frente.jpg")).convert("RGB")
+    bw = 300
+    box = box.resize((bw, round(box.height * bw / box.width)), Image.LANCZOS)
+    framed = Image.new("RGBA", (box.width + 24, box.height + 24), WHITE)
+    framed.paste(box, (12, 12))
+    framed = framed.rotate(6, expand=True, resample=Image.BICUBIC)
+    shadow = Image.new("RGBA", framed.size, (0, 0, 0, 0))
+    shadow.paste((5, 5, 30, 140), (0, 0), framed.split()[3])
+    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
+    cx, cy = (PANEL - framed.width) // 2, (CH - framed.height) // 2
+    panel.paste(shadow, (cx + 10, cy + 18), shadow)
+    panel.paste(framed, (cx, cy), framed)
+    im.paste(panel, (0, 0))
+
+    logo = Image.open(os.path.join(ROOT, "assets", "logo-full.png")).convert("RGBA")
+    lh = 84
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    x0 = PANEL + 60
+    im.paste(logo, (x0, 60), logo)
+    y = 200
+    d.text((x0, y), "SOLUCIÓN OFTÁLMICA", font=font("bold", 30), fill=T_NAVY)
+    y += 52
+    d.text((x0, y), "TEARSOFT®", font=font("bold", 72), fill=T_DEEP)
+    y += 96
+    d.text((x0, y), "Procaps · 1 frasco de 3 mL", font=font("medium", 30), fill=INK_MUTED)
+    y += 60
+    badge = "Muestra médica · prohibida su venta"
+    bwid = d.textlength(badge, font=font("semibold", 26)) + 44
+    d.rounded_rectangle((x0, y, x0 + bwid, y + 52), 26, fill=T_NAVY)
+    d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
+
+    qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(f"{SITE}/fichas/tea.pdf")  # abre la ficha del producto en PDF
+    qr.make(fit=True)
+    qimg = qr.make_image(fill_color=T_DEEP, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
+    qx, qy = CW - 60 - 270, CH - 60 - 270
+    im.paste(qimg, (qx, qy))
+    ty = qy + 6
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=T_DEEP)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a la foto de la caja."]:
+        ty += 50
+        d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
+    d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)
+    seg = CW / len(T_RAINBOW)  # franja de colores de la caja
+    for k, col in enumerate(T_RAINBOW):
+        d.rectangle((round(k * seg), CH - 14, round((k + 1) * seg), CH), fill=col)
+    d.rectangle((0, 0, CW - 1, CH - 1), outline="#DCE5E7", width=3)
+    return im, panel
+
+
 def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (prototipo académico)"):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
@@ -306,11 +389,16 @@ def main():
     c.save(os.path.join(OUT, "tarjetas", "pan.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "pan.png"), optimize=True)
     cards.append(c)
+    # y la de TEARSOFT al final (objetivo siguiente)
+    c, panel = card_tearsoft()
+    c.save(os.path.join(OUT, "tarjetas", "tea.png"), optimize=True)
+    panel.save(os.path.join(OUT, "objetivos", "tea.png"), optimize=True)
+    cards.append(c)
     sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
     # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
-    for p, c in zip(products + [COR, PAN], cards):
+    for p, c in zip(products + [COR, PAN, TEA], cards):
         sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
-    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN]
+    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))

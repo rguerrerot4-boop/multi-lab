@@ -56,5 +56,13 @@
   "category": "Suplemento dietario",
   "real": true,
   "escala": 0.35
+ },
+ {
+  "id": "tea",
+  "name": "TEARSOFT",
+  "lab": "Procaps",
+  "category": "Solución oftálmica",
+  "real": true,
+  "escala": 0.65
  }
 ]

@@ -89,3 +89,28 @@ export function teaSpots(mode: VitrinaMode): TeaSpot[] {
     { id: 'tapa', face: 'top', u: 0.5, v: 0.5, title: I.units, body: 'Las tapas de la caja repiten el nombre, la forma farmacéutica y el principio activo.' },
   ];
 }
+
+/** Tablas de la ficha en PDF (scripts/fichas/build_fichas.py), con el texto del costado de la caja */
+export function teaCards() {
+  const I = TEARSOFT_INFO;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  return [
+    {
+      id: 'composicion',
+      title: 'Composición',
+      rowsHead: ['Cada mL contiene', 'Cantidad'] as [string, string],
+      rows: [{ label: I.activeName, value: I.activeQty }, ...I.excipients.map((e) => ({ label: cap(e), value: '' }))],
+      foot: 'Excipientes en el orden impreso en la caja.',
+    },
+    {
+      id: 'indicacion',
+      title: 'Indicación y presentación',
+      rows: [
+        { label: `Indicación: ${I.indication}`, value: '' },
+        { label: `Forma farmacéutica: ${I.pharmaForm}`, value: '' },
+        { label: `Presentación: ${I.units.toLowerCase()} de ${I.front.volume} · muestra médica prohibida su venta.`, value: '' },
+      ],
+      foot: 'Texto impreso en la caja.',
+    },
+  ];
+}

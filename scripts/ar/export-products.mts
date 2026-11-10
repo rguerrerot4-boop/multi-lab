@@ -1,11 +1,12 @@
 // Exporta los datos de los productos a JSON para los scripts de Python.
 // - scripts/ar/products.json: productos ficticios (modelos de AR y tarjetas impresas)
-// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS)
+// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS, PANCREOGEN y TEARSOFT)
 // Uso: node --experimental-strip-types scripts/ar/export-products.mts
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CORAESSENS_INFO, vitrinaCards } from '../../src/data/coraessens-info.ts';
 import { labs, products } from '../../src/data/mock.ts';
 import { PANCREOGEN_INFO, panCards } from '../../src/data/pancreogen-info.ts';
+import { TEARSOFT_INFO, teaCards } from '../../src/data/tearsoft-info.ts';
 
 // los productos reales (con fotos) tienen su propio modelo: scripts/coraessens/modelo.py y scripts/pancreogen/modelo.py
 const data = products.filter((p) => !p.real).map(({ id, name, lab, category, form, howTo, precautions, hue }) => ({ id, name, lab, category, form, howTo, precautions, hue }));
@@ -32,6 +33,9 @@ const fichas = products.map((p) => ({
   sizeCm: p.sizeCm ?? null,
   ...(p.id === 'cor' ? { info: { ...CORAESSENS_INFO.names.real, formula: CORAESSENS_INFO.formula, badges: CORAESSENS_INFO.badges, sample: CORAESSENS_INFO.sample, cards: vitrinaCards('real') } } : {}),
   ...(p.id === 'pan' ? { info: { ...PANCREOGEN_INFO.names.real, formula: PANCREOGEN_INFO.formula, badges: PANCREOGEN_INFO.badges.slice(0, 2), sample: 'Producto de venta libre', cards: panCards() } } : {}),
+  ...(p.id === 'tea'
+    ? { info: { ...TEARSOFT_INFO.names.real, formula: `Solución oftálmica · ${TEARSOFT_INFO.activeName.toLowerCase()} 5 mg/mL`, badges: ['Solución oftálmica', '1 frasco · 3 mL'], sample: 'Muestra médica · prohibida su venta', tables: ['composicion', 'indicacion'], cards: teaCards() } }
+    : {}),
 }));
 mkdirSync(new URL('../fichas/', import.meta.url), { recursive: true });
 writeFileSync(new URL('../fichas/products.json', import.meta.url), JSON.stringify(fichas, null, 2));
