@@ -139,7 +139,7 @@ export default function NuevaSolicitud() {
               </Pressable>
             );
           })}
-          <Text style={[type.caption, { textAlign: 'center' }]}>Laboratorios y productos ficticios de demostración, salvo Nutrabiotics (producto real con permiso).</Text>
+          <Text style={[type.caption, { textAlign: 'center' }]}>Laboratorios y productos ficticios de demostración, salvo Nutrabiotics y Procaps (productos reales con permiso).</Text>
         </View>
       ) : null}
 

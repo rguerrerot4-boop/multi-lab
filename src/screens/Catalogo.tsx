@@ -82,7 +82,7 @@ export default function Catalogo() {
             {/* solo los productos del laboratorio del visitador (Celvia) y CORAESSENS, que se muestra con permiso */}
             <View style={[styles.row, { justifyContent: 'space-between' }]}>
               <Text style={[type.caption, { flex: 1 }]}>
-                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio), CORAESSENS y PANCREOGEN (reales, con permiso)
+                {list.length} {list.length === 1 ? 'producto' : 'productos'} · {labOfRep(userId ?? 'v1')?.full ?? 'Laboratorios Celvia'} (ficticio); CORAESSENS, PANCREOGEN y TEARSOFT (reales, con permiso)
               </Text>
               <Pressable
                 onPress={() => setGrid((g) => !g)}

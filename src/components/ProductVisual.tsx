@@ -29,12 +29,14 @@ export function ProductVisual({ product, height = 150, view = 0 }: { product: Pr
     const C = packColors.coraessens;
     const face = view === 1 ? 'right' : view === 2 ? 'left' : 'front';
     const ph = height * 0.8;
+    const { w, h, d } = product.photo.dims;
+    const ratio = (face === 'front' ? w : d) / h; // ancho / alto de la cara que se muestra
     return (
-      <LinearGradient colors={[C.purple, C.purpleDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.wrap, { height }]}>
+      <LinearGradient colors={product.photo.bg ?? [C.purple, C.purpleDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.wrap, { height }]}>
         <View style={[s.capsH, { top: height * 0.12, left: -height * 0.2, width: height * 0.9, height: height * 0.28 }]} />
         <Image
           source={product.photo.textures[face]}
-          style={{ width: ph / 1.447, height: ph, borderRadius: Math.max(2, height * 0.02), transform: [{ rotate: '-6deg' }] }}
+          style={{ width: ph * ratio, height: ph, borderRadius: Math.max(2, height * 0.02), transform: [{ rotate: '-6deg' }] }}
           resizeMode="cover"
           accessibilityLabel={`Foto del empaque de ${product.name}`}
         />

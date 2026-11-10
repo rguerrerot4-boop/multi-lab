@@ -86,7 +86,7 @@ export interface Product {
   /** producto real mostrado con permiso del laboratorio (texto tomado del empaque) */
   real?: { note: string };
   /** caja 3D con las fotos del empaque (vitrina 3D) */
-  photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string };
+  photo?: { textures: BoxTextures; dims: { w: number; h: number; d: number }; vitrina: string; /** fondo de su miniatura (colores del empaque); si no hay, los de CORAESSENS */ bg?: [string, string] };
   /** frasco fotografiado en 360° (cuadros renderizados del modelo 3D), con su propio catálogo */
   bottle?: { frames: ImageSourcePropType[]; framesFicticio: ImageSourcePropType[]; thumb: ImageSourcePropType; thumbFicticio: ImageSourcePropType; /** modelo .glb animado (la web lo dibuja en 3D real) */ model?: string; modelFicticio?: string };
   arTitle?: string; // título en el visor AR del teléfono
@@ -118,6 +118,7 @@ export const labs: Lab[] = [
   { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
   // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
   { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
+  { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología · producto real con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
 ];
 export const labByName = (name: string) => labs.find((l) => l.name === name);
 export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
@@ -148,6 +149,15 @@ const realSpots: Hotspot[] = [
   { face: 'right', u: 0.5, v: 0.4, title: 'Información nutricional', text: 'Porción diaria: 3 cápsulas. Folacina 900 mcg · vitamina B6 75 mg · vitamina B12 1950 mcg · vitamina C 12,75 mg · magnesio 332,55 mg.' },
   { face: 'back', u: 0.5, v: 0.25, title: 'Advertencias', text: 'Manténgase fuera del alcance de los niños. No superar la dosis recomendada. No use el producto si el sello de seguridad está roto o despegado.' },
   { face: 'back', u: 0.4, v: 0.82, title: 'Lote de la muestra', text: 'LOT 25-211 · FAB oct-2025 · EXP oct-2027.' },
+];
+
+// puntos de la caja de TEARSOFT (texto tomado de la caja)
+const teaSpots: Hotspot[] = [
+  { face: 'front', u: 0.5, v: 0.24, title: 'Muestra médica', text: 'Muestra médica prohibida su venta. 3 mL · solución oftálmica.' },
+  { face: 'front', u: 0.55, v: 0.88, title: 'TEARSOFT®', text: 'Procaps. Carboximetilcelulosa sódica 5 mg/mL.' },
+  { face: 'left', u: 0.5, v: 0.12, title: 'Composición', text: 'Cada mL de solución oftálmica contiene: carboximetilcelulosa sódica 5 mg.' },
+  { face: 'left', u: 0.5, v: 0.3, title: 'Dosificación', text: '1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario. 1 mL = 20 gotas.' },
+  { face: 'left', u: 0.5, v: 0.62, title: 'Advertencias', text: 'Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada.' },
 ];
 
 export interface Visit {
@@ -358,7 +368,7 @@ export const people: Person[] = [
 export const DEMO_USER: Record<Role, string> = { medico: 'm1', visitador: 'v1' };
 
 // ---------- Productos (ficticios) ----------
-export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos'];
+export const categories = ['Todos', 'Limpieza', 'Hidratación', 'Reparación', 'Fotoprotección', 'Pediatría', 'Suplementos', 'Oftalmología'];
 
 export const products: Product[] = [
   {
@@ -629,10 +639,58 @@ export const products: Product[] = [
     arTitle: 'PANCREOGEN · Nutrabiotics',
     sizeCm: { w: 4, h: 12.4, d: 4 },
   },
+  {
+    // PRODUCTO REAL (con permiso de Procaps). Todo el texto está tomado de la caja (src/data/tearsoft-info.ts).
+    id: 'tea',
+    name: 'TEARSOFT',
+    lab: 'Procaps',
+    category: 'Oftalmología',
+    form: 'Solución oftálmica · frasco de 3 mL',
+    component: 'Carboximetilcelulosa sódica',
+    concentration: '5 mg/mL',
+    tagline: 'Solución oftálmica · carboximetilcelulosa sódica 5 mg/mL',
+    description:
+      'Solución oftálmica: cada mL contiene carboximetilcelulosa sódica 5 mg. Muestra médica de 3 mL (1 frasco), prohibida su venta.',
+    uses: [
+      'Alivio temporal de la irritación, picazón, ardor y molestias que se presentan en el síndrome de resequedad ocular sea éste moderado o severo, de cualquier etiología, incluyendo la irritación ocular causada por el viento y la exposición al sol',
+    ],
+    howTo: ['1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario', '1 mL = 20 gotas', 'Vía de administración: Colombia: conjuntival. Otros países: oftálmica'],
+    precautions: [
+      'Contraindicaciones y advertencias: historia de hipersensibilidad a alguno de los componentes de la fórmula',
+      'Para evitar contaminación no toque ni ponga en contacto la punta del dispensador con la zona afectada',
+      'Si durante la utilización se presenta dolor ocular, cambios en la agudeza visual o continúan los signos de irritación y éstos se presentan o persisten por 72 horas, descontinuar el producto y consultar con el oftalmólogo',
+      'Bolivia, Ecuador: para mayor información ver inserto adjunto',
+    ],
+    docs: ['Fotos de la caja (6 caras).png'],
+    slides: [
+      { title: 'Composición', body: 'Cada mL de solución oftálmica contiene carboximetilcelulosa sódica 5 mg.', icon: 'flask-outline' },
+      { title: 'Dosificación', body: '1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario. 1 mL = 20 gotas.', icon: 'water-outline' },
+      { title: 'Presentación', body: 'Muestra médica: 1 frasco de 3 mL de solución oftálmica. Prohibida su venta.', icon: 'cube-outline' },
+    ],
+    icon: 'eye-outline',
+    hue: '#32316C', // azul del texto de la caja (packColors.tearsoft.navy)
+    isNew: true,
+    keywords: ['solución oftálmica', 'gotas', 'ojo', 'ojos', 'oftálmica', 'carboximetilcelulosa', 'resequedad ocular', 'irritación ocular', 'lágrima'],
+    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
+    specs: [
+      { value: '3 mL', label: 'Solución oftálmica', note: '1 frasco · muestra médica' },
+      { value: '5 mg', label: 'Por mL', note: 'Carboximetilcelulosa sódica' },
+      { value: '20', label: 'Gotas por mL', note: '1 mL = 20 gotas' },
+    ],
+    notes: [
+      { title: 'Carboximetilcelulosa sódica', text: '5 mg en cada mL de solución oftálmica.' },
+      { title: 'Dosificación', text: '1 o 2 gotas en el ojo afectado cuantas veces al día sea necesario.' },
+    ],
+    // la caja con sus fotos (photo) se agrega en src/data/tearsoft.ts, que se carga en src/app/_layout.tsx
+    arTitle: 'TEARSOFT · Procaps',
+    sizeCm: { w: 2.7, h: 5.3, d: 2.2 },
+  },
 ];
 
 products.forEach((p) => {
-  p.hotspots = p.real ? realSpots : spots(p);
+  // cada producto real tiene los suyos (PANCREOGEN usa los puntos de su frasco, en su propio catálogo)
+  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.real ? [] : spots(p);
 });
 
 // ---------- Visitas ----------

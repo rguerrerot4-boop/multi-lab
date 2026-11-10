@@ -99,4 +99,19 @@ export const packColors = {
     veil: 'rgba(255, 255, 255, 0.10)',
     veilLine: 'rgba(255, 255, 255, 0.28)',
   },
+  tearsoft: {
+    navy: '#32316C', // azul violeta del texto de la caja (títulos, cifras, acciones; AA sobre blanco y celeste)
+    navyDeep: '#1E1D4A',
+    sky: '#8AD1FD', // celeste de la parte de arriba de la caja (solo fondos, nunca texto)
+    skySoft: '#C3E4FC',
+    paper: '#F3F8FD', // fondo de las páginas
+    ink: '#1C1B3F', // texto sobre fondo claro
+    line: '#D3E3F2',
+    glass: 'rgba(255, 255, 255, 0.62)', // tarjetas de vidrio
+    glassLine: 'rgba(255, 255, 255, 0.9)',
+    veil: 'rgba(255, 255, 255, 0.14)',
+    veilLine: 'rgba(255, 255, 255, 0.4)',
+    // franja arcoíris de la caja (de abajo a arriba): solo decoración
+    rainbow: ['#2C77AC', '#24B96D', '#F5DC34', '#F68C2B', '#F7592C'],
+  },
 };

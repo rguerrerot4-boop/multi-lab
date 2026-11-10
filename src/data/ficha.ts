@@ -19,6 +19,10 @@ export interface FichaPal {
 
 /** Colores: los del empaque si el producto tiene fotos; si no, el tono del producto con los de Multi LAB */
 export function fichaPalette(p: Product): FichaPal {
+  if (p.id === 'tea') {
+    const T = packColors.tearsoft;
+    return { main: T.navy, mainDeep: T.navyDeep, bg: T.navy, bgDeep: T.navyDeep, paper: T.paper, line: T.line, ink: T.ink, giant: T.navy, veil: T.veil, veilLine: T.veilLine };
+  }
   if (p.photo) {
     const C = packColors.coraessens;
     return { main: C.red, mainDeep: C.redDeep, bg: C.purple, bgDeep: C.purpleDeep, paper: C.blush, line: C.line, ink: C.ink, giant: C.red, veil: C.veil, veilLine: C.veilLine };

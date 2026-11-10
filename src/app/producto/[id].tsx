@@ -3,6 +3,7 @@ import { AppHeader, EmptyState, Screen } from '@/components/ui';
 import { productById } from '@/data/mock';
 import Ficha from '@/screens/Ficha';
 import FichaPancreogen from '@/screens/FichaPancreogen';
+import FichaTearsoft from '@/screens/FichaTearsoft';
 
 // Ficha del producto (diseño en src/screens/Ficha.tsx)
 export default function Producto() {
@@ -16,6 +17,7 @@ export default function Producto() {
     );
   }
   // el frasco 360° tiene su propio catálogo (distinto de la ficha de la caja)
+  if (p.id === 'tea') return <FichaTearsoft key={p.id} product={p} initialMode={modo === 'ficticio' ? 'ficticio' : 'real'} />;
   if (p.bottle) return <FichaPancreogen key={p.id} product={p} initialMode={modo === 'ficticio' ? 'ficticio' : 'real'} />;
   return <Ficha key={p.id} product={p} initialMode={modo === 'ficticio' ? 'ficticio' : 'real'} />;
 }
