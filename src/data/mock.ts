@@ -118,7 +118,7 @@ export const labs: Lab[] = [
   { id: 'celvia', name: 'Celvia', full: 'Laboratorios Celvia', repId: 'v1', tagline: 'Dermocosmética y cuidado de la piel', hue: '#1E7F8C' },
   // laboratorio real: su producto se muestra con permiso (en la demo lo atiende el mismo visitador de Celvia)
   { id: 'nutrabiotics', name: 'Nutrabiotics', full: 'Nutrabiotics', repId: 'v1', tagline: 'Suplementos · producto real con permiso', hue: '#C9262F', real: true }, // rojo del empaque (packColors.coraessens.red)
-  { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología y vitamina D3 · productos reales con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
+  { id: 'procaps', name: 'Procaps', full: 'Procaps', repId: 'v1', tagline: 'Oftalmología, vitamina D3 y suplementos · productos reales con permiso', hue: '#32316C', real: true }, // azul de la caja de TEARSOFT (packColors.tearsoft.navy)
 ];
 export const labByName = (name: string) => labs.find((l) => l.name === name);
 export const labOfRep = (repId: string) => labs.find((l) => l.repId === repId);
@@ -168,6 +168,15 @@ const defSpots: Hotspot[] = [
   { face: 'back', u: 0.25, v: 0.24, title: 'Dosificación', text: '1 cápsula semanal. Consumo máximo: 2 cápsulas semanales.' },
   { face: 'back', u: 0.5, v: 0.33, title: 'Indicaciones', text: 'Tratamiento de la deficiencia de Vitamina D (suero 25 (OH) D < 25 nmol/L). Prevención de la deficiencia de Vitamina D en pacientes de alto riesgo.' },
   { face: 'back', u: 0.25, v: 0.9, title: 'Conservación', text: 'Consérvese a temperatura no mayor a 30 °C en su envase y empaque original.' },
+];
+
+// puntos de la caja de VITYBELL (texto tomado de la caja)
+const vitSpots: Hotspot[] = [
+  { face: 'front', u: 0.47, v: 0.25, title: 'VITYBELL®', text: 'Suplemento alimenticio en cápsula blanda a base de: Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina.' },
+  { face: 'front', u: 0.2, v: 0.86, title: 'Contenido neto', text: 'Contenido Neto: 4.050 g (5 Cápsulas blandas x 0.810 g/Cápsula). Muestra gratuita.' },
+  { face: 'back', u: 0.5, v: 0.15, title: 'Información nutricional', text: 'Porción: 1 Cápsula blanda (0.810 g). Biotina 900 µg (300% VDR) · Zinc 20 mg (133.33% VDR) · Selenio 200 µg (285.7% VDR).' },
+  { face: 'back', u: 0.4, v: 0.72, title: 'Modo de uso', text: 'Vía oral. Tomar una (1) cápsula al día. Consumo máximo diario: 1 cápsula en 24 horas. Adultos mayores de 18 años.' },
+  { face: 'top', u: 0.55, v: 0.7, title: 'Cabello y uñas', text: 'El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales. El Zinc contribuye al mantenimiento de las uñas en condiciones normales.' },
 ];
 
 export interface Visit {
@@ -744,11 +753,55 @@ export const products: Product[] = [
     arTitle: 'DEFEROL · Procaps',
     sizeCm: { w: 7, h: 4.3, d: 1.45 },
   },
+  {
+    // PRODUCTO REAL (con permiso de Procaps). Todo el texto está tomado de la caja (src/data/vitybell-info.ts).
+    id: 'vit',
+    name: 'VITYBELL',
+    lab: 'Procaps',
+    category: 'Suplementos',
+    form: 'Cápsula blanda · 5 cápsulas',
+    component: 'Biotina, ácido pantoténico, nicotinamida, zinc, cobre, selenio, riboflavina y piridoxina',
+    concentration: '0.810 g por cápsula',
+    tagline: 'Suplemento alimenticio en cápsula blanda a base de biotina, zinc, selenio y vitaminas del complejo B',
+    description:
+      'Suplemento alimenticio en cápsula blanda a base de: Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina. Contenido Neto: 4.050 g (5 Cápsulas blandas x 0.810 g/Cápsula). Muestra gratuita.',
+    uses: [
+      'El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales',
+      'El Zinc contribuye al mantenimiento de las uñas en condiciones normales',
+    ],
+    howTo: ['Vía de administración: oral', 'Tomar una (1) cápsula al día', 'Consumo máximo diario: 1 cápsula en 24 horas', 'Población: adultos mayores de 18 años'],
+    precautions: ['Advertencia: puede causar hipersensibilidad a sus componentes', 'Contiene soya', 'Consumo máximo diario: 1 cápsula en 24 horas'],
+    docs: ['Fotos de la caja (6 caras).png'],
+    slides: [
+      { title: 'Componentes', body: 'Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina, en cápsula blanda.', icon: 'flask-outline' },
+      { title: 'Cabello y uñas', body: 'El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales. El Zinc contribuye al mantenimiento de las uñas en condiciones normales.', icon: 'sparkles-outline' },
+      { title: 'Modo de uso', body: 'Vía oral. Tomar una (1) cápsula al día. Consumo máximo diario: 1 cápsula en 24 horas. Adultos mayores de 18 años.', icon: 'time-outline' },
+    ],
+    icon: 'flower-outline',
+    hue: '#C2223F', // rojo del logotipo (packColors.vitybell.rose)
+    isNew: true,
+    keywords: ['suplemento', 'cabello', 'uñas', 'biotina', 'zinc', 'selenio', 'nicotinamida', 'riboflavina', 'piridoxina', 'ácido pantoténico', 'cobre', 'cápsula blanda'],
+    areas: ['Medicina general'], // la caja no lo dirige a ninguna especialidad de la app
+    real: { note: 'Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja.' },
+    specs: [
+      { value: '8', label: 'Componentes', note: 'Vitaminas y minerales del frente' },
+      { value: '1', label: 'Cápsula al día', note: 'Vía oral · adultos' },
+      { value: '5', label: 'Cápsulas blandas', note: '0.810 g cada una' },
+    ],
+    notes: [
+      { title: 'Biotina', text: '900 µg por porción (300% VDR).' },
+      { title: 'Zinc', text: '20 mg por porción (133.33% VDR).' },
+      { title: 'Selenio', text: '200 µg por porción (285.7% VDR).' },
+    ],
+    // la caja con sus fotos (photo) se agrega en src/data/vitybell.ts, que se carga en src/app/_layout.tsx
+    arTitle: 'VITYBELL · Procaps',
+    sizeCm: { w: 7, h: 4.3, d: 1.4 },
+  },
 ];
 
 products.forEach((p) => {
   // cada producto real tiene los suyos (PANCREOGEN usa los puntos de su frasco, en su propio catálogo)
-  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.id === 'def' ? defSpots : p.real ? [] : spots(p);
+  p.hotspots = p.id === 'cor' ? realSpots : p.id === 'tea' ? teaSpots : p.id === 'def' ? defSpots : p.id === 'vit' ? vitSpots : p.real ? [] : spots(p);
 });
 
 // ---------- Visitas ----------

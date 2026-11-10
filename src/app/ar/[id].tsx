@@ -40,8 +40,8 @@ export default function ArScreen() {
   const stageH = 300;
   // en la computadora no hay cámara para la AR: solo vista previa
   const device = arDevice();
-  // PANCREOGEN, TEARSOFT y DEFEROL se proyectan más grandes que el producto real (para leer el empaque)
-  const bigger = p.id === 'pan' || p.id === 'tea' || p.id === 'def';
+  // PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL se proyectan más grandes que el producto real (para leer el empaque)
+  const bigger = p.id === 'pan' || p.id === 'tea' || p.id === 'def' || p.id === 'vit';
 
   const launch = async () => {
     setBusy(true);
@@ -153,7 +153,7 @@ export default function ArScreen() {
             <Text style={{ flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 19, color: colors.white }}>
               {p.id === 'tea'
                 ? 'Con animación: la caja flota y gira despacio mientras gotas de lágrima dan vueltas a su alrededor. Se proyecta grande para que se lea el empaque.'
-                : p.id === 'def'
+                : p.id === 'def' || p.id === 'vit'
                   ? 'Con animación: la caja flota y gira despacio mientras cápsulas blandas (ilustrativas) dan vueltas a su alrededor. Se proyecta grande para que se lea el empaque.'
                 : 'Con animación: la caja sale girando, aparece su nombre en 3D, se abre la tapa y salen sus cápsulas a dar vueltas alrededor. También sobre su tarjeta impresa.'}
             </Text>

@@ -949,5 +949,170 @@
         }
       ]
     }
+  },
+  {
+    "id": "vit",
+    "name": "VITYBELL",
+    "lab": "Procaps",
+    "labFull": "Procaps",
+    "category": "Suplementos",
+    "form": "Cápsula blanda · 5 cápsulas",
+    "component": "Biotina, ácido pantoténico, nicotinamida, zinc, cobre, selenio, riboflavina y piridoxina",
+    "concentration": "0.810 g por cápsula",
+    "tagline": "Suplemento alimenticio en cápsula blanda a base de biotina, zinc, selenio y vitaminas del complejo B",
+    "description": "Suplemento alimenticio en cápsula blanda a base de: Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina. Contenido Neto: 4.050 g (5 Cápsulas blandas x 0.810 g/Cápsula). Muestra gratuita.",
+    "uses": [
+      "El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales",
+      "El Zinc contribuye al mantenimiento de las uñas en condiciones normales"
+    ],
+    "howTo": [
+      "Vía de administración: oral",
+      "Tomar una (1) cápsula al día",
+      "Consumo máximo diario: 1 cápsula en 24 horas",
+      "Población: adultos mayores de 18 años"
+    ],
+    "precautions": [
+      "Advertencia: puede causar hipersensibilidad a sus componentes",
+      "Contiene soya",
+      "Consumo máximo diario: 1 cápsula en 24 horas"
+    ],
+    "hue": "#C2223F",
+    "specs": [
+      {
+        "value": "8",
+        "label": "Componentes",
+        "note": "Vitaminas y minerales del frente"
+      },
+      {
+        "value": "1",
+        "label": "Cápsula al día",
+        "note": "Vía oral · adultos"
+      },
+      {
+        "value": "5",
+        "label": "Cápsulas blandas",
+        "note": "0.810 g cada una"
+      }
+    ],
+    "notes": [
+      {
+        "title": "Biotina",
+        "text": "900 µg por porción (300% VDR)."
+      },
+      {
+        "title": "Zinc",
+        "text": "20 mg por porción (133.33% VDR)."
+      },
+      {
+        "title": "Selenio",
+        "text": "200 µg por porción (285.7% VDR)."
+      }
+    ],
+    "real": {
+      "note": "Producto real de Procaps, mostrado con permiso del laboratorio. Información tomada de la caja."
+    },
+    "sizeCm": {
+      "w": 7,
+      "h": 4.3,
+      "d": 1.4
+    },
+    "info": {
+      "name": "VITYBELL",
+      "mark": "Vitybell®",
+      "lab": "Procaps",
+      "labLine": "Grupo Procaps · suplemento alimenticio",
+      "disclaimer": "Producto real de Procaps, mostrado con permiso del laboratorio. La información está tomada de la caja de la muestra gratuita.",
+      "arTitle": "VITYBELL · Procaps",
+      "arId": "vit",
+      "formula": "Suplemento alimenticio en cápsula blanda a base de Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina",
+      "badges": [
+        "Suplemento alimenticio",
+        "5 cápsulas blandas"
+      ],
+      "sample": "Muestra gratuita",
+      "tables": [
+        "composicion",
+        "indicacion"
+      ],
+      "cards": [
+        {
+          "id": "composicion",
+          "title": "Información nutricional",
+          "rowsHead": [
+            "Por porción (1 cápsula blanda)",
+            "Cantidad",
+            "%VDR"
+          ],
+          "rows": [
+            {
+              "label": "Biotina",
+              "value": "900 µg",
+              "extra": "300%"
+            },
+            {
+              "label": "Ácido Pantoténico (Como Pantetonato de Calcio)",
+              "value": "3 mg",
+              "extra": "30%"
+            },
+            {
+              "label": "Nicotinamida",
+              "value": "17.5 mg",
+              "extra": "97%"
+            },
+            {
+              "label": "Zinc (como Sulfato de Zinc monohidrato)",
+              "value": "20 mg",
+              "extra": "133.33%"
+            },
+            {
+              "label": "Cobre (como Sulfato de cobre anhidro)",
+              "value": "0.1 mg",
+              "extra": "5%"
+            },
+            {
+              "label": "Selenio (como L(+) Seleniometionina)",
+              "value": "200 µg",
+              "extra": "285.7%"
+            },
+            {
+              "label": "Riboflavina",
+              "value": "0.8 mg",
+              "extra": "50%"
+            },
+            {
+              "label": "Piridoxina (como Piridoxina Clorhidrato)",
+              "value": "1 mg",
+              "extra": "50%"
+            }
+          ],
+          "foot": "*Los porcentajes de los valores diarios recomendados están basados en una dieta 8380 kJ (2000 kcal). No es una fuente significativa de grasa saturada."
+        },
+        {
+          "id": "indicacion",
+          "title": "En los cantos de la caja",
+          "rows": [
+            {
+              "label": "El Zinc y la Biotina contribuyen al mantenimiento del cabello en condiciones normales.",
+              "value": ""
+            },
+            {
+              "label": "El Zinc contribuye al mantenimiento de las uñas en condiciones normales.",
+              "value": ""
+            },
+            {
+              "label": "Contenido: 4.050 g (5 Cápsulas blandas x 0.810 g/Cápsula)",
+              "value": ""
+            }
+          ],
+          "foot": "Texto impreso en la caja."
+        },
+        {
+          "id": "fabricante",
+          "title": "Fabricante",
+          "body": "Fabricado por PROCAPS S.A. Calle 80 No. 78B-201. Barranquilla – Colombia. INDUSTRIA COLOMBIANA. Notificación Sanitaria No. 14758-ALE-0121 Ecuador. Importado/Distribuido por: RODDOME PHARMACEUTICAL S.A., Dirección: Avenida 6 de Diciembre N 32-594 E Ignacio Bossano, Quito, Ecuador.",
+          "foot": "Muestra gratuita. Contiene soya (ver el listado de ingredientes en el reverso de la caja)."
+        }
+      ]
+    }
   }
 ]

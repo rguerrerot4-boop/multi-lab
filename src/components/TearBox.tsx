@@ -23,6 +23,8 @@ export function TearBox({
   fold = 1,
   drops = false,
   capsules = false,
+  capsuleColor,
+  capsuleCount,
   free = false,
   face = null,
   edge = '#E8EEF5',
@@ -41,6 +43,9 @@ export function TearBox({
   drops?: boolean;
   /** cápsulas blandas alrededor (DEFEROL) */
   capsules?: boolean;
+  /** color y número de las cápsulas (p. ej. '#E9A8C8') */
+  capsuleColor?: string;
+  capsuleCount?: number;
   /** giro libre en cualquier dirección (en la web) */
   free?: boolean;
   /** cara que gira hasta quedar de frente */
@@ -84,7 +89,7 @@ export function TearBox({
     import('@/lib/boxGL')
       .then((m) => {
         if (dead) return;
-        gl.current = m.createBoxGL(canvas, { urls, dims, drops, capsules, free, reduce, zoom, onReady: () => ready.current?.() });
+        gl.current = m.createBoxGL(canvas, { urls, dims, drops, capsules, capsuleColor: capsuleColor ? parseInt(capsuleColor.slice(1), 16) : undefined, capsuleCount, free, reduce, zoom, onReady: () => ready.current?.() });
         gl.current.setFold(fold, true);
         gl.current.resize(width, height);
       })

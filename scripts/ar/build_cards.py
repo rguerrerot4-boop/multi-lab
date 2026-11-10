@@ -1,6 +1,6 @@
 """Genera las tarjetas impresas de realidad aumentada (una por producto).
 
-Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN, TEARSOFT y DEFEROL
+Las de los productos ficticios usan el patrón de cápsulas de Multi LAB. CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL
 (productos reales, con permiso) tienen su propia tarjeta con los colores de su empaque y la foto del
 producto en el panel.
 
@@ -435,6 +435,102 @@ def card_deferol():
     return im, panel
 
 
+# ---------- tarjeta propia de VITYBELL (colores de su caja: rosado, rojo y dorado) ----------
+VIT = {"id": "vit", "name": "VITYBELL", "lab": "Procaps", "category": "Suplemento alimenticio", "real": True, "escala": 0.65}  # la caja mide 7 cm de ancho y gira: 65 %
+V_PLUM, V_PLUM2, V_ROSE, V_PINK, V_PEARL, V_GOLD = "#24152A", "#3A2440", "#C2223F", "#E6D0E6", "#E9A8C8", "#D4A24C"
+
+
+def pearl(w, rot):
+    """Cápsula blanda perlada ilustrativa."""
+    h = round(w * 0.58)
+    im = Image.new("RGBA", (w * 3, h * 3), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((0, 0, w * 3 - 1, h * 3 - 1), fill="#7E2F57")
+    d.ellipse((9, 9, w * 3 - 10, h * 3 - 10), fill="#D98AB4")
+    d.ellipse((w * 0.25, h * 0.2, w * 2.7, h * 2.1), fill=V_PEARL)
+    d.ellipse((w * 0.7, h * 0.45, w * 1.8, h * 0.95), fill="#FFF3FA")
+    im = im.resize((w, h), Image.LANCZOS)
+    return im.rotate(rot, expand=True, resample=Image.BICUBIC)
+
+
+def card_vitybell():
+    import math
+    from PIL import ImageFilter
+
+    im = Image.new("RGB", (CW, CH), WHITE)
+    d = ImageDraw.Draw(im)
+    # panel que reconoce la cámara: ciruela oscuro (contraste), trazos de cabello claros, líneas doradas, cápsulas
+    # perladas con borde y la foto del frente de la caja
+    panel = Image.new("RGB", (PANEL, CH), V_PLUM)
+    pd = ImageDraw.Draw(panel)
+    for k in range(0, PANEL + CH, 48):  # líneas diagonales finas
+        pd.line((k, 0, k - CH, CH), fill=V_PLUM2, width=12)
+    rnd = random.Random("multilab-vit")
+    for _ in range(16):  # trazos de cabello (curvas)
+        x0, y0 = rnd.randint(-60, PANEL), rnd.randint(-40, CH)
+        x3, y3 = x0 + rnd.randint(120, 320), y0 - rnd.randint(80, 260)
+        c1 = (x0 + rnd.randint(0, 120), y0 - rnd.randint(40, 200))
+        pts = []
+        for t in [i / 40 for i in range(41)]:
+            x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * c1[0] + t * t * x3
+            y = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * c1[1] + t * t * y3
+            pts.append((x, y))
+        pd.line(pts, fill=rnd.choice([V_PINK, WHITE, "#9C8AA3", V_PEARL]), width=rnd.choice([5, 8, 11]), joint="curve")
+    for k in range(4):  # líneas doradas como las de la caja
+        y = 120 + k * 230
+        pd.line((0, y, PANEL, y - 60), fill=V_GOLD, width=6)
+    for _ in range(28):
+        g = pearl(rnd.randint(48, 104), rnd.randint(0, 179))
+        panel.paste(g, (rnd.randint(-30, PANEL - 30), rnd.randint(-30, CH - 30)), g)
+    box = Image.open(os.path.join(ROOT, "assets", "vitybell", "frente.jpg")).convert("RGB")
+    bw = 440
+    box = box.resize((bw, round(box.height * bw / box.width)), Image.LANCZOS)
+    framed = Image.new("RGBA", (box.width + 22, box.height + 22), WHITE)
+    framed.paste(box, (11, 11))
+    framed = framed.rotate(8, expand=True, resample=Image.BICUBIC)
+    shadow = Image.new("RGBA", framed.size, (0, 0, 0, 0))
+    shadow.paste((10, 0, 20, 140), (0, 0), framed.split()[3])
+    shadow = shadow.filter(ImageFilter.GaussianBlur(14))
+    cx, cy = (PANEL - framed.width) // 2, (CH - framed.height) // 2
+    panel.paste(shadow, (cx + 10, cy + 18), shadow)
+    panel.paste(framed, (cx, cy), framed)
+    im.paste(panel, (0, 0))
+
+    logo = Image.open(os.path.join(ROOT, "assets", "logo-full.png")).convert("RGBA")
+    lh = 84
+    logo = logo.resize((round(logo.width * lh / logo.height), lh), Image.LANCZOS)
+    x0 = PANEL + 60
+    im.paste(logo, (x0, 60), logo)
+    y = 200
+    d.text((x0, y), "SUPLEMENTO ALIMENTICIO", font=font("bold", 30), fill=V_ROSE)
+    y += 52
+    d.text((x0, y), "VITYBELL®", font=font("bold", 72), fill=V_PLUM)
+    y += 96
+    d.text((x0, y), "Procaps · 5 cápsulas blandas", font=font("medium", 30), fill=INK_MUTED)
+    y += 60
+    badge = "Muestra gratuita"
+    bwid = d.textlength(badge, font=font("semibold", 26)) + 44
+    d.rounded_rectangle((x0, y, x0 + bwid, y + 52), 26, fill=V_ROSE)
+    d.text((x0 + 22, y + 11), badge, font=font("semibold", 26), fill=WHITE)
+
+    qr = qrcode.QRCode(border=0, box_size=10, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(f"{SITE}/fichas/vit.pdf")  # abre la ficha del producto en PDF
+    qr.make(fit=True)
+    qimg = qr.make_image(fill_color=V_PLUM, back_color=WHITE).convert("RGB").resize((270, 270), Image.NEAREST)
+    qx, qy = CW - 60 - 270, CH - 60 - 270
+    im.paste(qimg, (qx, qy))
+    ty = qy + 6
+    d.text((x0, ty), "Ficha del producto", font=font("bold", 34), fill=V_PLUM)
+    for line in ["1. Escanea el código: se", "    abre la ficha en PDF.", "2. Toca «Ver en AR» y", "    apunta a la foto de la caja."]:
+        ty += 50
+        d.text((x0, ty), line, font=font("medium", 28), fill=INK_MUTED)
+    d.text((x0, CH - 44), "Producto real mostrado con permiso del laboratorio.", font=font("regular", 22), fill=INK_MUTED)
+    d.rectangle((0, CH - 14, CW, CH), fill=V_ROSE)
+    d.rectangle((CW * 0.7, CH - 14, CW, CH), fill=V_GOLD)
+    d.rectangle((0, 0, CW - 1, CH - 1), outline="#DCE5E7", width=3)
+    return im, panel
+
+
 def sheet(cards, path, title="Multi LAB · Tarjetas de realidad aumentada (prototipo académico)"):
     # A4 a 300 ppp con tres tarjetas por hoja y líneas de corte
     W, H = 2480, 3508
@@ -488,11 +584,16 @@ def main():
     c.save(os.path.join(OUT, "tarjetas", "def.png"), optimize=True)
     panel.save(os.path.join(OUT, "objetivos", "def.png"), optimize=True)
     cards.append(c)
+    # y la de VITYBELL al final (objetivo siguiente)
+    c, panel = card_vitybell()
+    c.save(os.path.join(OUT, "tarjetas", "vit.png"), optimize=True)
+    panel.save(os.path.join(OUT, "objetivos", "vit.png"), optimize=True)
+    cards.append(c)
     sheet(cards, os.path.join(OUT, "tarjetas-multilab.pdf"))
     # una hoja por producto: la app descarga solo la tarjeta del producto que se está viendo
-    for p, c in zip(products + [COR, PAN, TEA, DEF], cards):
+    for p, c in zip(products + [COR, PAN, TEA, DEF, VIT], cards):
         sheet([c], os.path.join(OUT, "tarjetas", f"{p['id']}.pdf"), f"Multi LAB · Tarjeta de realidad aumentada · {p['name']}")
-    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA, DEF]
+    data = [{k: p[k] for k in ("id", "name", "lab", "category")} for p in products] + [COR, PAN, TEA, DEF, VIT]
     with open(os.path.join(OUT, "productos.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     shutil.copyfile(os.path.join(ROOT, "assets", "logo-full.png"), os.path.join(OUT, "logo-full.png"))

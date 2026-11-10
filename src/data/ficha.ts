@@ -23,6 +23,10 @@ export function fichaPalette(p: Product): FichaPal {
     const T = packColors.tearsoft;
     return { main: T.navy, mainDeep: T.navyDeep, bg: T.navy, bgDeep: T.navyDeep, paper: T.paper, line: T.line, ink: T.ink, giant: T.navy, veil: T.veil, veilLine: T.veilLine };
   }
+  if (p.id === 'vit') {
+    const V = packColors.vitybell;
+    return { main: V.rose, mainDeep: V.roseDeep, bg: V.plum, bgDeep: V.plumDeep, paper: V.blush, line: V.line, ink: V.plum, giant: V.rose, veil: packColors.tearsoft.veil, veilLine: packColors.tearsoft.veilLine };
+  }
   if (p.id === 'def') {
     const D = packColors.deferol;
     return { main: D.deep, mainDeep: D.ink, bg: D.deep, bgDeep: D.ink, paper: D.aquaMist, line: D.line, ink: D.ink, giant: D.deep, veil: packColors.tearsoft.veil, veilLine: packColors.tearsoft.veilLine };

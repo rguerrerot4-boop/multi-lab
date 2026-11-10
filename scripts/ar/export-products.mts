@@ -1,12 +1,13 @@
 // Exporta los datos de los productos a JSON para los scripts de Python.
 // - scripts/ar/products.json: productos ficticios (modelos de AR y tarjetas impresas)
-// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS, PANCREOGEN, TEARSOFT y DEFEROL)
+// - scripts/fichas/products.json: todos, con los textos de la ficha en PDF (incluye CORAESSENS, PANCREOGEN, TEARSOFT, DEFEROL y VITYBELL)
 // Uso: node --experimental-strip-types scripts/ar/export-products.mts
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { CORAESSENS_INFO, vitrinaCards } from '../../src/data/coraessens-info.ts';
 import { labs, products } from '../../src/data/mock.ts';
 import { PANCREOGEN_INFO, panCards } from '../../src/data/pancreogen-info.ts';
 import { DEFEROL_INFO, defCards } from '../../src/data/deferol-info.ts';
+import { VITYBELL_INFO, vitCards } from '../../src/data/vitybell-info.ts';
 import { TEARSOFT_INFO, teaCards } from '../../src/data/tearsoft-info.ts';
 
 // los productos reales (con fotos) tienen su propio modelo: scripts/coraessens/modelo.py y scripts/pancreogen/modelo.py
@@ -39,6 +40,9 @@ const fichas = products.map((p) => ({
     : {}),
   ...(p.id === 'def'
     ? { info: { ...DEFEROL_INFO.names.real, formula: `Vitamina D3 7000 U.I. · cápsula blanda de gelatina`, badges: ['Vitamina D3', '1 cápsula blanda'], sample: 'Muestra médica · prohibida su venta', tables: ['composicion', 'indicacion'], cards: defCards() } }
+    : {}),
+  ...(p.id === 'vit'
+    ? { info: { ...VITYBELL_INFO.names.real, formula: VITYBELL_INFO.tagline.replace(':', '') + ' Biotina + Ácido Pantoténico + Nicotinamida + Zinc + Cobre + Selenio + Riboflavina + Piridoxina', badges: ['Suplemento alimenticio', '5 cápsulas blandas'], sample: 'Muestra gratuita', tables: ['composicion', 'indicacion'], cards: vitCards() } }
     : {}),
 }));
 mkdirSync(new URL('../fichas/', import.meta.url), { recursive: true });

@@ -47,6 +47,8 @@ for name, folder in (("R", "400Regular"), ("M", "500Medium"), ("S", "600SemiBold
 def palette(p):
     if p["id"] == "pan":  # teal de la etiqueta de PANCREOGEN
         return dict(main="#1F6B6E", mainDeep="#0E3A3C", bg="#0E3A3C", bgDeep="#061718", paper="#EEF3F3", line="#CFDCDC", ink="#0B2526", giant="#8FD3CC", muted="#4F6467")
+    if p["id"] == "vit":  # rosado, rojo y ciruela de la caja de VITYBELL (el rosado solo como fondo)
+        return dict(main="#C2223F", mainDeep="#8E1430", bg="#3A2440", bgDeep="#24152A", paper="#F7ECF5", line="#E8D3E5", ink="#3A2440", giant="#C2223F", muted="#6B5670")
     if p["id"] == "def":  # turquesa de la caja de DEFEROL (el turquesa claro solo como fondo y decoración)
         return dict(main="#0E6A66", mainDeep="#0B3332", bg="#0E6A66", bgDeep="#0B3332", paper="#EEFAF9", line="#C5E9E5", ink="#0B3332", giant="#66D9CF", muted="#43605E")
     if p["id"] == "tea":  # azul marino de la caja de TEARSOFT (el celeste solo como fondo)
@@ -128,6 +130,10 @@ def render_box(faces, w, h, d, size=900, yaw=-0.62, tilt=0.36):
 
 
 def faces_for(p):
+    if p["id"] == "vit":  # fotos rectificadas de la caja (scripts/vitybell/texturas.py)
+        tex = os.path.join(ROOT, "assets", "vitybell")
+        names = {"front": "frente", "right": "derecha", "top": "arriba"}
+        return {f: Image.open(os.path.join(tex, f"{n}.jpg")) for f, n in names.items()}, (1.62, 1, 0.33)
     if p["id"] == "def":  # fotos rectificadas de la caja (scripts/deferol/texturas.py)
         tex = os.path.join(ROOT, "assets", "deferol")
         names = {"front": "frente", "right": "derecha", "top": "arriba"}
@@ -453,7 +459,8 @@ def page_detail(c, p, pal):
             c.setLineWidth(0.5)
             c.line(x, ty + 9, x + col_w, ty + 9)
         if tb.get("foot"):
-            para(c, x, ty - 2, tb["foot"], "Mont-M", 7.5, col_w, pal["muted"], 10)
+            # el pie también cuenta para el alto de la tabla (si no, lo de abajo se le encima)
+            ty = min(ty, para(c, x, ty - 2, tb["foot"], "Mont-M", 7.5, col_w, pal["muted"], 10) + 8)
         tb["_end"] = ty
     y = min(tb["_end"] for tb in tables) - 26
 

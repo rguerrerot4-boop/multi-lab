@@ -8,6 +8,7 @@ import { PANCREOGEN } from '@/data/pancreogen';
 import { arModelUrls } from '@/lib/ar';
 import { CORAESSENS } from '@/data/vitrina';
 import { DEFEROL } from '@/data/deferol';
+import { VITYBELL } from '@/data/vitybell';
 import { TEARSOFT } from '@/data/tearsoft';
 import { colors, font, packColors, radius, space } from '@/theme';
 
@@ -99,6 +100,32 @@ export function TearsoftBanner() {
   );
 }
 
+const V = packColors.vitybell;
+
+/** Acceso al catálogo de VITYBELL (rueda de componentes), con los colores de su caja */
+export function VitybellBanner() {
+  return (
+    <PressableScale onPress={() => router.push('/producto/vit')} accessibilityLabel="Abrir el catálogo de VITYBELL">
+      <View style={{ borderRadius: radius.xl, overflow: 'hidden', minHeight: 132 }}>
+        <LinearGradient colors={[V.pinkSoft, V.pink]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: space.lg, paddingRight: 128, gap: 4, minHeight: 132 }}>
+          <View style={{ alignSelf: 'flex-start', backgroundColor: V.rose, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 }}>
+            <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.white }}>NUEVO · RUEDA INTERACTIVA</Text>
+          </View>
+          <Text style={{ fontFamily: font.bold, fontSize: 22, color: V.rose, letterSpacing: -0.3 }}>VITYBELL®</Text>
+          <Text style={{ fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: V.plum }}>
+            Gira la rueda de sus 8 componentes, saca las cápsulas del blíster y mira la caja en 3D.
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Text style={{ fontFamily: font.bold, fontSize: 13, color: V.rose }}>Explorar</Text>
+            <Ionicons name="arrow-forward" size={16} color={V.rose} />
+          </View>
+        </LinearGradient>
+        <Image source={VITYBELL.thumb.real} style={{ position: 'absolute', right: 14, top: 30, width: 112, height: 112 / 1.62, borderRadius: 3, transform: [{ rotate: '8deg' }] }} accessibilityIgnoresInvertColors />
+      </View>
+    </PressableScale>
+  );
+}
+
 const D = packColors.deferol;
 
 /** Acceso al catálogo en mosaicos de DEFEROL, con los colores de su caja */
@@ -132,6 +159,9 @@ export function Destacados() {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={w + space.md} decelerationRate="fast" contentContainerStyle={{ gap: space.md, paddingRight: space.lg }} style={{ marginHorizontal: -space.lg }}>
       <View style={{ width: space.lg - space.md }} />
+      <View style={{ width: w }}>
+        <VitybellBanner />
+      </View>
       <View style={{ width: w }}>
         <DeferolBanner />
       </View>

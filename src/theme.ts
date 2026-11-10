@@ -131,4 +131,20 @@ export const packColors = {
     capsule: '#F2B33D', // cápsula blanda ilustrativa (solo decoración)
     tile: '#FFFFFF',
   },
+  // VITYBELL (Procaps): rosado lila de la caja, rojo del logotipo, magenta de la etiqueta y dorado de las líneas
+  vitybell: {
+    blush: '#F7ECF5', // fondo de la página
+    pink: '#E6D0E6', // rosado de la caja (solo fondos y decoración)
+    pinkSoft: '#F1E2EF',
+    rose: '#C2223F', // rojo del logotipo: títulos, cifras y acciones (AA sobre blanco y blush)
+    roseDeep: '#8E1430',
+    magenta: '#A82D6C', // etiqueta de contenido neto (texto: AA sobre blanco)
+    plum: '#3A2440', // texto y fondos oscuros
+    plumDeep: '#24152A',
+    muted: '#6B5670',
+    line: '#E8D3E5',
+    gold: '#D4A24C', // líneas doradas de la caja (solo decoración)
+    pearl: '#E9A8C8', // cápsula perlada ilustrativa (solo decoración)
+    strand: '#5E5A66', // trazo gris del logotipo (decoración)
+  },
 };

@@ -72,5 +72,13 @@
   "category": "Vitamina D3",
   "real": true,
   "escala": 0.65
+ },
+ {
+  "id": "vit",
+  "name": "VITYBELL",
+  "lab": "Procaps",
+  "category": "Suplemento alimenticio",
+  "real": true,
+  "escala": 0.65
  }
 ]

@@ -30,6 +30,10 @@ export interface BoxGLOptions {
   drops?: boolean;
   /** cápsulas blandas alrededor (en vez de gotas) */
   capsules?: boolean;
+  /** color de las cápsulas (por defecto, ámbar) */
+  capsuleColor?: number;
+  /** cuántas cápsulas */
+  capsuleCount?: number;
   /** giro libre en cualquier dirección (como tomar la caja con la mano); sin esto, con el dedo solo gira de lado */
   free?: boolean;
   reduce?: boolean;
@@ -168,9 +172,9 @@ export function createBoxGL(canvas: HTMLCanvasElement, opts: BoxGLOptions): BoxG
     // cápsula blanda: esfera estirada (la escala de cada una la estira en x)
     const dg = opts.capsules ? new THREE.SphereGeometry(0.5, 32, 20) : dropGeometry();
     const dm = opts.capsules
-      ? new THREE.MeshPhysicalMaterial({ color: CAPSULE, roughness: 0.12, metalness: 0, transparent: true, opacity: 0.9, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.3 })
+      ? new THREE.MeshPhysicalMaterial({ color: opts.capsuleColor ?? CAPSULE, roughness: 0.16, metalness: 0, transparent: true, opacity: 0.92, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.3, sheen: 1, sheenColor: new THREE.Color(0xffffff), sheenRoughness: 0.4 })
       : new THREE.MeshPhysicalMaterial({ color: DROP, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.82, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.4 });
-    const n = opts.capsules ? 7 : 9;
+    const n = opts.capsules ? (opts.capsuleCount ?? 7) : 9;
     for (let i = 0; i < n; i++) {
       const m = new THREE.Mesh(dg, dm);
       scene.add(m);
