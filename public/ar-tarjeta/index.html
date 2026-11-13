@@ -202,9 +202,13 @@
           } else base.add(sombra, gltf.scene);
           const g = new THREE.Group();
           g.visible = false;
-          g.add(base);
+          // `ajuste` achica el producto solo cuando el teléfono está tan cerca que la punta casi toca la cámara (ver seguir)
+          const ajuste = new THREE.Group();
+          ajuste.add(base);
+          g.add(ajuste);
           mindar.scene.add(g);
-          seguidores.push({ anchor, g, listo: false, visto: 0 });
+          const seguidor = { anchor, g, ajuste, altura: 1, k: 1, sinAjuste: p.id === 'cor', listo: false, visto: 0 };
+          seguidores.push(seguidor);
           const m = { base, modelo: gltf.scene, escala: escala(p), anchor, sombra: limpio ? null : sombra, caja: animado ? caja : null };
           if (animado) {
             m.mixer = new THREE.AnimationMixer(gltf.scene);
@@ -225,7 +229,13 @@
               }));
             }
           }
+          // altura del producto (sin las cápsulas o gotas que vuelan), en anchos de tarjeta, ya de frente y en reposo
+          if (m.mixer) m.mixer.setTime(m.frente);
+          gltf.scene.updateMatrixWorld(true);
+          seguidor.altura = Math.max(0.2, new THREE.Box3().setFromObject(caja ?? gltf.scene).max.y * m.escala);
+          if (m.mixer) m.mixer.setTime(reduce ? m.frente : 0);
           listos.push(m);
+          if (prueba) (prueba.altura ??= {})[p.id] = seguidor.altura;
           return m;
         });
         modelos.set(i, promesa);
@@ -299,6 +309,8 @@
               f.vR = new THREE.Vector3(); f.vP = new THREE.Vector3(); f.uR = new THREE.Vector3(); f.uP = new THREE.Vector3();
               f.prevQ = new THREE.Quaternion(); f.prevP = new THREE.Vector3();
               f.vFg = 0; f.vFp = 0; f.saltos = 0; f.quieto = false;
+              f.inicio = t;
+              f.k = -1; // el tamaño se fija directo en este cuadro
             } else if (dt > 0) {
               const F = f.F;
               const z = Math.max(1e-6, Math.abs(F.p.z));
@@ -312,11 +324,12 @@
               rotVec(F.q, pos.q, tmp.r); // radianes
               tmp.d.set((pos.p.x - F.p.x) / z, (pos.p.y - F.p.y) / z, (0.3 * (pos.p.z - F.p.z)) / z); // fracción de la vista
               // un salto brusco de un solo cuadro (error de detección, típico de cerca) no cuenta hasta que se repita
-              const salto = tmp.r.length() > 0.35 || Math.hypot(tmp.d.x, tmp.d.y) > 0.12 || Math.abs(tmp.d.z) > 0.075;
+              const salto = tmp.r.length() > 0.3 - 0.12 * cerca || Math.hypot(tmp.d.x, tmp.d.y) > 0.12 - 0.05 * cerca || Math.abs(tmp.d.z) > 0.075;
               f.saltos = salto ? f.saltos + 1 : 0;
               f.prevQ.copy(F.q);
               f.prevP.copy(F.p);
-              if (!salto || f.saltos >= 4) {
+              // de cerca la detección a veces se va a una pose absurda por un rato: hay que esperar más para creerle
+              if (!salto || f.saltos >= 4 + Math.round(12 * cerca)) {
                 const aV = pasoBajo(1.2, dt);
                 f.vR.lerp(tmp.r.divideScalar(dt), aV);
                 f.vP.lerp(tmp.d.divideScalar(dt), aV);
@@ -337,28 +350,55 @@
               // 2) Lo que se ve (g) se queda totalmente QUIETO mientras el filtro se mueva dentro de un margen pequeño
               //    (temblor que queda); cuando se sale del margen (movimiento real) lo alcanza con suavidad y se vuelve
               //    a quedar quieto. Así el producto no vibra aunque la detección tiemble, a cualquier distancia.
+              // 2) Lo que se ve (g) se queda totalmente QUIETO mientras el filtro se mueva dentro de un margen pequeño
+              //    (temblor que queda); cuando se sale del margen (movimiento real) lo alcanza con suavidad y se vuelve
+              //    a quedar quieto. Así el producto no vibra aunque la detección tiemble, a cualquier distancia.
               const dGiro = angulo(g.quaternion, F.q) * 57.3;
               const dLat = Math.hypot(F.p.x - g.position.x, F.p.y - g.position.y) / z;
               const dFondo = Math.abs(F.p.z - g.position.z) / z;
-              if (f.quieto) {
-                if (dGiro > 1.6 + 6 * c2 || dLat > 0.006 + 0.02 * c2 || dFondo > 0.025 + 0.05 * c2) f.quieto = false;
+              // Un cambio de giro solo cuenta si de verdad cambia cómo se ve la parte visible de la tarjeta en la
+              // pantalla. Si no, es un error de la detección (la ambigüedad típica de los objetivos planos, peor de
+              // cerca), que hacía que el producto «se inclinara» de golpe: se ignora.
+              const giroVisible = desplazamiento(g.position, g.quaternion, g.scale, g.position, F.q, g.scale, z);
+              // con giroscopio: el giro solo se acompaña si el teléfono de verdad está girando (o si el cambio es enorme)
+              const telQuieto = tel.hay && t - tel.visto < 500 && tel.giro < 5;
+              const giroReal = dGiro > 25 || (!telQuieto && giroVisible > 0.004 + 0.012 * c2) || (telQuieto && dGiro > 12 && giroVisible > 0.02);
+              // los primeros instantes después de reconocer la tarjeta la detección todavía se está asentando (puede
+              // corregir varios grados): mientras dura la entrada del producto se la sigue con suavidad y sin quedarse
+              // quieto, así esa corrección no se nota después
+              const asentando = t - f.inicio < 1600;
+              if (asentando) f.quieto = false;
+              else if (f.quieto) {
+                if (dLat > 0.006 + 0.03 * c2 || dFondo > 0.025 + 0.13 * c2 || (giroReal && dGiro > 1.6 + 6 * c2)) f.quieto = false;
               }
               if (!f.quieto) {
                 const a = pasoBajo(2.2, dt);
                 g.position.lerp(F.p, a);
                 g.scale.lerp(F.s, a);
-                g.quaternion.slerp(F.q, a);
-                const lento = f.vFg < 1.5 + 4 * c2 && f.vFp < 0.004 + 0.01 * c2;
-                if (lento && dGiro < 0.3 + 0.7 * cerca && dLat < 0.001 + 0.002 * cerca && dFondo < 0.004 + 0.006 * cerca) f.quieto = true;
+                if (asentando || giroReal || dGiro < 1) g.quaternion.slerp(F.q, a);
+                if (prueba) f.dbg = { tq: telQuieto, gr: giroReal, as: asentando, dg: dGiro, gv: giroVisible };
+                const lento = f.vFp < 0.004 + 0.01 * c2 && (f.vFg < 1.5 + 4 * c2 || !giroReal);
+                const cercaDeF = dLat < 0.001 + 0.004 * cerca && dFondo < 0.004 + 0.02 * cerca && (dGiro < 0.3 + 0.7 * cerca || !giroReal);
+                if (!asentando && lento && cercaDeF) f.quieto = true;
               }
             }
+            // Si el teléfono se acerca tanto que la punta del producto quedaría casi pegada a la cámara, cualquier
+            // mínimo error de la detección se ve enorme (el producto «se inclina» y tiembla). Entonces el producto se
+            // achica lo justo para que su punta quede a la mitad de la distancia. Se calcula con la pose que se
+            // muestra (quieta), así que no agrega movimiento.
+            const dist = g.position.length() / Math.max(1e-6, g.scale.x); // en anchos de tarjeta
+            // (CORAESSENS se ve bien de cerca tal cual: no se achica)
+            const kObj = f.sinAjuste ? 1 : Math.min(1, (0.55 * dist) / f.altura);
+            if (f.k < 0) f.k = kObj;
+            else if (!f.quieto) f.k += (kObj - f.k) * pasoBajo(1.5, Math.max(dt, 1e-3));
+            f.ajuste.scale.setScalar(f.k);
             f.visto = t;
             g.visible = true;
           } else if (f.listo && t - f.visto > 350) {
             g.visible = false;
             f.listo = false;
           }
-          if (prueba && g.visible) prueba.poses.push({ t, quieto: f.quieto, vFg: f.vFg, vFp: f.vFp, crudo: anchor.visible ? [...anchor.group.matrix.elements] : null, suave: [...g.matrixWorld.elements] });
+          if (prueba && g.visible) prueba.poses.push({ t, dbg: f.dbg, quieto: f.quieto, vFg: f.vFg, vFp: f.vFp, crudo: anchor.visible ? [...anchor.group.matrix.elements] : null, suave: [...g.matrixWorld.elements] });
         }
       }
       const tmp = { r: null, d: null, q: null };
@@ -370,12 +410,54 @@
         const k = sn > 1e-9 ? (2 * Math.atan2(sn, tmp.q.w)) / sn : 2;
         return out.set(tmp.q.x * k, tmp.q.y * k, tmp.q.z * k);
       }
+      const tmpA = { v: null, w: null };
+      /**
+       * mayor desplazamiento en pantalla (fracción del ancho o alto) de puntos del plano de la tarjeta entre dos poses.
+       * Los puntos se toman dentro de lo que la cámara alcanza a ver a esa distancia (z), así sirve también de muy cerca.
+       */
+      function desplazamiento(p1, q1, s1, p2, q2, s2, z) {
+        if (!tmpA.v) { tmpA.v = new THREE.Vector3(); tmpA.w = new THREE.Vector3(); }
+        const cam = mindar.camera;
+        const medioAlto = (z * Math.tan((cam.fov * Math.PI) / 360)) / Math.max(1e-6, s1.x); // en anchos de tarjeta
+        const kx = 0.6 * Math.min(medioAlto * cam.aspect, 0.5);
+        const ky = 0.6 * Math.min(medioAlto, 0.72);
+        let max = 0;
+        for (const [x, y] of [[0, 0], [-kx, -ky], [kx, -ky], [-kx, ky], [kx, ky]]) {
+          tmpA.v.set(x, y, 0).multiply(s1).applyQuaternion(q1).add(p1).project(cam);
+          tmpA.w.set(x, y, 0).multiply(s2).applyQuaternion(q2).add(p2).project(cam);
+          max = Math.max(max, Math.abs(tmpA.v.x - tmpA.w.x) / 2, Math.abs(tmpA.v.y - tmpA.w.y) / 2);
+        }
+        return max;
+      }
       /** paso de un filtro pasabajos de corte fc (Hz) para un cuadro de dt segundos */
       function pasoBajo(fc, dt) {
         return 1 / (1 + 1 / (2 * Math.PI * fc * dt));
       }
 
+      // Giroscopio del teléfono: si el teléfono no está girando, el giro del producto no cambia aunque la detección
+      // de la cámara se desvíe unos grados (lo que pasa de cerca o mientras se asienta). Sin giroscopio (o sin permiso)
+      // todo funciona igual, solo con la cámara.
+      const tel = { hay: false, giro: 0, visto: 0 };
+      function escucharGiroscopio() {
+        if (tel.escuchando) return;
+        tel.escuchando = true;
+        addEventListener('devicemotion', (e) => {
+          const r = e.rotationRate;
+          if (!r || r.alpha == null) return;
+          const ahora = performance.now();
+          const v = Math.hypot(r.alpha || 0, r.beta || 0, r.gamma || 0); // °/s
+          const a = Math.min(1, (ahora - (tel.visto || ahora - 16)) / 120); // promedio de ~0,1 s
+          tel.giro += (v - tel.giro) * a;
+          tel.visto = ahora;
+          tel.hay = true;
+        });
+      }
       async function iniciar() {
+        // iPhone pide permiso para el giroscopio, y solo dentro del toque del botón
+        escucharGiroscopio(); // si no hay giroscopio o no dan permiso, simplemente no llegan datos
+        try {
+          if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') await DeviceMotionEvent.requestPermission();
+        } catch { /* sin permiso: solo cámara */ }
         $('abrir').disabled = true;
         $('abrir').textContent = 'Abriendo cámara…';
         try {
@@ -391,10 +473,15 @@
           });
           const { renderer, scene, camera } = mindar;
           renderer.outputColorSpace = THREE.SRGBColorSpace;
-          scene.add(new THREE.HemisphereLight(0xffffff, 0x445a60, 2.2));
-          const sol = new THREE.DirectionalLight(0xffffff, 1.6);
+          // luz de arriba, un relleno suave desde abajo y una luz desde la cámara: la cara del producto que mira al
+          // teléfono (la del nombre) se ve clara aunque la tarjeta esté acostada
+          scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9ea3, 2.0));
+          const sol = new THREE.DirectionalLight(0xffffff, 1.4);
           sol.position.set(0.5, 1, 2);
           scene.add(sol);
+          const frente = new THREE.DirectionalLight(0xffffff, 0.9);
+          frente.position.set(0, -0.3, 1);
+          scene.add(frente);
 
           productos.forEach((p, i) => {
             const anchor = mindar.addAnchor(i);
