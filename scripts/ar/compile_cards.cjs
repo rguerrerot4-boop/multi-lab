@@ -10,8 +10,10 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CARDS = path.join(ROOT, 'public', 'ar-tarjeta', 'objetivos');
-const OUT = path.join(ROOT, 'public', 'ar-tarjeta', 'tarjetas.mind');
+const CARDS = process.env.OBJETIVOS ? path.resolve(process.env.OBJETIVOS) : path.join(ROOT, 'public', 'ar-tarjeta', 'objetivos');
+const OUT = process.env.SALIDA ? path.resolve(process.env.SALIDA) : path.join(ROOT, 'public', 'ar-tarjeta', 'tarjetas.mind');
+// ancho máximo de cada imagen al compilar (más ancho = más detalle para cuando la cámara está cerca)
+const ANCHO = Number(process.env.ANCHO || 900);
 const DIST = path.resolve(process.argv[2] || 'package/dist');
 // mismo orden que los productos: el índice del objetivo es la posición en esta lista
 const IDS = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'ar-tarjeta', 'productos.json'), 'utf8')).map((p) => p.id);
@@ -36,14 +38,14 @@ const server = http.createServer((req, res) => {
   page.on('crash', () => console.log('  la pestaña se cerró (memoria)'));
   page.on('console', (m) => { if (m.type() === 'error') console.log('  consola:', m.text().slice(0, 120)); });
   await page.goto('http://localhost:8123/');
-  const b64 = await page.evaluate(async (ids) => {
+  const b64 = await page.evaluate(async ([ids, ANCHO]) => {
     const { Compiler } = await import('/mindar/mindar-image.prod.js');
     const images = await Promise.all(ids.map((id) => new Promise((ok, fail) => {
       const img = new Image();
       // como máximo 900 px de ancho: el archivo pesa menos y la cámara lo reconoce igual
       img.onload = () => {
         const c = document.createElement('canvas');
-        c.width = Math.min(img.width, 900);
+        c.width = Math.min(img.width, ANCHO);
         c.height = Math.round((img.height * c.width) / img.width);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
         ok(c);
@@ -57,7 +59,7 @@ const server = http.createServer((req, res) => {
     let s = '';
     for (let i = 0; i < data.length; i += 0x8000) s += String.fromCharCode(...data.subarray(i, i + 0x8000));
     return btoa(s);
-  }, IDS);
+  }, [IDS, ANCHO]);
   fs.writeFileSync(OUT, Buffer.from(b64, 'base64'));
   console.log(`${IDS.length} objetivos compilados en ${path.relative(ROOT, OUT)} (${IDS.join(', ')})`);
   await browser.close();

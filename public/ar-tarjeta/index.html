@@ -94,7 +94,7 @@
         <span class="chip" id="chip">Productos reales · con permiso del laboratorio</span>
         <div class="steps">
           <div class="step"><span class="num">1</span><div><b>Abre la cámara</b><span>El navegador te pedirá permiso para usarla.</span></div></div>
-          <div class="step"><span class="num">2</span><div><b>Apunta al panel de la izquierda</b><span>Encuadra el panel de color de la tarjeta, con buena luz y sin reflejos.</span></div></div>
+          <div class="step"><span class="num">2</span><div><b>Apunta al frente de la tarjeta</b><span>El lado con el producto, con buena luz y sin reflejos. Puedes acercarte o alejarte: el producto se queda quieto.</span></div></div>
           <div class="step"><span class="num">3</span><div><b>Mueve la tarjeta</b><span>El producto se queda sobre ella: gírala o acércala para verlo.</span></div></div>
         </div>
         <p class="notice" id="aviso"></p>
@@ -112,7 +112,7 @@
         <p>Realidad aumentada</p>
       </div>
       <div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <div class="bottom"><button class="girar" id="girar" type="button" aria-pressed="false">Girar producto</button><div class="pill" id="estado">Apunta al panel de la izquierda de la tarjeta</div></div>
+      <div class="bottom"><button class="girar" id="girar" type="button" aria-pressed="false">Girar producto</button><div class="pill" id="estado">Apunta al frente de la tarjeta</div></div>
     </div>
 
     <script type="module">
@@ -123,7 +123,11 @@
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const PANEL_M = 0.0508; // ancho real del panel de cápsulas que reconoce la cámara: 50,8 mm (los modelos están en metros)
       // producto al 60 % de su tamaño para que se vea completo sobre la tarjeta (cada producto puede traer su propia escala)
-      const escala = (p) => (p.escala ?? 0.6) / PANEL_M;
+      // los objetivos son el frente completo de las tarjetas impresas de 9,4 × 13,5 cm (scripts/ar/impresas): más detalle
+      // para la cámara que solo el panel. El panel ocupa el 91 % del ancho del frente, así que el tamaño se ajusta por
+      // ese factor y el producto se ve igual que antes sobre la tarjeta.
+      const PANEL_EN_FRENTE = 0.91;
+      const escala = (p) => ((p.escala ?? 0.6) / PANEL_M) * PANEL_EN_FRENTE;
       const labDe = (p) => (p.real ? `${p.lab} · producto real con permiso` : `${p.lab} (ficticio) · producto ficticio`);
 
       const productos = await fetch('productos.json').then((r) => r.json());
@@ -136,7 +140,7 @@
         $('ficha').href = `../fichas/${pedido.id}.pdf`;
         $('ficha').style.display = '';
       }
-      const buscar = pedido ? `Apunta a la tarjeta de ${pedido.name}` : 'Apunta al panel de la izquierda de la tarjeta';
+      const buscar = pedido ? `Apunta a la tarjeta de ${pedido.name}` : 'Apunta al frente de la tarjeta';
       $('estado').textContent = buscar;
       if (pedido?.real) $('chip').textContent = 'Producto real · con permiso del laboratorio';
 
@@ -281,7 +285,7 @@
         return 2 * Math.atan2(Math.hypot(dif.x, dif.y, dif.z), Math.abs(dif.w));
       }
       function seguir(t, dt) {
-        if (!pos.p) { pos.p = new THREE.Vector3(); pos.q = new THREE.Quaternion(); pos.s = new THREE.Vector3(); }
+        if (!pos.p) { pos.p = new THREE.Vector3(); pos.q = new THREE.Quaternion(); pos.s = new THREE.Vector3(); tmp.r = new THREE.Vector3(); tmp.d = new THREE.Vector3(); }
         for (const f of seguidores) {
           const { anchor, g } = f;
           if (anchor.visible) {
@@ -289,35 +293,63 @@
             pos.q.normalize();
             if (!f.listo) {
               // primera vez (o después de perder la tarjeta): aparece directo en su sitio
+              f.F = { p: pos.p.clone(), q: pos.q.clone(), s: pos.s.clone() };
               g.position.copy(pos.p); g.quaternion.copy(pos.q); g.scale.copy(pos.s);
               f.listo = true;
-              f.vGiro = 0; f.vPos = 0; f.saltos = 0;
-            } else {
-              // Filtro «One Euro» propio, para el giro y para la posición: la velocidad se estima suavizada, así el
-              // temblor (que va y viene) casi no la sube y el producto queda quieto; un movimiento real de la mano
-              // la sube de forma sostenida y el producto lo sigue sin retraso.
-              const z = Math.max(1e-6, Math.abs(g.position.z));
-              const giro = angulo(g.quaternion, pos.q); // radianes
-              const lateral = Math.hypot(pos.p.x - g.position.x, pos.p.y - g.position.y) / z; // fracción de la vista
-              const fondo = Math.abs(pos.p.z - g.position.z) / z;
+              f.vR = new THREE.Vector3(); f.vP = new THREE.Vector3(); f.uR = new THREE.Vector3(); f.uP = new THREE.Vector3();
+              f.prevQ = new THREE.Quaternion(); f.prevP = new THREE.Vector3();
+              f.vFg = 0; f.vFp = 0; f.saltos = 0; f.quieto = false;
+            } else if (dt > 0) {
+              const F = f.F;
+              const z = Math.max(1e-6, Math.abs(F.p.z));
+              // de cerca (la tarjeta llena la vista) la detección es menos precisa: todo se suaviza más.
+              // z / ancho de la tarjeta: ~2 a unos 20 cm del teléfono, ~1 a unos 10 cm (solo se ve el centro)
+              const cerca = Math.min(1, Math.max(0, (2.0 - z / Math.max(1e-6, F.s.x)) / 0.9));
+              const c2 = cerca * cerca;
+              // 1) Filtro «One Euro» (F). La velocidad se estima CON SIGNO y suavizada: el temblor va y viene, así que su
+              //    promedio es casi cero y el filtro queda muy suave; un movimiento real de la mano tiene dirección
+              //    sostenida, sube la velocidad y el filtro lo deja pasar sin retraso.
+              rotVec(F.q, pos.q, tmp.r); // radianes
+              tmp.d.set((pos.p.x - F.p.x) / z, (pos.p.y - F.p.y) / z, (0.3 * (pos.p.z - F.p.z)) / z); // fracción de la vista
               // un salto brusco de un solo cuadro (error de detección, típico de cerca) no cuenta hasta que se repita
-              const salto = giro > 0.35 || lateral > 0.12 || fondo > 0.25;
-              f.saltos = salto ? (f.saltos ?? 0) + 1 : 0;
-              if (salto && f.saltos < 4) {
-                // se queda donde está
-              } else if (dt > 0) {
-                const bajo = (fc) => 1 / (1 + 1 / (2 * Math.PI * fc * dt)); // paso de un filtro pasabajos de corte fc (Hz)
-                const aV = bajo(1.2);
-                f.vGiro = (f.vGiro ?? 0) + aV * ((giro * 57.3) / dt - (f.vGiro ?? 0)); // °/s suavizados
-                f.vPos = (f.vPos ?? 0) + aV * ((lateral + 0.3 * fondo) / dt - (f.vPos ?? 0)); // vista/s suavizada
-                // de cerca (la tarjeta llena la vista) la detección es menos precisa: se suaviza más
-                const cerca = Math.min(1, Math.max(0, (2.2 - z / Math.max(1e-6, g.scale.x)) / 1.2));
-                const calma = 1 - 0.55 * cerca;
-                const aR = bajo(calma * Math.min(6, 0.15 + 0.03 * f.vGiro));
-                const aP = bajo(calma * Math.min(10, 0.3 + 30 * f.vPos));
-                g.position.lerp(pos.p, aP);
-                g.scale.lerp(pos.s, aP);
-                g.quaternion.slerp(pos.q, aR);
+              const salto = tmp.r.length() > 0.35 || Math.hypot(tmp.d.x, tmp.d.y) > 0.12 || Math.abs(tmp.d.z) > 0.075;
+              f.saltos = salto ? f.saltos + 1 : 0;
+              f.prevQ.copy(F.q);
+              f.prevP.copy(F.p);
+              if (!salto || f.saltos >= 4) {
+                const aV = pasoBajo(1.2, dt);
+                f.vR.lerp(tmp.r.divideScalar(dt), aV);
+                f.vP.lerp(tmp.d.divideScalar(dt), aV);
+                const calma = 1 - 0.7 * cerca;
+                const aP = pasoBajo(calma * Math.min(8, 0.3 + 25 * f.vP.length()), dt);
+                F.p.lerp(pos.p, aP);
+                F.s.lerp(pos.s, aP);
+                F.q.slerp(pos.q, pasoBajo(calma * Math.min(6, 0.15 + 0.03 * f.vR.length() * 57.3), dt));
+              }
+              // velocidad del propio filtro (ya sin temblor), también con signo: dice si la tarjeta de verdad está quieta
+              const aF = pasoBajo(1.5, dt);
+              rotVec(f.prevQ, F.q, tmp.r);
+              f.uR.lerp(tmp.r.divideScalar(dt), aF);
+              tmp.d.set((F.p.x - f.prevP.x) / z, (F.p.y - f.prevP.y) / z, (0.3 * (F.p.z - f.prevP.z)) / z);
+              f.uP.lerp(tmp.d.divideScalar(dt), aF);
+              f.vFg = f.uR.length() * 57.3;
+              f.vFp = f.uP.length();
+              // 2) Lo que se ve (g) se queda totalmente QUIETO mientras el filtro se mueva dentro de un margen pequeño
+              //    (temblor que queda); cuando se sale del margen (movimiento real) lo alcanza con suavidad y se vuelve
+              //    a quedar quieto. Así el producto no vibra aunque la detección tiemble, a cualquier distancia.
+              const dGiro = angulo(g.quaternion, F.q) * 57.3;
+              const dLat = Math.hypot(F.p.x - g.position.x, F.p.y - g.position.y) / z;
+              const dFondo = Math.abs(F.p.z - g.position.z) / z;
+              if (f.quieto) {
+                if (dGiro > 1.6 + 6 * c2 || dLat > 0.006 + 0.02 * c2 || dFondo > 0.025 + 0.05 * c2) f.quieto = false;
+              }
+              if (!f.quieto) {
+                const a = pasoBajo(2.2, dt);
+                g.position.lerp(F.p, a);
+                g.scale.lerp(F.s, a);
+                g.quaternion.slerp(F.q, a);
+                const lento = f.vFg < 1.5 + 4 * c2 && f.vFp < 0.004 + 0.01 * c2;
+                if (lento && dGiro < 0.3 + 0.7 * cerca && dLat < 0.001 + 0.002 * cerca && dFondo < 0.004 + 0.006 * cerca) f.quieto = true;
               }
             }
             f.visto = t;
@@ -326,8 +358,21 @@
             g.visible = false;
             f.listo = false;
           }
-          if (prueba && g.visible) prueba.poses.push({ t, dt, vGiro: f.vGiro, vPos: f.vPos, crudo: anchor.visible ? [...anchor.group.matrix.elements] : null, suave: [...g.matrixWorld.elements] });
+          if (prueba && g.visible) prueba.poses.push({ t, quieto: f.quieto, vFg: f.vFg, vFp: f.vFp, crudo: anchor.visible ? [...anchor.group.matrix.elements] : null, suave: [...g.matrixWorld.elements] });
         }
+      }
+      const tmp = { r: null, d: null, q: null };
+      /** giro que lleva de a a b, como vector (eje × ángulo en radianes) */
+      function rotVec(a, b, out) {
+        tmp.q = (tmp.q ?? new THREE.Quaternion()).copy(a).invert().multiply(b);
+        if (tmp.q.w < 0) tmp.q.set(-tmp.q.x, -tmp.q.y, -tmp.q.z, -tmp.q.w);
+        const sn = Math.hypot(tmp.q.x, tmp.q.y, tmp.q.z);
+        const k = sn > 1e-9 ? (2 * Math.atan2(sn, tmp.q.w)) / sn : 2;
+        return out.set(tmp.q.x * k, tmp.q.y * k, tmp.q.z * k);
+      }
+      /** paso de un filtro pasabajos de corte fc (Hz) para un cuadro de dt segundos */
+      function pasoBajo(fc, dt) {
+        return 1 / (1 + 1 / (2 * Math.PI * fc * dt));
       }
 
       async function iniciar() {
