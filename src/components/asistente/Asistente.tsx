@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Personaje, type Pose } from '@/components/asistente/Personaje';
@@ -66,6 +66,55 @@ function useCara(hablando: boolean) {
   return { blink, open };
 }
 
+/**
+ * El personaje con su parpadeo y su boca. Va en su propio componente para que el parpadeo y la boca (que cambian
+ * varias veces por segundo mientras habla) no vuelvan a dibujar todo el panel con la conversación: eso trababa la app.
+ */
+const CaraAnimada = memo(function CaraAnimada({ size, hablando, pose }: { size: number; hablando: boolean; pose: Pose }) {
+  const cara = useCara(hablando);
+  return <Personaje size={size} {...pose} blink={cara.blink} open={cara.open} />;
+});
+
+/** La conversación, dibujada solo cuando cambian los mensajes */
+const Conversacion = memo(function Conversacion({ msgs, oyendo, parcial, ir }: { msgs: Msg[]; oyendo: boolean; parcial: string; ir: (href: string) => void }) {
+  return (
+    <>
+      {msgs.map((m) =>
+        m.from === 'yo' ? (
+          <View key={m.id} style={{ alignSelf: 'flex-end', maxWidth: '86%', backgroundColor: colors.primary, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 }}>
+            <Text style={[type.body, { color: colors.white }]}>{m.text}</Text>
+          </View>
+        ) : (
+          <View key={m.id} style={{ alignSelf: 'flex-start', maxWidth: '92%', gap: 6 }}>
+            <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 }}>
+              <Text style={type.body}>{m.text}</Text>
+            </View>
+            {m.r?.href ? (
+              <Pressable
+                onPress={() => ir(m.r!.href!)}
+                accessibilityRole="link"
+                style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7 }}
+              >
+                <Text style={[type.label, { color: colors.primary }]}>{m.r.hrefLabel ?? 'Abrir'}</Text>
+                <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+              </Pressable>
+            ) : null}
+          </View>
+        ),
+      )}
+      {oyendo ? (
+        <View style={{ alignSelf: 'flex-end', maxWidth: '86%', backgroundColor: colors.primarySoft, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <Ionicons name="mic" size={16} color={colors.primary} />
+          <Text style={[type.body, { color: colors.primary, flexShrink: 1 }]}>{parcial || 'Hable ahora…'}</Text>
+        </View>
+      ) : null}
+    </>
+  );
+});
+
+const SIN_POSE: Pose = {};
+const OYENDO: Pose = { wave: true, happy: true };
+
 export function Asistente() {
   const insets = useSafeAreaInsets();
   const rm = useReduceMotion();
@@ -102,6 +151,7 @@ export function Asistente() {
   const sonidoRef = useRef(sonido);
   sonidoRef.current = sonido;
   const siempre = useRef<ReturnType<typeof escucharSiempre> | null>(null);
+  const cerrarRef = useRef(() => {});
   const una = useRef<Escucha | null>(null);
   const lista = useRef<ScrollView>(null);
 
@@ -180,9 +230,16 @@ export function Asistente() {
       (f) => alOir.current(f),
       (activo, error) => {
         setVozActiva(activo);
-        if (error === 'sin-permiso') {
+        if (error === 'sin-permiso' || error === 'sin-microfono' || error === 'falla') {
           setPorVoz(false);
-          setAviso('Permita el micrófono en el navegador para activar a Multi con la voz.');
+          guardarPref('voz', false);
+          setAviso(
+            error === 'sin-permiso'
+              ? 'Permita el micrófono en el navegador para activar a Multi con la voz.'
+              : error === 'sin-microfono'
+                ? 'No encontré un micrófono. Puede escribirme o tocar el micrófono.'
+                : 'La escucha por voz se cortó en este navegador. Puede volver a activarla o escribirme.',
+          );
         }
       },
     );
@@ -227,17 +284,18 @@ export function Asistente() {
     siempre.current?.pausa(false);
     setAbierto(false);
   };
+  cerrarRef.current = cerrar;
   const enviar = () => {
     const q = texto.trim();
     if (!q) return;
     setTexto('');
     preguntar(q);
   };
-  const ir = (href: string) => {
-    cerrar();
+  const ir = useCallback((href: string) => {
+    cerrarRef.current();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.push(href as any);
-  };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => lista.current?.scrollToEnd({ animated: true }), 60);
@@ -252,7 +310,6 @@ export function Asistente() {
   );
 
   // ---------- la burbuja se mueve de vez en cuando ----------
-  const cara = useCara(hablando);
   const [pose, setPose] = useState<Pose>({});
   const salto = useRef(new Animated.Value(0)).current;
   const paso = useRef(new Animated.Value(0)).current;
@@ -387,7 +444,7 @@ export function Asistente() {
           >
             <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: BUBBLE * 0.36, backgroundColor: colors.primarySoft }} />
             <View style={{ marginTop: 6 }}>
-              <Personaje size={50} {...pose} blink={cara.blink} open={cara.open} />
+              <CaraAnimada size={50} hablando={!abierto && hablando} pose={pose} />
             </View>
           </Pressable>
           {vozActiva ? (
@@ -421,7 +478,7 @@ export function Asistente() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.sm }}>
               <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: colors.primarySoft, borderWidth: 2, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 <View style={{ marginTop: 5 }}>
-                  <Personaje size={44} blink={cara.blink} open={cara.open} wave={oyendo} happy={oyendo} />
+                  <CaraAnimada size={44} hablando={hablando} pose={oyendo ? OYENDO : SIN_POSE} />
                 </View>
               </View>
               <View style={{ flex: 1 }}>
@@ -469,35 +526,7 @@ export function Asistente() {
 
             {/* conversación */}
             <ScrollView ref={lista} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: space.lg, paddingVertical: space.sm, gap: space.sm }} keyboardShouldPersistTaps="handled">
-              {msgs.map((m) =>
-                m.from === 'yo' ? (
-                  <View key={m.id} style={{ alignSelf: 'flex-end', maxWidth: '86%', backgroundColor: colors.primary, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 }}>
-                    <Text style={[type.body, { color: colors.white }]}>{m.text}</Text>
-                  </View>
-                ) : (
-                  <View key={m.id} style={{ alignSelf: 'flex-start', maxWidth: '92%', gap: 6 }}>
-                    <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 }}>
-                      <Text style={type.body}>{m.text}</Text>
-                    </View>
-                    {m.r?.href ? (
-                      <Pressable
-                        onPress={() => ir(m.r!.href!)}
-                        accessibilityRole="link"
-                        style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primarySoft, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7 }}
-                      >
-                        <Text style={[type.label, { color: colors.primary }]}>{m.r.hrefLabel ?? 'Abrir'}</Text>
-                        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ),
-              )}
-              {oyendo ? (
-                <View style={{ alignSelf: 'flex-end', maxWidth: '86%', backgroundColor: colors.primarySoft, borderRadius: radius.lg, borderBottomRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                  <Ionicons name="mic" size={16} color={colors.primary} />
-                  <Text style={[type.body, { color: colors.primary, flexShrink: 1 }]}>{parcial || 'Hable ahora…'}</Text>
-                </View>
-              ) : null}
+              <Conversacion msgs={msgs} oyendo={oyendo} parcial={parcial} ir={ir} />
             </ScrollView>
 
             {/* sugerencias */}

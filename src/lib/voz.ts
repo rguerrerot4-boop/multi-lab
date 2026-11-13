@@ -11,6 +11,7 @@ const W: any = web ? window : {};
 // ---------- hablar ----------
 let audio: HTMLAudioElement | null = null;
 let turno = 0;
+let seguro: ReturnType<typeof setTimeout> | null = null; // por si el navegador nunca avisa que terminó
 
 export const puedeHablar = web && (typeof W.Audio !== 'undefined' || 'speechSynthesis' in W);
 
@@ -47,9 +48,19 @@ export function hablar(text: string, alTerminar?: () => void) {
   const fin = () => {
     if (hecho) return;
     hecho = true;
+    if (seguro) clearTimeout(seguro);
+    seguro = null;
     alTerminar?.();
   };
   if (!web) return fin();
+  // Algunos navegadores (sobre todo en iPhone) a veces no avisan que el audio terminó o se quedan esperando la red:
+  // el asistente se quedaba «Hablando…» y sin escuchar. Pasado un tiempo razonable para el largo del texto, se da
+  // por terminado.
+  seguro = setTimeout(() => {
+    if (id !== turno) return;
+    callar();
+    fin();
+  }, 4000 + text.length * 95);
   const url = VOZ[claveVoz(text)];
   if (!url || typeof W.Audio === 'undefined') return sintetizar(text, id, fin);
   const a: HTMLAudioElement = new W.Audio(url);
@@ -61,6 +72,8 @@ export function hablar(text: string, alTerminar?: () => void) {
 
 export function callar() {
   turno++;
+  if (seguro) clearTimeout(seguro);
+  seguro = null;
   if (audio) {
     audio.onended = audio.onerror = null;
     audio.pause();
@@ -106,9 +119,19 @@ export function escucharUna(onParcial: (t: string) => void, onFin: (t: string, e
   let texto = '';
   let listo = false;
   let error: string | undefined;
+  // si el navegador nunca cierra la escucha, se cierra a los 12 s (antes el botón quedaba «escuchando» para siempre)
+  const limite = setTimeout(() => {
+    try {
+      r.abort();
+    } catch {
+      /* nada */
+    }
+    fin();
+  }, 12000);
   const fin = () => {
     if (listo) return;
     listo = true;
+    clearTimeout(limite);
     onFin(texto.trim(), error);
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,8 +177,23 @@ export function escucharSiempre(onFrase: (t: string) => void, onEstado: (activo:
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let r: any = null;
   let reintento: ReturnType<typeof setTimeout> | null = null;
+  // Si el navegador corta la escucha enseguida una y otra vez (sin micrófono, sin red, en segundo plano…), se espera
+  // cada vez más antes de reintentar y, tras varios intentos, se apaga: antes se reiniciaba sin parar y trababa la app.
+  let fallos = 0;
+  let inicio = 0;
+  const oculta = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  const alVolver = () => {
+    if (!oculta()) {
+      fallos = 0;
+      if (reintento) clearTimeout(reintento);
+      reintento = setTimeout(arrancar, 300);
+    } else parar();
+  };
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', alVolver);
   const arrancar = () => {
-    if (!vivo || pausado || r) return;
+    reintento = null;
+    if (!vivo || pausado || r || oculta()) return;
+    inicio = Date.now();
     r = new SR();
     r.lang = 'es-EC';
     r.interimResults = false;
@@ -166,30 +204,47 @@ export function escucharSiempre(onFrase: (t: string) => void, onEstado: (activo:
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     r.onerror = (e: any) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
         vivo = false;
-        onEstado(false, 'sin-permiso');
+        onEstado(false, e.error === 'audio-capture' ? 'sin-microfono' : 'sin-permiso');
       }
     };
     r.onend = () => {
       r = null;
-      if (vivo && !pausado) reintento = setTimeout(arrancar, 350); // el navegador corta la escucha cada cierto tiempo
+      if (!vivo || pausado) return;
+      // el navegador corta la escucha cada cierto tiempo: se reanuda; si se cortó enseguida, cuenta como fallo
+      fallos = Date.now() - inicio < 1500 ? fallos + 1 : 0;
+      if (fallos >= 8) {
+        vivo = false;
+        onEstado(false, 'falla');
+        return;
+      }
+      reintento = setTimeout(arrancar, fallos ? Math.min(8000, 400 * 2 ** fallos) : 350);
     };
     try {
       r.start();
       onEstado(true);
     } catch {
       r = null;
-      reintento = setTimeout(arrancar, 1200);
+      fallos++;
+      if (fallos >= 8) {
+        vivo = false;
+        onEstado(false, 'falla');
+        return;
+      }
+      reintento = setTimeout(arrancar, Math.min(8000, 600 * 2 ** fallos));
     }
   };
   const parar = () => {
     if (reintento) clearTimeout(reintento);
     reintento = null;
-    try {
-      r?.abort();
-    } catch {
-      /* ya estaba parada */
+    if (r) {
+      r.onend = r.onresult = r.onerror = null;
+      try {
+        r.abort();
+      } catch {
+        /* ya estaba parada */
+      }
     }
     r = null;
   };
@@ -198,13 +253,17 @@ export function escucharSiempre(onFrase: (t: string) => void, onEstado: (activo:
     stop: () => {
       vivo = false;
       parar();
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', alVolver);
       onEstado(false);
     },
     pausa: (p: boolean) => {
       if (!vivo || pausado === p) return;
       pausado = p;
       if (p) parar();
-      else reintento = setTimeout(arrancar, 250);
+      else {
+        if (reintento) clearTimeout(reintento);
+        reintento = setTimeout(arrancar, 250);
+      }
     },
   };
 }
